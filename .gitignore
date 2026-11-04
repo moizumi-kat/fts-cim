@@ -1,0 +1,8 @@
+# 現行ソースの展開物は入れない（Dropbox から取り直せる。README 1章を参照）
+utf8/
+raw/
+src/
+*.zip
+# 作業用
+__pycache__/
+*.pyc
