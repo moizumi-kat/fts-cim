@@ -1,0 +1,93 @@
+FTS-CIM　定義の無かった18表について
+
+　作成　2026-11-11
+　お願いする先：ＩＴ管理室
+
+
+■ 要点
+
+　いただいた「ＣＬ，ＣＯＢＯＬ使用ファイル一覧」489表のうち、
+　レコードリストにも定義体にも定義が無かったのは18表でした。
+　そのうち11表は、現行のＣＬ・ＣＯＢＯＬに根拠が書かれていたので、
+　そこから埋めました。**お願いしたいのは残りの7表だけです。**
+
+　　　作れる表　　471表　→　482表
+　　　お願いする表　18表　→　  7表
+
+
+■ 埋めた11表（根拠つき）
+
+　(1) プログラムがレコードを直接書いていたもの（3表）
+　　　ＦＤの下に項目がそのまま並んでいたので、そこから起こしました。
+　　　定義体をいただく必要はありません。
+
+　　　TENURISF   36列 255バイト   TENSO1CF.COB　ＦＤ 売上ファイル の 01 URIREC
+　　　TENURI2F   36列 255バイト   TENSO2CF.COB　ＦＤ TENURI2F の 01 URIREC2
+　　　TENURI3F   37列 255バイト   MJS110CF.COB　ＦＤ 売上用ファィル３ の 01 URIREC3
+
+　(2) ＣＬに「どのファイルの写しか」が書かれていたもの（8表）
+　　　CNVFILE／SETPF／OVRF／OVRSF はレコードをそのまま移すので、
+　　　写し元と同じ並びとみなしました。
+
+　　　AREGFS  ←  SREGFS    CB1D1225.CL  CNVFILE FILE-AREGFS.FADLIB,TOFILE-SREGFS.FADLIB
+　　　AREKFS  ←  SREKFS    CB1D1225.CL  CNVFILE FILE-AREKFS.FADLIB,TOFILE-SREKFS.FADLIB
+　　　SENGFS  ←  SREGFS    CL4D0000.CL  CNVFILE FILE-SREGFS.@LIBL,TOFILE-SENGFS.FADLIB
+　　　SENKFS  ←  SREKFS    CL4D0000.CL  CNVFILE FILE-SREKFS.@LIBL,TOFILE-SENKFS.FADLIB
+　　　AUKRFS  ←  AUKJFS    CB1D1225.CL  CNVFILE FILE-AUKJFS.FADLIB,TOFILE-AUKRFS.FADLIB
+　　　CSEICP  ←  CSEIJP    CKORNCL1.CL  SETPF   FILE-CSEIJP.FCDLIB,TOFILE-CSEICP.FCDLIB
+　　　FGENKA  ←  CGENKA    CB2M5100.CL  OVRF    FILE-CGENKA,TOFILE-FGENKA（ファイル名の上書き）
+　　　KFKNSWK ←  KFKNSDF   KOGYOCL8.CL  OVRSF   FILE-KFKNSDF,TOFILE-KFKNSWK.@LIBL
+
+　　　※ (2)は**推定**です。現物の定義体をいただければ差し替えます。
+　　　　 ただし KFKNSWK は、写し元から起こした定義がちょうど323バイトで、
+　　　　 ＫＯＧＹＯＣＬ８に書かれた OUTRL-323 とピタリ一致しました。
+　　　　 写しとみなす読み方そのものの裏取りになっています。
+
+
+■ お願いしたい7表
+
+　下の7表は、写し元まで辿っても定義が見当たりませんでした。
+　**定義体（またはレコードリスト）をいただけますでしょうか。**
+
+　　① AERGFS   FADLIB　ＳＦ
+　　　 CL1D0000 の SAVFILE と CL2D0000 の CNVFILE→RERGFS のみ。
+　　　 写し先の RERGFS にも定義がありません。
+
+　　② AERKFS   FADLIB　ＳＦ
+　　　 ①と同じ（写し先の RERKFS にも定義がありません）。
+
+　　③ AJKTFS   FADLIB　ＳＦ
+　　　 CB1Z0010 の CNVFILE FILE-B11200S1→AJKTFS。
+　　　 写し元 B11200S1（＠ＴＥＭＰ）に定義がありません。
+　　　 なお CL6D0000 に SORTD INFILE-AJKTFS,INRL-7 とあり、レコード長は7バイトです。
+
+　　④ D20520BK FCDLIB　ＳＦ
+　　　 CL3D0000 の CNVFILE FILE-D20520S3→D20520BK。
+　　　 写し元 D20520S3（＠ＴＥＭＰ）に定義がありません。
+
+　　⑤ D20530BK FCDLIB　ＳＦ
+　　　 CL3D0000 の CNVFILE FILE-D20530S1→D20530BK。
+　　　 写し元 D20530S1（＠ＴＥＭＰ）に定義がありません。
+
+　　⑥ GKUMIKSF FCDLIB　ＳＦ
+　　　 PKOUJOU3 の CLRFILE／ＦＩＭＰＯＲＴ のみで、写し元が書かれていません。
+
+　　⑦ PJYURIFP FADLIB　物理　出力完納受注累積ファイル
+　　　 ＣＯＢＯＬもＣＬも1本も触っていません。
+　　　 一覧に載っているので表は作りますが、**どの処理で使うファイルか**を
+　　　 教えていただけると助かります（使われていないのであれば、その旨で結構です）。
+
+　　※ ③④⑤の写し元（B11200S1／D20520S3／D20530S1）はいずれも＠ＴＥＭＰの
+　　　 作業ファイルです。**その定義体でも構いません**（同じ並びとみなせます）。
+
+
+■ この時点の状況
+
+　　表　　　　　482表 22,462列（489表のうち、残り7表は上記のとおり）
+　　点検　　　　すべて通っています
+　　　　　　　　・レプリケーション81表が定義体と一字一句同じ　81／81
+　　　　　　　　・桁あふれなし（482表）
+　　　　　　　　・ＳＱＬ Ｓｅｒｖｅｒのふるまいで通し実行
+　　　　　　　　・発行ＳＱＬ 1,595文がＴ－ＳＱＬとして解析できる
+　　　　　　　　・工程11-1（見積登録）の制御が現行どおり
+　　　　　　　　・画面定義6本の読み取り（手書き領域と15項目一致）

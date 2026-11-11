@@ -16,9 +16,10 @@
 """
 import sys, json, pprint, pathlib, collections
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-import recdef, repdef
+import recdef, repdef, oginai, fd_hirou
 
 RECDIR, DEFDIR, TBLJSON, OUT = sys.argv[1:5]
+SRCDIR = sys.argv[5] if len(sys.argv) > 5 else 'cim/utf8'
 
 rec = recdef.yomu(RECDIR)
 rep = repdef.yomu(DEFDIR)
@@ -34,6 +35,9 @@ for _a, _b in (tbl.get('naoshi') or {}).items():
         rec[_b] = rec[_a]
 
 TABLES, warn, nashi = {}, collections.defaultdict(list), []
+
+# レコードリストにも定義体にも無い表を、現行ソースの根拠で補う（bin/oginai.py）
+oginai.oginau(rec, rep, SRCDIR)
 
 for t in MOKUHYO:
     r = rec.get(t)
@@ -55,12 +59,16 @@ for t in MOKUHYO:
         }
     elif r:                                        # ② 変換仕様書どおり
         TABLES[t] = {
-            'src': 'conv',
+            'src': {'source': 'source'}.get(r.get('_moto'),
+                                            'utsushi' if r.get('_moto') else 'conv'),
             'lib': r['lib'], 'nm': r['nm'],
             'ronri': sorted(set(r.get('ronri', []))),
             'cols': cols,
             'notnull': [], 'pk': [], 'default': {},
         }
+        if r.get('_konkyo'):
+            TABLES[t]['konkyo'] = r['_konkyo']
+            TABLES[t]['moto'] = r.get('_moto')
     else:
         nashi.append(t)
     if t in TABLES:
@@ -73,7 +81,10 @@ atama = '''# -*- coding: utf-8 -*-
   テーブル名 ＝ 現行の物理ファイル名（論理ファイル名は ronri に保持）
   列名      ＝ 現行の COBOL 英名（英大文字）
 
-  src='rep' … データベースサーバへ**レプリケーションしている**ファイル。
+  src='rep'     … データベースサーバへ**レプリケーションしている**ファイル。
+  src='utsushi' … 定義が無く、CL の CNVFILE/SETPF/OVRF/OVRSF が示す**写し元と同じ並び**と
+                  みなしたもの（**推定**。根拠は konkyo、写し元は moto）。
+  src='source'  … 定義が無く、プログラムが FD の下に直接書いているレコードから起こしたもの。
               村上様よりいただいた定義体（DDL）を一字一句そのまま使う。
               CAD・営業支援システム等の周辺ソフトが同じ定義を見ているため、
               ここは絶対に変えない。
@@ -93,9 +104,10 @@ atama = '''# -*- coding: utf-8 -*-
 '''
 kazu = collections.Counter(v['src'] for v in TABLES.values())
 h = collections.Counter(v['hantei'] for v in TABLES.values())
-atama += '\n   %d表 %d列（定義体のまま %d表 ／ 変換仕様書から %d表）\n' % (
+atama += ('\n   %d表 %d列（定義体のまま %d表 ／ 変換仕様書から %d表'
+          ' ／ 現行ソースの根拠で補った %d表）\n') % (
     len(TABLES), sum(len(v['cols']) for v in TABLES.values()),
-    kazu['rep'], kazu['conv'])
+    kazu['rep'], kazu['conv'], kazu['utsushi'] + kazu['source'])
 for k, v in h.most_common():
     atama += '     %-12s %3d表\n' % (k, v)
 atama += '"""\n'
@@ -105,7 +117,10 @@ pathlib.Path(OUT).write_text(atama + body, encoding='utf-8')
 
 print('■ 書き出し %s' % OUT)
 print('   %d表 %d列' % (len(TABLES), sum(len(v['cols']) for v in TABLES.values())))
-print('   定義体のまま %d表 ／ 変換仕様書から %d表' % (kazu['rep'], kazu['conv']))
+print('   定義体のまま %d表 ／ 変換仕様書から %d表 ／ 現行ソースの根拠で補った %d表'
+      % (kazu['rep'], kazu['conv'], kazu['utsushi'] + kazu['source']))
+for _t in sorted(t for t, v in TABLES.items() if v['src'] in ('utsushi', 'source')):
+    print('     %-9s %s' % (_t, TABLES[_t]['konkyo']))
 for k, v in h.most_common():
     print('     %-12s %3d表' % (k, v))
 print()

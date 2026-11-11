@@ -113,6 +113,8 @@
   "APCRFP",
   "ARABJP",
   "ARBHJP",
+  "AREGFS",
+  "AREKFS",
   "ARHOJP",
   "ARIRFP",
   "ARKAJP",
@@ -133,6 +135,7 @@
   "ATESAKIF",
   "AUKCFS",
   "AUKJFS",
+  "AUKRFS",
   "AUKSFS",
   "AURDFP",
   "AURPFS",
@@ -184,6 +187,7 @@
   "CPOWMP",
   "CRSAJP",
   "CRSEJP",
+  "CSEICP",
   "CSEIJP",
   "CSJPFP",
   "CSJRFP",
@@ -221,6 +225,7 @@
   "FAXRNSFP",
   "FDGWFP",
   "FDLTJP",
+  "FGENKA",
   "FGEWFP",
   "FHACFP",
   "FHATBNFP",
@@ -305,6 +310,7 @@
   "KFKNSDF",
   "KFKNSDFA",
   "KFKNSDFB",
+  "KFKNSWK",
   "KFKRKF",
   "KFKSWK",
   "KINJYUSF",
@@ -394,6 +400,8 @@
   "SEISNSJF",
   "SEKJITFP",
   "SELBANFP",
+  "SENGFS",
+  "SENKFS",
   "SETUKDFP",
   "SHIDELFP",
   "SHOKISF",
@@ -428,6 +436,9 @@
   "TANSIJFP",
   "TEGNIPSF",
   "TENSCHFP",
+  "TENURI2F",
+  "TENURI3F",
+  "TENURISF",
   "TKANRUFP",
   "TKANRYFP",
   "TKTMASSF",
@@ -588,6 +599,8 @@
   "APCRFP",
   "ARABJP",
   "ARBHJP",
+  "AREGFS",
+  "AREKFS",
   "ARHOJP",
   "ARIRFP",
   "ARKAJP",
@@ -608,6 +621,7 @@
   "ATESAKIF",
   "AUKCFS",
   "AUKJFS",
+  "AUKRFS",
   "AUKSFS",
   "AURDFP",
   "AURPFS",
@@ -659,6 +673,7 @@
   "CPOWMP",
   "CRSAJP",
   "CRSEJP",
+  "CSEICP",
   "CSEIJP",
   "CSJPFP",
   "CSJRFP",
@@ -696,6 +711,7 @@
   "FAXRNSFP",
   "FDGWFP",
   "FDLTJP",
+  "FGENKA",
   "FGEWFP",
   "FHACFP",
   "FHATBNFP",
@@ -780,6 +796,7 @@
   "KFKNSDF",
   "KFKNSDFA",
   "KFKNSDFB",
+  "KFKNSWK",
   "KFKRKF",
   "KFKSWK",
   "KINJYUSF",
@@ -869,6 +886,8 @@
   "SEISNSJF",
   "SEKJITFP",
   "SELBANFP",
+  "SENGFS",
+  "SENKFS",
   "SETUKDFP",
   "SHIDELFP",
   "SHOKISF",
@@ -903,6 +922,9 @@
   "TANSIJFP",
   "TEGNIPSF",
   "TENSCHFP",
+  "TENURI2F",
+  "TENURI3F",
+  "TENURISF",
   "TKANRUFP",
   "TKANRYFP",
   "TKTMASSF",
@@ -951,22 +973,68 @@
   "AERGFS",
   "AERKFS",
   "AJKTFS",
-  "AREGFS",
-  "AREKFS",
-  "AUKRFS",
-  "CSEICP",
   "D20520BK",
   "D20530BK",
-  "FGENKA",
   "GKUMIKSF",
-  "KFKNSWK",
-  "PJYURIFP",
-  "SENGFS",
-  "SENKFS",
-  "TENURI2F",
-  "TENURI3F",
-  "TENURISF"
+  "PJYURIFP"
  ],
+ "oginatta": {
+  "TENURISF": [
+   "source",
+   "TENSO1CF",
+   "TENSO1CF.COB  FD 売上ファイル の 01 URIREC（レコードを直接書いている）"
+  ],
+  "TENURI2F": [
+   "source",
+   "TENSO2CF",
+   "TENSO2CF.COB  FD TENURI2F の 01 URIREC2"
+  ],
+  "TENURI3F": [
+   "source",
+   "MJS110CF",
+   "MJS110CF.COB  FD 売上用ファィル３ の 01 URIREC3"
+  ],
+  "AREGFS": [
+   "utsushi",
+   "SREGFS",
+   "CB1D1225.CL  CNVFILE FILE-AREGFS.FADLIB,TOFILE-SREGFS.FADLIB"
+  ],
+  "AREKFS": [
+   "utsushi",
+   "SREKFS",
+   "CB1D1225.CL  CNVFILE FILE-AREKFS.FADLIB,TOFILE-SREKFS.FADLIB"
+  ],
+  "SENGFS": [
+   "utsushi",
+   "SREGFS",
+   "CL4D0000.CL  CNVFILE FILE-SREGFS.@LIBL,TOFILE-SENGFS.FADLIB"
+  ],
+  "SENKFS": [
+   "utsushi",
+   "SREKFS",
+   "CL4D0000.CL  CNVFILE FILE-SREKFS.@LIBL,TOFILE-SENKFS.FADLIB"
+  ],
+  "CSEICP": [
+   "utsushi",
+   "CSEIJP",
+   "CKORNCL1.CL  SETPF FILE-CSEIJP.FCDLIB,TOFILE-CSEICP.FCDLIB"
+  ],
+  "FGENKA": [
+   "utsushi",
+   "CGENKA",
+   "CB2M5100.CL  OVRF FILE-CGENKA,TOFILE-FGENKA（ファイル名の上書き＝別名）"
+  ],
+  "KFKNSWK": [
+   "utsushi",
+   "KFKNSDF",
+   "KOGYOCL8.CL  OVRSF FILE-KFKNSDF,TOFILE-KFKNSWK.@LIBL（別名）"
+  ],
+  "AUKRFS": [
+   "utsushi",
+   "AUKJFS",
+   "CB1D1225.CL  CNVFILE FILE-AUKJFS.FADLIB,TOFILE-AUKRFS.FADLIB"
+  ]
+ },
  "naoshi": {
   "AUKJFD": "AUKJFS",
   "CJISFD": "CJISFP",
