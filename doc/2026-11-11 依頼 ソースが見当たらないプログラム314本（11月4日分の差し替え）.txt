@@ -1,0 +1,253 @@
+================================================================
+ ソースが見当たらないプログラムの件（**11月4日分の差し替え**）
+ FTS-CIM                                   2026年11月11日
+ お願いする先：ＩＴ管理室
+================================================================
+
+ 11月4日に「811本」としてお願いしましたが、**こちらの数えまちがいでした。**
+ 正しくは **314本**です。差し替えをお願いいたします。
+ 申し訳ございません。
+
+----------------------------------------------------------------
+ ■ なぜ数が変わったのか（原因は3つ。いずれもこちらの不具合です）
+----------------------------------------------------------------
+
+ (1) SBMJOB の `PGM-xxx` から `PGM-` を外していませんでした
+
+     ・同じ1本を2件に数えていました。
+         「BANKIN9O」と「PGM-BANKIN9O」を別物として数えていた（35組）
+     ・さらに、**ソースがあるのに「無い」と数えていました。**
+         `PGM-BANKIN1O` は PROGRAM-ID の表と突き合わせられないため
+         「見つからない」に落ちていました。素の `BANKIN1O` なら
+         `BANKIN1S.COB` に辿れます。**これが過大の主な原因です。**
+
+ (2) CLで「名前だけ書いて起動する形」を拾う処理が、CLのコマンド語まで
+     拾っていました（165件）。例
+
+         #0016#    ＝ メッセージ番号
+         @JOBDATE  ＝ システム変数
+         ACTLF／CANFAXLK ＝ ASPのCLコマンド
+
+     これらはプログラムではないので、依頼対象から外しました。
+
+ (3) `CALL PGM-D20070PP` から `PGM` を名前として拾っていました
+     （本体の D20070PP は別の処理で拾えており、取りこぼしはありません）。
+
+ なお、以前ご指摘いただいた**「ソース末尾S → 実行形式末尾O」の読み替えは
+ 効かせたうえでの数**です。末尾の文字で読み替えるのではなく、全COBOLの
+ `PROGRAM-ID.` の行を読んで「実行形式名→ソース名」の表を作り、
+ CLの呼び出しをその表で引いています。実測で190本がファイル名と違い、
+ うち188本がS→O、残り2本は **P→O** でした。
+     DATECHKP → DATECHKO ／ TUKICHKP → TUKICHKO
+ 末尾の文字で決め打つとこの2本を落とすため、`PROGRAM-ID` を読んでいます。
+
+----------------------------------------------------------------
+ ■ 数の訂正（11月4日 → 11月11日）
+----------------------------------------------------------------
+
+                                11月4日      11月11日
+     １．末尾 KB／KP／KO          134本   →   122本
+     ２．末尾 O（KOを除く）        223本   →    47本
+     ３．そのほか                 454本   →   145本
+                                 ─────       ─────
+                                  811本   →   314本
+
+     ※ このほかに、プログラムかCLのキーワードか判別できないものが4件
+        （END／START／STATUS／STS）あります。下の「■ 判断がつかないもの」。
+
+----------------------------------------------------------------
+ １．末尾が KB／KP／KO のもの  122本
+----------------------------------------------------------------
+
+ **この系統は、いまのソースに2本しかありません。**
+ 11月4日に申し上げたとおり、系統ごとまとまって欠けています。
+ 別のライブラリに入っているのではないでしょうか。
+
+     系統 … M系 35本／D系 30本／E系 30本／A系 20本／B系 6本／C系 1本
+
+     A16100KB    A16110KB    A16120KP    A20010KO    A20020KO    A20030KB
+     A20040KP    A20050KO    A20060KB    A20070KP    A20080KO    A20130KO
+     A20310KB    A20315KP    A20440KB    A20450KB    A20460KP    A26100KB
+     A36100KB    A36110KB    B11000KO    B11220KB    B11310KO    B11330KO
+     B17300KB    B17310KP    C10010KO    D20700KB    D20710KP    D20730KP
+     D40010KO    D40020KO    D40030KO    D40040KO    D40050KO    D40060KP
+     D40070KO    D40080KP    D40090KP    D40091KB    D40092KB    D40095KP
+     D40120KP    D40130KP    D40135KP    D40140KB    D40150KB    D40160KB
+     D40165KB    D40170KB    D40175KB    D40190KB    D40210KP    D40215KB
+     D40220KB    D40900KB    D40910KB    E10015KO    E10020KP    E10040KB
+     E10060KB    E10070KB    E10080KP    E10090KB    E10100KP    E10105KB
+     E10110KB    E20020KO    E20030KO    E20040KO    E20190KP    E20200KB
+     E20210KB    E20220KB    E20230KB    E20240KB    E20250KB    E20260KB
+     E20270KB    E20280KP    E20300KB    E20330KB    E20340KP    E20345KB
+     E20350KO    E20360KP    E20370KB    M10020KO    M10040KO    M10050KP
+     M10060KO    M10080KO    M10090KP    M10100KO    M10110KP    M10120KO
+     M10140KO    M10160KO    M10180KO    M10190KP    M10200KO    M10220KO
+     M10230KP    M10500KB    M11000KO    M11010KO    M11020KO    M11030KP
+     M12000KB    M20010KO    M20020KO    M20030KO    M20040KB    M20050KO
+     M20060KO    M20070KP    M20080KP    M20090KP    M20100KP    M20270KB
+     M30610KO    M30611KP
+
+----------------------------------------------------------------
+ ２．末尾が O のもの  47本
+----------------------------------------------------------------
+
+ 末尾SをOに読み替えて探したうえで、なお見当たらない分です。
+ **呼び元のCLはすべて手元にあります**ので、「このCLがこの名前を起動して
+ いる」ことは確認できていて、起動先のCOBOLソースだけが無い状態です。
+ 原価計算・納期・指示・組立・資材といった**業務単位でまとまって**
+ 欠けています。
+
+     A11000PO   ← CA1Z1000
+     A30010PO   ← CA3Z0010
+     BANKIN9O   ← FCLBNKN9
+     D20010PO   ← CD2Z0015
+     D20020PO   ← CD2Z0025
+     D20080PO   ← CD2Z0085
+     D20090PO   ← CD2Z0095
+     D20100PO   ← CD2Z0105
+     D20110PO   ← CD2Z0110
+     F10110PO   ← SIYOUCL1
+     F10410PO   ← CF1Z0410／CF1Z0415
+     F10650PO   ← CF1Z0650
+     GAISEP1O   ← GAITUCL4
+     GAITYU4O   ← GAITUCL4
+     GENHYO1O   ← PGENHYO1
+     JYOTAI1O   ← PJYOTAI1
+     KENTOUWO   ← PKENTOUW
+     KENTOUXO   ← PKENTOUX
+     KUMIKF1O   ← PKOUJOU3
+     KUMIKF2O   ← PKOUJOU3
+     KUMIKF3O   ← PKOUJOU3
+     KUMIKF4O   ← PKOUJOU3
+     NGENKS1O   ← NGENCL11
+     NGENKS2O   ← NGENCL12
+     NGENKS3O   ← NGENCL13
+     NGENKS4O   ← NGENCL14
+     NGENKS8O   ← NGENCL18
+     NNOKI78O   ← PNNOKI78
+     NNOKI79O   ← PNNOKI79
+     NOKIK54O   ← NOKICL20
+     NOKIK58O   ← PNOKIK58
+     NOKIK69O   ← PNOKIK69
+     NOKIK77O   ← PNNOKI77
+     NOKIK78O   ← PNNOKI78
+     RENRAK1O   ← RENRKCLB
+     RENRAK2O   ← RENRAKCL
+     SEISAN8O   ← SEISNCL8
+     SHIZI02O   ← SHIZICL1
+     SHIZI07O   ← SHIZICL5
+     SHIZI09O   ← CF1Z0650
+     SHIZI22O   ← SHIZICLB
+     SHIZI71O   ← SHIZICL5
+     SIZAI01O   ← CF1Z0260
+     SIZAI22O   ← PSIZAIAA／PSIZAIAB
+     SIZAI23O   ← PSIZAIAA／PSIZAIAB
+     SYUTUZ2O   ← SYUTUCL2
+     ZOGEN02O   ← PZOGEN02
+
+----------------------------------------------------------------
+ ３．そのほか  145本
+----------------------------------------------------------------
+
+     系統 … D系 20本／F系 18本／FSIK系 13本／UKAKU系 6本／KG系 5本
+            SYUSK系 5本／CD系 4本／SEMICH系 4本／B系 3本／CL系 3本
+
+     AJBKPRE1    B10180PP    B10220PP    B11400PB    BANCH1CP    CA2Z0460
+     CB1D5500    CB1M6200    CD4Z0121    CD4Z0122    CD4Z012B    CD4Z012D
+     CE1Z0020    CF2M031X    CL23D000    CL5D0000    CL5M0000    D10030PB
+     D20030PB    D20040PP    D20060PB    D2006XPB    D2006YPB    D20070PP
+     D2007XPP    D20120PB    D20135PP    D20160PB    D20170PP    D20180PB
+     D20190PP    D20220PB    D20230PP    D20270PB    D20280PP    D20930PB
+     D21010PB    DACTPP      E10025CP    E1002HCP    EM1100CM    ENDMSG10
+     ENDMSG15    ENDMSG5     F10030PX    F10110RA    F10110RB    F10130PP
+     F10275PP    F10870PP    F11020PB    F19025PB    F19035PB    F19045PB
+     F19055PB    F19065PB    F19075PB    F19085PB    F19095PB    F19105PB
+     F20312PB    F20312PN    FILECNVS    FSIK01CF    FSIK02CP    FSIK11CF
+     FSIK12CF    FSIK13CF    FSIK1ACF    FSIK1BCF    FSIK1CCF    FSIK1ECF
+     FSIK1FCF    FSIK1GCF    FSIK1HCF    FSIK1JCF    FSIZIACS    GENK12CS
+     GENSY1CS    GENSYNCS    IT1010CP    IT1020CP    JCVEBCC     JISEK2CP
+     JUSUI1CP    KARIJU1P    KARIJU2P    KG0101CF    KG0103CF    KG0104CF
+     KG1002CK    KG1003CK    KRCH01CP    KYAHN9CP    MJS080CS    MJS090CG
+     MJS100CG    NIPSY1CS    NPHEN3CK    NPHEN4CK    RENDPP      RENRKCL2
+     SAKUZ1CG    SAKUZBCG    SAKUZNCG    SEISN2CF    SEISN5CP    SEJYO1CP
+     SEMICH01    SEMICH02    SEMICH03    SEMICH04    SETUK1CP    SETUK2CP
+     SETUK3CP    SETUKXCP    SETUPCL2    SETUPCLB    SYBKNXCS    SYGEN1CS
+     SYUSK1CM    SYUSK2CF    SYUSK4CF    SYUSK7CP    SYUSK8CP    SYUSKMCP
+     SYUSKMDP    SYUSKMEP    SYUSKNCP    TREN01CP    UKAKU4CP    UKAKU5CP
+     UKAKU6CP    UKAKU7CP    UKAKU8CP    UKAKU9CP    UKAKUWCP    UKAKUXCP
+     UKAKUYCP    UKAKUZCP    UNCHNCL2    UNCHNLCF    X10010PX    X10020PX
+     XSBSSI
+
+----------------------------------------------------------------
+ ４．コピー原文  残り5本
+----------------------------------------------------------------
+
+     A1VLD001  A1VLD002  SYMED001  SYMED002  YAMAMED1
+
+ ※ **A10CPYPO は11月11日に受領いたしました。**ありがとうございました。
+    実物のとおりに作り直し、工程11-1の受け渡し領域（2,077バイト）として
+    組み込み済みです。
+
+----------------------------------------------------------------
+ ５．画面定義（XMDLIB）  残り346種
+----------------------------------------------------------------
+
+ ※ **6本（A10040D1～A10090D1）を11月11日に受領し、解読できました。**
+    オフコンのオブジェクト形式でしたが、中の構造を解き、画面項目の
+    位置・桁をすべて取り出せています。A10080PO.COB が手書きしている
+    画面編集領域と突き合わせ、**15項目すべて一致**を確認しました。
+    ＝ **この形式でお送りいただければ、こちらで読めます。**
+
+----------------------------------------------------------------
+ ６．【新規】XFDLIB の記述体  21本（急ぎません・確認用）
+----------------------------------------------------------------
+
+ 工程11-1の子6本が `COPY xxx OF XFDLIB` で取り込んでいるものです。
+
+     ABANML1  ABUHML1  ACHKFL1  AHATML1  AHOSML1  AJBGFL1  AKAKML1
+     ANAMML1  ARMIJL1  ASIYML1  ASOSML1  ASUNML1  ASUNML2  ASUNML3
+     ATORML1  ATYUML1  AWKGFL1  AWKKFL1  AWKMFL1  CCALML1  CSHKML1
+
+ ※ **無くても作業は止まりません。** 21本すべて論理ファイル名
+    （`DA-01-VI-…` ＝ビュー）で、21本とも物理ファイルに辿れました。
+    レコードの並びはレコードリストから分かります。
+        例) AWKGFL1 → AWKGFP（ワークファイル（鑑）・166項目）
+            ASUNML1／L2／L3 → いずれも ASUNMP
+                              （＝同じ物理ファイルへの別キー）
+    いただきたいのは**索引（どの項目をキーにしているか）の確認**のためです。
+    プログラムの READ／START の書き方からも読み取れますので、
+    お手すきのときで結構です。
+
+----------------------------------------------------------------
+ ■ 判断がつかないもの  4件
+----------------------------------------------------------------
+
+     END   START   STATUS   STS
+
+ `PGM-END` のような形で現れますが、プログラム名なのかCLのキーワードなのか
+ 決められませんでした。ご覧いただいて、プログラムでなければ
+ その旨お教えください。
+
+----------------------------------------------------------------
+ ■ お願いしたいこと
+----------------------------------------------------------------
+
+ (1) 上の 314本について、ソースのある場所をお教えいただけますでしょうか。
+     特に「末尾 KB／KP／KO」の122本は系統ごと欠けておりますので、
+     どこか別のライブラリにまとまっているのではないかと思います。
+
+ (2) 「すでに使っていない」ものが含まれていれば、その旨お教えください。
+     作成対象から外します。
+
+ (3) **全部まとめてでなくて構いません。** 工程順序マスタの順に作って
+     おりますので、その工程で必要になった分だけ都度お願いする進め方で
+     もよろしいでしょうか。
+     （現に、いま作っている工程11-1の6本は手元にあり、お願いは不要でした）
+
+ (4) 画面定義は、受領した6本と同じ**オフコンのオブジェクト形式のままで
+     結構です。**こちらで読めることを確認できました。
+
+ 全314本の一覧と、それぞれの呼び元は、添付の work_tarinai2.json にあります。
+ 見づらいようでしたら、Excel にしてお送りします。
+
+================================================================
