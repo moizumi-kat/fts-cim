@@ -22,14 +22,15 @@
   ・CLOSE に **ＶＬＤ１／ＶＬＤ２ は入っていない**（行879がコメントアウトされている）。
     現行がそうなっているので、そのまま閉じない。
 
-■ まだ現行どおりに作れないところ（ＩＴ管理室へ依頼中）
-  ・画面定義 A10040D1〜A10090D1（XMDLIB・6本）が未入手。
-    現行は 初期処理 で6画面を LOW-VALUE で初期化し、子を呼ぶ前後で
-    画面情報 とやりとりする（行583-635）。ここは入手後に埋める。
-  ・受け渡し領域 A10CPYPO（コピー原文）が未入手。
-    下の Linkage は、7本（A10010PO と子6本）の**使いかたから起こした暫定**。
-    桁は確定していないので、入手後に差し替える。
+■ 2026-11-11 に届いたもの
+  ・受け渡し領域 A10CPYPO … **実物に差し替え済み**（下の Linkage）
+  ・画面定義 A10040D1〜A10090D1（6本）… オフコンのオブジェクト形式(.SMD)で受領。
+    EBCDIC として解読し、項目名・行・桁・長さ・レコード内位置を取り出した
+    （bin/smd_parse.py。検算は bin/smd_kensan.py）。
+    子6本の中身は、これから順に作る。
 """
+import unicodedata
+
 from .. import db
 
 # 定数エリア（行464-467）
@@ -94,31 +95,93 @@ class Abend(Exception):
 
 
 class Linkage:
-    """リンケージ情報エリア（A10CPYPO）の**暫定**。
+    """リンケージ情報エリア（A10CPYPO の実物どおり）。
 
-    7本の使いかたから起こしたもので、桁は確定していない。
-    のべ回数の多い順に 戻り画面53／リターンコード44／画面情報41／端末ＩＤ34／
-    キーＩＤ34／見積ナンバー115／項番79 … が確認できている。
+    2026-11-11 に村上様より A10CPYPO.COB をいただき、**暫定を実物へ差し替えた**。
+    いただく前は7本の使いかたから項目名を起こしていたが、
+      ・名前は15個とも合っていた
+      ・**システム日付は実在しなかった**（こちらの思い違い）
+      ・**頁番号と位置項番が漏れていた**
+    桁はこれで確定。全体で 2,077 バイト。
+
+        01 リンケージ情報エリア.
+           03 処理区分.
+              05 鑑画面処理区分    PIC X(01)
+              05 項目処理区分      PIC X(01)
+              05 項目明細処理区分  PIC X(01)
+           03 行き画面             PIC X(06)
+           03 戻り画面             PIC X(06)
+           03 キーＩＤ             PIC X(04)
+           03 見積ナンバー         PIC X(08)
+           03 項番                 PIC 9(06)
+           03 行番                 PIC 9(05)
+           03 頁番号               PIC 9(05)
+           03 画面情報             PIC X(2000)
+           03 ファイル名           PIC X(10)
+           03 端末ＩＤ             PIC X(08)
+           03 リターンコード       PIC X(04)
+           03 ＶＬＤ一             PIC 9(03)
+           03 ＶＬＤ二             PIC 9(03)
+           03 位置項番             PIC 9(06)
     """
 
-    項目 = ('画面情報', '行き画面', '戻り画面', 'キーＩＤ', 'リターンコード',
-            'ファイル名', '端末ＩＤ', 'ＶＬＤ一', 'ＶＬＤ二',
-            '見積ナンバー', '項番', '行番',
-            '鑑画面処理区分', '項目処理区分', '項目明細処理区分', 'システム日付')
+    # (項目名, 種別, 桁)  種別 X=英数字（空白で埋める） 9=数字（ゼロ）
+    項目 = (('鑑画面処理区分', 'X', 1), ('項目処理区分', 'X', 1),
+            ('項目明細処理区分', 'X', 1),
+            ('行き画面', 'X', 6), ('戻り画面', 'X', 6), ('キーＩＤ', 'X', 4),
+            ('見積ナンバー', 'X', 8), ('項番', '9', 6), ('行番', '9', 5),
+            ('頁番号', '9', 5), ('画面情報', 'X', 2000),
+            ('ファイル名', 'X', 10), ('端末ＩＤ', 'X', 8),
+            ('リターンコード', 'X', 4), ('ＶＬＤ一', '9', 3),
+            ('ＶＬＤ二', '9', 3), ('位置項番', '9', 6))
+
+    桁 = {n: (k, d) for n, k, d in 項目}
+    ながさ = sum(d for _n, _k, d in 項目)        # 2,077 バイト
+
+    # ＶＬＤ一・端末ＩＤ のような全角の英字は、Python がソースを読むときに
+    # 半角へそろえる（VLD一・端末ID）。setattr に渡す文字列はそろわないので、
+    # ここで同じ形にしておかないと link.端末ＩＤ で取り出せなくなる。
+    @staticmethod
+    def _na(n):
+        return unicodedata.normalize('NFKC', n)
 
     def __init__(self):
         self.初期化()
 
     def 初期化(self):
-        """INITIALIZE リンケージ情報エリア（行669）。
-        COBOL の INITIALIZE は英数字項目を空白、数字項目をゼロにする。"""
-        for n in self.項目:
-            setattr(self, n, '')
+        """INITIALIZE リンケージ情報エリア（A10010PO.COB 行669）。
+
+        COBOL の INITIALIZE は、英数字項目を空白、数字項目をゼロにする。
+        """
+        for n, k, d in self.項目:
+            setattr(self, self._na(n), ' ' * d if k == 'X' else 0)
+
+    def 詰める(self, n, v):
+        """COBOL の MOVE と同じ詰めかたで入れる。
+
+        英数字は左詰め・右を空白で埋める（あふれたら右を切る）。
+        数字は右詰め・左をゼロで埋める（あふれたら左を切る）。
+        """
+        k, d = self.桁[n]
+        a = self._na(n)
+        if k == 'X':
+            s = '' if v is None else str(v)
+            setattr(self, a, (s + ' ' * d)[:d])
+        else:
+            i = 0 if v in (None, '') else int(v)
+            setattr(self, a, int(str(abs(i))[-d:] or 0))
+        return getattr(self, a)
 
     def __repr__(self):
-        return 'Linkage(' + ', '.join(
-            '%s=%r' % (n, getattr(self, n)) for n in self.項目
-            if getattr(self, n) not in ('', None)) + ')'
+        mi = []
+        for n, k, d in self.項目:
+            v = getattr(self, self._na(n))
+            if k == 'X' and v.strip() == '':
+                continue
+            if k == '9' and not v:
+                continue
+            mi.append('%s=%r' % (n, v if n != '画面情報' else '…%d桁…' % d))
+        return 'Linkage(' + ', '.join(mi) + ')'
 
 
 def _mikomi(ko):
@@ -191,9 +254,9 @@ class A10010PO:
             self.gamen[d1] = 'LOW-VALUE'     # MOVE LOW-VALUE TO A10040D1 …
         self.オープン処理()
         self.link.初期化()
-        self.link.端末ＩＤ = ws_no
-        self.link.ＶＬＤ一 = vld1
-        self.link.ＶＬＤ二 = vld2
+        self.link.詰める('端末ＩＤ', ws_no)        # MOVE WS-NO TO 端末ＩＤ
+        self.link.詰める('ＶＬＤ一', vld1)          # MOVE VLD1 TO ＶＬＤ一
+        self.link.詰める('ＶＬＤ二', vld2)          # MOVE VLD2 TO ＶＬＤ二
         self.end_flg = 'INT'
 
     # ---- 主処理Ｒ（行679-717）------------------------------------
