@@ -9,10 +9,14 @@ import re, pathlib
 
 T_CREATE = re.compile(r'CREATE\s+TABLE\s+\[dbo\]\.\[(\w+)\]\s*\((.*?)\n\)\s*ON ',
                       re.S | re.I)
-T_COL    = re.compile(r'^\s*\[(\w+)\]\s+\[(\w+)\]\s*(\([^)]*\))?\s*(.*?),?\s*$')
+# 列名に空白が入っていることがある（実例 [SURYO ] … 末尾に空白）。
+# \w だけで拾うと**黙って1列落ちる**ので、] までを名前として取る。
+T_COL    = re.compile(r'^\s*\[([^\]]+)\]\s+\[(\w+)\]\s*(\([^)]*\))?\s*(.*?),?\s*$')
+# 取りこぼしを見つけるため、列らしい行を数えておく
+T_COLLINE = re.compile(r'^\s*\[[^\]]+\]\s+\[\w+\]', re.M)
 T_PK     = re.compile(r'PRIMARY\s+KEY\s+CLUSTERED\s*\((.*?)\)', re.S | re.I)
 T_DEF    = re.compile(r'ALTER\s+TABLE\s+\[dbo\]\.\[(\w+)\]\s+ADD\s+DEFAULT\s+'
-                      r'(\(.*?\))\s+FOR\s+\[(\w+)\]', re.I)
+                      r'(\(.*?\))\s+FOR\s+\[([^\]]+)\]', re.I)
 
 
 def _gata(kata, kakko):
@@ -44,10 +48,15 @@ def yomu1(path):
         c = T_COL.match(ln)
         if not c:
             continue
-        nm = c.group(1).upper()
+        nm = c.group(1).upper()      # 末尾の空白も名前の一部。定義体のまま残す
         cols.append((nm, _gata(c.group(2).lower(), c.group(3))))
         if 'NOT NULL' in (c.group(4) or '').upper():
             notnull.append(nm)
+    # 黙って落ちていないか数え合わせる
+    hazu = len(T_COLLINE.findall(naka.split('CONSTRAINT')[0]))
+    if len(cols) != hazu:
+        raise ValueError('%s: 列を取りこぼしました（%d 行あるのに %d 列しか読めていません）'
+                         % (path, hazu, len(cols)))
     pk = []
     p = T_PK.search(naka)
     if p:

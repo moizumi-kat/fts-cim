@@ -24,8 +24,14 @@ rec = recdef.yomu(RECDIR)
 rep = repdef.yomu(DEFDIR)
 tbl = json.load(open(TBLJSON))
 
-MOKUHYO = tbl['hyo']                 # 405工程が使う物理ファイル
-HANTEI  = tbl.get('hantei', {})      # 仕分け提案書（村上様ご確認済）の判定
+MOKUHYO = tbl['hyo']                 # 作る表の一覧
+HANTEI  = tbl.get('hantei', {})      # 仕分けの判定
+
+# 名前のゆれ（仕分け提案書「⑤ ファイル名の訂正」）。
+# レコードリストは台帳の名前で持っているので、正しい名前でも引けるようにする。
+for _a, _b in (tbl.get('naoshi') or {}).items():
+    if _a in rec and _b not in rec:
+        rec[_b] = rec[_a]
 
 TABLES, warn, nashi = {}, collections.defaultdict(list), []
 
