@@ -1,21 +1,29 @@
 ================================================================
  ソースが見当たらないプログラムの件（**11月4日分の差し替え**）
- FTS-CIM                                   2026年11月11日
+ FTS-CIM                                   2026年11月12日
  お願いする先：ＩＴ管理室
 ================================================================
 
  11月4日に「811本」としてお願いしましたが、**こちらの数えまちがいと
- 見落としでした。** 正しくは **209本**です。差し替えをお願いいたします。
+ 見落としでした。** 正しくは **48本**です。差し替えをお願いいたします。
  申し訳ございません。
+
+ **ＣＬのコメントの件、ご指摘のとおりでした。**
+ 「/.」から「./」までがコメントで、行をまたぐのですね。
+ これを外していなかったため、**コメントアウトされた呼び出しを
+ 「生きている」と数えておりました。** 外して数え直したところ、
+ 314本 → 144本 まで減りました。
+ 実例) PKOUJOU3.CL 44行  /.  CLRFILE FILE-KUMIKSF.FCDLIB ./
+ ＣＬ587本すべてがこの書き方でした。今後は必ず外して読みます。
 
  **末尾 KB／KP／KO の件、ご指摘のとおりでした。**
  カセット（CASET）で書かれており、COBOLソースは存在しないのですね。
  仕様書も**9月16日に既にいただいておりました**（CASET仕様書.zip）。
- こちらの見落としです。中を確認し、105本分の仕様書があることを
- 確認いたしましたので、**その105本は依頼から取り下げます。**
+ こちらの見落としです。中を確認し、96本分の仕様書があることを
+ 確認いたしましたので、**その96本は依頼から取り下げます。**
 
 ----------------------------------------------------------------
- ■ なぜ数が変わったのか（原因は3つ。いずれもこちらの不具合です）
+ ■ なぜ数が変わったのか（原因は4つ。いずれもこちらの不具合です）
 ----------------------------------------------------------------
 
  (1) SBMJOB の `PGM-xxx` から `PGM-` を外していませんでした
@@ -39,6 +47,10 @@
  (3) `CALL PGM-D20070PP` から `PGM` を名前として拾っていました
      （本体の D20070PP は別の処理で拾えており、取りこぼしはありません）。
 
+ (4) **ＣＬのコメント「/.」～「./」を外していませんでした**
+     （ご指摘 11月12日）。これがいちばん大きい原因で、314本が144本に
+     なりました。特に「末尾O」は47本→7本、「そのほか」は145本→25本です。
+
  なお、以前ご指摘いただいた**「ソース末尾S → 実行形式末尾O」の読み替えは
  効かせたうえでの数**です。末尾の文字で読み替えるのではなく、全COBOLの
  `PROGRAM-ID.` の行を読んで「実行形式名→ソース名」の表を作り、
@@ -48,26 +60,27 @@
  末尾の文字で決め打つとこの2本を落とすため、`PROGRAM-ID` を読んでいます。
 
 ----------------------------------------------------------------
- ■ 数の訂正（11月4日 → 11月11日）
+ ■ 数の訂正（11月4日 → 11月12日）
 ----------------------------------------------------------------
 
                                 11月4日      11月11日
-     １．末尾 KB／KP／KO          134本   →    17本
-          （うち105本はCASET仕様書で埋まったため取り下げ）
-     ２．末尾 O（KOを除く）        223本   →    47本
-     ３．そのほか                 454本   →   145本
+     １．末尾 KB／KP／KO          134本   →    16本
+          （うち96本はCASET仕様書で埋まったため取り下げ）
+     ２．末尾 O（KOを除く）        223本   →     7本
+     ３．そのほか                 454本   →    25本
                                  ─────       ─────
-                                  811本   →   209本
+                                  811本   →    48本
 
      内訳の動き
-         811 → 314  … 数えまちがいの訂正（下記3つの原因）
-         314 → 209  … CASET仕様書（既受領）で105本が埋まった
+         811 → 314  … 数えまちがいの訂正（PGM- の外し忘れ 他）
+         314 → 144  … **ＣＬのコメントを外した**（ご指摘 11月12日）
+         144 →  48  … CASET仕様書（既受領）で96本が埋まった
 
      ※ このほかに、プログラムかCLのキーワードか判別できないものが4件
         （END／START／STATUS／STS）あります。下の「■ 判断がつかないもの」。
 
 ----------------------------------------------------------------
- １．末尾が KB／KP／KO のもの  17本
+ １．末尾が KB／KP／KO のもの  16本
 ----------------------------------------------------------------
 
  11月4日に「この系統はソースに2本しかない」と書きましたが、
@@ -75,18 +88,18 @@
  偶然一致しただけの普通のCOBOLで、カセットではありません。
  **カセットのCOBOLソースは0本＝あるはずがない**のですね。
 
- CASET仕様書にあった105本は取り下げました。
- 下の17本は、**仕様書のほうにも見当たりませんでした。**
+ CASET仕様書にあった96本は取り下げました。
+ 下の16本は、**仕様書のほうにも見当たりませんでした。**
  別のライブラリにあるか、すでに使っていないか、お教えください。
 
-     系統 … A系 7本／D系 5本／M系 4本／B系 1本
+     系統 … A系 6本／D系 5本／M系 4本／B系 1本
 
-     A16100KB    A16110KB    A16120KP    A20060KB    A26100KB    A36100KB
-     A36110KB    B11330KO    D20710KP    D40130KP    D40135KP    D40900KB
-     D40910KB    M10500KB    M11020KO    M11030KP    M30611KP
+     A16100KB    A16110KB    A16120KP    A26100KB    A36100KB    A36110KB
+     B11330KO    D20710KP    D40130KP    D40135KP    D40900KB    D40910KB
+     M10500KB    M11020KO    M11030KP    M30611KP
 
 ----------------------------------------------------------------
- ２．末尾が O のもの  47本
+ ２．末尾が O のもの  7本
 ----------------------------------------------------------------
 
  末尾SをOに読み替えて探したうえで、なお見当たらない分です。
@@ -95,85 +108,25 @@
  原価計算・納期・指示・組立・資材といった**業務単位でまとまって**
  欠けています。
 
-     A11000PO   ← CA1Z1000
-     A30010PO   ← CA3Z0010
-     BANKIN9O   ← FCLBNKN9
      D20010PO   ← CD2Z0015
      D20020PO   ← CD2Z0025
      D20080PO   ← CD2Z0085
      D20090PO   ← CD2Z0095
      D20100PO   ← CD2Z0105
-     D20110PO   ← CD2Z0110
-     F10110PO   ← SIYOUCL1
-     F10410PO   ← CF1Z0410／CF1Z0415
-     F10650PO   ← CF1Z0650
      GAISEP1O   ← GAITUCL4
-     GAITYU4O   ← GAITUCL4
-     GENHYO1O   ← PGENHYO1
-     JYOTAI1O   ← PJYOTAI1
-     KENTOUWO   ← PKENTOUW
-     KENTOUXO   ← PKENTOUX
-     KUMIKF1O   ← PKOUJOU3
-     KUMIKF2O   ← PKOUJOU3
-     KUMIKF3O   ← PKOUJOU3
      KUMIKF4O   ← PKOUJOU3
-     NGENKS1O   ← NGENCL11
-     NGENKS2O   ← NGENCL12
-     NGENKS3O   ← NGENCL13
-     NGENKS4O   ← NGENCL14
-     NGENKS8O   ← NGENCL18
-     NNOKI78O   ← PNNOKI78
-     NNOKI79O   ← PNNOKI79
-     NOKIK54O   ← NOKICL20
-     NOKIK58O   ← PNOKIK58
-     NOKIK69O   ← PNOKIK69
-     NOKIK77O   ← PNNOKI77
-     NOKIK78O   ← PNNOKI78
-     RENRAK1O   ← RENRKCLB
-     RENRAK2O   ← RENRAKCL
-     SEISAN8O   ← SEISNCL8
-     SHIZI02O   ← SHIZICL1
-     SHIZI07O   ← SHIZICL5
-     SHIZI09O   ← CF1Z0650
-     SHIZI22O   ← SHIZICLB
-     SHIZI71O   ← SHIZICL5
-     SIZAI01O   ← CF1Z0260
-     SIZAI22O   ← PSIZAIAA／PSIZAIAB
-     SIZAI23O   ← PSIZAIAA／PSIZAIAB
-     SYUTUZ2O   ← SYUTUCL2
-     ZOGEN02O   ← PZOGEN02
 
 ----------------------------------------------------------------
- ３．そのほか  145本
+ ３．そのほか  25本
 ----------------------------------------------------------------
 
-     系統 … D系 20本／F系 18本／FSIK系 13本／UKAKU系 6本／KG系 5本
-            SYUSK系 5本／CD系 4本／SEMICH系 4本／B系 3本／CL系 3本
+     系統 … D系 13本／SEMICH系 4本／MJS系 3本／X系 2本／AJBKPRE系 1本
+            JCVEBCC系 1本／XSBSSI系 1本
 
-     AJBKPRE1    B10180PP    B10220PP    B11400PB    BANCH1CP    CA2Z0460
-     CB1D5500    CB1M6200    CD4Z0121    CD4Z0122    CD4Z012B    CD4Z012D
-     CE1Z0020    CF2M031X    CL23D000    CL5D0000    CL5M0000    D10030PB
-     D20030PB    D20040PP    D20060PB    D2006XPB    D2006YPB    D20070PP
-     D2007XPP    D20120PB    D20135PP    D20160PB    D20170PP    D20180PB
-     D20190PP    D20220PB    D20230PP    D20270PB    D20280PP    D20930PB
-     D21010PB    DACTPP      E10025CP    E1002HCP    EM1100CM    ENDMSG10
-     ENDMSG15    ENDMSG5     F10030PX    F10110RA    F10110RB    F10130PP
-     F10275PP    F10870PP    F11020PB    F19025PB    F19035PB    F19045PB
-     F19055PB    F19065PB    F19075PB    F19085PB    F19095PB    F19105PB
-     F20312PB    F20312PN    FILECNVS    FSIK01CF    FSIK02CP    FSIK11CF
-     FSIK12CF    FSIK13CF    FSIK1ACF    FSIK1BCF    FSIK1CCF    FSIK1ECF
-     FSIK1FCF    FSIK1GCF    FSIK1HCF    FSIK1JCF    FSIZIACS    GENK12CS
-     GENSY1CS    GENSYNCS    IT1010CP    IT1020CP    JCVEBCC     JISEK2CP
-     JUSUI1CP    KARIJU1P    KARIJU2P    KG0101CF    KG0103CF    KG0104CF
-     KG1002CK    KG1003CK    KRCH01CP    KYAHN9CP    MJS080CS    MJS090CG
-     MJS100CG    NIPSY1CS    NPHEN3CK    NPHEN4CK    RENDPP      RENRKCL2
-     SAKUZ1CG    SAKUZBCG    SAKUZNCG    SEISN2CF    SEISN5CP    SEJYO1CP
-     SEMICH01    SEMICH02    SEMICH03    SEMICH04    SETUK1CP    SETUK2CP
-     SETUK3CP    SETUKXCP    SETUPCL2    SETUPCLB    SYBKNXCS    SYGEN1CS
-     SYUSK1CM    SYUSK2CF    SYUSK4CF    SYUSK7CP    SYUSK8CP    SYUSKMCP
-     SYUSKMDP    SYUSKMEP    SYUSKNCP    TREN01CP    UKAKU4CP    UKAKU5CP
-     UKAKU6CP    UKAKU7CP    UKAKU8CP    UKAKU9CP    UKAKUWCP    UKAKUXCP
-     UKAKUYCP    UKAKUZCP    UNCHNCL2    UNCHNLCF    X10010PX    X10020PX
+     AJBKPRE1    D20030PB    D20040PP    D20120PB    D20135PP    D20160PB
+     D20170PP    D20180PB    D20190PP    D20220PB    D20230PP    D20270PB
+     D20280PP    D21010PB    JCVEBCC     MJS080CS    MJS090CG    MJS100CG
+     SEMICH01    SEMICH02    SEMICH03    SEMICH04    X10010PX    X10020PX
      XSBSSI
 
 ----------------------------------------------------------------
@@ -251,8 +204,8 @@
  ■ お願いしたいこと
 ----------------------------------------------------------------
 
- (1) 上の 209本について、ソースのある場所をお教えいただけますでしょうか。
-     「末尾 KB／KP／KO」の17本は、カセット仕様書のほうにも
+ (1) 上の 48本について、ソースのある場所をお教えいただけますでしょうか。
+     「末尾 KB／KP／KO」の16本は、カセット仕様書のほうにも
      見当たらなかった分です。
 
  (2) 「すでに使っていない」ものが含まれていれば、その旨お教えください。
@@ -266,7 +219,7 @@
  (4) 画面定義は、受領した6本と同じ**オフコンのオブジェクト形式のままで
      結構です。**こちらで読めることを確認できました。
 
- 全209本の一覧と、それぞれの呼び元は、添付の work_tarinai2.json にあります。
+ 全48本の一覧と、それぞれの呼び元は、添付の work_tarinai2.json にあります。
  見づらいようでしたら、Excel にしてお送りします。
 
 ================================================================

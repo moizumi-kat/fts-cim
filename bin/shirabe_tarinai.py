@@ -11,6 +11,9 @@
            BANKIN1S.COB に辿れる）。
      (2) CLの「名前のみで起動する形」を拾う正規表現が、CLのコマンド語
          （CNVFILE・SETPF・MONMSG 等）も拾っていた。
+     (2') **CLのコメント「/.」〜「./」を外していなかった**（村上様ご教示
+         2026-11-12）。コメントアウトされた呼び出しを生きていると数えていた。
+         例) PKOUJOU3.CL 44行  /.  CLRFILE FILE-KUMIKSF.FCDLIB ./
      (3) `CALL PGM-D20070PP` から **`PGM`** を名前として拾っていた
          （`-` を名前の文字に入れていなかったため）。本体の D20070PP は
          SBMJOB 側の正規表現で拾えているので取りこぼしは無いが、
@@ -22,13 +25,21 @@
      に分けて数える。
 """
 import sys, re, json, pathlib, collections
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import cl_honbun
 
 U = pathlib.Path(sys.argv[1])
 OUT = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else None
 
 src = {f.stem.upper(): f for f in list(U.glob('*.CL')) + list(U.glob('*.COB'))}
 kind = {n: f.suffix.upper().lstrip('.') for n, f in src.items()}
-txt = {n: f.read_text('utf-8', 'replace') for n, f in src.items()}
+# CL は「/.」〜「./」がコメント（村上様ご教示 2026-11-12）。
+# 外さないと、コメントに書かれたコマンドやプログラム名を
+# 「生きている」と数えてしまう。
+txt = {}
+for n, f in src.items():
+    t = f.read_text('utf-8', 'replace')
+    txt[n] = cl_honbun.honbun(t) if kind[n] == 'CL' else t
 
 PID      = re.compile(r'^\s*PROGRAM-ID\.\s*([A-Z0-9#@$\-]+)\s*\.', re.M | re.I)
 # CALL PGM-xxx の形では PGM を拾わない（名前は SBM 側で取る）
