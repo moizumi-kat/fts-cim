@@ -29,6 +29,33 @@ JYUUFUKU  = '22'
 NASHI     = '23'
 
 
+def _moji_kagi(hyo, kagi):
+    """キーのうち、文字の列はどれか。
+
+       ■ なぜ要るか（2026-11-12 実測）
+         db._val は読み取った文字の**末尾の半角空白を落とす**。
+         SQL Server は char/nchar を桁いっぱいまで空白で埋めて返すが
+         SQLite は埋めないので、両方をそろえるためにそうしている。
+         ところが COBOL のキーは**固定長**で、発番キーなら "610A  " のように
+         空白を含む。読んだときに "610A" になってしまうと、そのまま
+         REWRITE／DELETE すると WHERE が外れて「見つからない（23）」になる。
+         （実際にそうなった。発番の連番更新が 23 で落ちた。）
+       ■ どうするか
+         文字のキーは **両側の末尾空白を無いものとして比べる**。
+         （RTRIM は SQLite にも SQL Server にもある）
+    """
+    try:
+        from .. import schema_gen
+        t = schema_gen.TABLES.get(hyo)
+        if not t:
+            return set()
+        kata = {c[0]: c[1] for c in t['cols']}
+        return {k for k in kagi
+                if str(kata.get(k, '')).startswith(('char', 'nchar'))}
+    except Exception:
+        return set()
+
+
 class Fairu:
     """索引ファイル1つ。ACCESS MODE DYNAMIC（乱＋順）。"""
 
@@ -39,6 +66,7 @@ class Fairu:
         self.kagi = list(kagi)
         self.ronri = ronri or hyo
         self.db = db
+        self.moji = _moji_kagi(hyo, self.kagi)    # 末尾空白を見ないで比べる列
         self.rec = {}                 # いま読んでいるレコード
         self.status = SEIJOU
         self._ichi = None             # 順読みの位置（キーの値）
@@ -48,10 +76,18 @@ class Fairu:
     def _Q(self, n):
         return '[%s]' % n
 
+    def _hidari(self, k):
+        """比較の左辺。文字のキーは末尾空白を落として比べる。"""
+        return 'RTRIM(%s)' % self._Q(k) if k in self.moji else self._Q(k)
+
+    def _migi(self, k, v):
+        """比較の右辺の値。文字のキーは末尾空白を落とす。"""
+        return v.rstrip(' ') if (k in self.moji and isinstance(v, str)) else v
+
     def _where(self, hikaku='='):
         """キーの比較。複数キーは辞書順で比べる。"""
         if hikaku == '=':
-            return ' AND '.join('%s = ?' % self._Q(k) for k in self.kagi)
+            return ' AND '.join('%s = ?' % self._hidari(k) for k in self.kagi)
         # START / READ NEXT 用。(a,b,c) > (?,?,?) を素のSQLで書く。
         #
         #   辞書順の「より大きい」は
@@ -62,11 +98,11 @@ class Fairu:
         #   「以上」は、これに「全部＝」を足したもの。
         joken = []
         for i in range(len(self.kagi)):
-            mae = ' AND '.join('%s = ?' % self._Q(k) for k in self.kagi[:i])
-            ato = '%s > ?' % self._Q(self.kagi[i])
+            mae = ' AND '.join('%s = ?' % self._hidari(k) for k in self.kagi[:i])
+            ato = '%s > ?' % self._hidari(self.kagi[i])
             joken.append('(%s)' % (' AND '.join(filter(None, [mae, ato]))))
         if hikaku == '>=':
-            joken.append('(%s)' % ' AND '.join('%s = ?' % self._Q(k)
+            joken.append('(%s)' % ' AND '.join('%s = ?' % self._hidari(k)
                                                for k in self.kagi))
         return ' OR '.join(joken)
 
@@ -75,13 +111,14 @@ class Fairu:
 
     def _hikisu(self, atai, hikaku):
         """_where が組んだ順に値を並べる。"""
+        v = [self._migi(k, a) for k, a in zip(self.kagi, atai)]
         if hikaku == '=':
-            return list(atai)
+            return v
         a = []
         for i in range(len(self.kagi)):
-            a += list(atai[:i]) + [atai[i]]
+            a += list(v[:i]) + [v[i]]
         if hikaku == '>=':
-            a += list(atai)                  # 「全部＝」の分
+            a += list(v)                     # 「全部＝」の分
         return a
 
     # ── 入出力 ──────────────────────────────────
@@ -90,7 +127,7 @@ class Fairu:
         if not kagi_atai:
             kagi_atai = tuple(self.rec.get(k) for k in self.kagi)
         sql = 'SELECT * FROM %s WHERE %s' % (self._Q(self.hyo), self._where())
-        r = self.db.q1(self.con, sql, tuple(kagi_atai))
+        r = self.db.q1(self.con, sql, tuple(self._hikisu(kagi_atai, '=')))
         if r is None:
             self.status = NASHI
         else:
@@ -127,7 +164,7 @@ class Fairu:
             self._tsugi_wa_ima = False
             sql = ('SELECT * FROM %s WHERE %s ORDER BY %s'
                    % (self._Q(self.hyo), self._where(), self._junjo()))
-            r = self.db.q1(self.con, sql, tuple(self._ichi))
+            r = self.db.q1(self.con, sql, tuple(self._hikisu(self._ichi, '=')))
         else:
             if self._ichi is None:
                 sql = 'SELECT * FROM %s ORDER BY %s' % (self._Q(self.hyo), self._junjo())
@@ -151,7 +188,7 @@ class Fairu:
             self.rec = dict(rec)
         kagi_atai = tuple(self.rec.get(k) for k in self.kagi)
         sql = 'SELECT * FROM %s WHERE %s' % (self._Q(self.hyo), self._where())
-        if self.db.q1(self.con, sql, kagi_atai) is not None:
+        if self.db.q1(self.con, sql, tuple(self._hikisu(kagi_atai, '='))) is not None:
             self.status = JYUUFUKU
             return self.status
         hashira = list(self.rec.keys())
@@ -172,7 +209,8 @@ class Fairu:
                % (self._Q(self.hyo), ', '.join('%s = ?' % self._Q(h) for h in hashira),
                   self._where()))
         cur = self.db.ex(self.con, sql,
-                         tuple(self.rec[h] for h in hashira) + kagi_atai)
+                         tuple(self.rec[h] for h in hashira)
+                         + tuple(self._hikisu(kagi_atai, '=')))
         self.status = SEIJOU if cur.rowcount else NASHI
         return self.status
 
@@ -181,7 +219,7 @@ class Fairu:
         if not kagi_atai:
             kagi_atai = tuple(self.rec.get(k) for k in self.kagi)
         sql = 'DELETE FROM %s WHERE %s' % (self._Q(self.hyo), self._where())
-        cur = self.db.ex(self.con, sql, tuple(kagi_atai))
+        cur = self.db.ex(self.con, sql, tuple(self._hikisu(kagi_atai, '=')))
         self.status = SEIJOU if cur.rowcount else NASHI
         return self.status
 

@@ -177,12 +177,12 @@ miru('第3群・最終納期が入っていれば入力不可',
 print()
 print('■ まだ写していない段落は、黙って素通りしない')
 p = a10040po.A10040PO(sousa=Sousa('E000'))
-p.初期処理Ｒ(); p.link = Linkage(); p.SAVE_GROUP = 'GRPA02'
+p.初期処理Ｒ(); p.link = Linkage(); p.SAVE_GROUP = 'GRPA03'
 try:
     p.主処理Ｒ(); ok = False
 except a10040po.未実装 as e:
-    ok = 'GRPA02' in str(e)
-miru('GRPA02 を呼ぶと 未実装 を投げる', ok)
+    ok = 'GRPA03' in str(e)
+miru('まだの GRPA03 を呼ぶと 未実装 を投げる', ok)
 
 print()
 print('=' * 60)

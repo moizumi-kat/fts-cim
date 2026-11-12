@@ -63,6 +63,7 @@ class A10040PO:
     新規, 修正, 変更, 取消, 複写１, 複写２ = 1, 2, 3, 4, 5, 6
     概算新規, 概算修正 = 8, 9
     計算済, 未計算 = 1, 0
+    見積, 物件 = 1, 2                     # 発番区分（406-407行）
 
     # 受渡鑑処理区分（1088行）処理区 → 鑑画面処理区分
     鑑処理区分 = {新規: '1', 修正: '2', 変更: '3', 取消: '4',
@@ -87,6 +88,13 @@ class A10040PO:
         self.WK_SEIREKI = 0
         self.WK_YMD = 0
         self.WK_TIME = 0
+        self.TR_CNL_FLG = 0
+        self.発番区分 = 0
+        self.端末ＩＤ = ''
+        # 発番用ワーク（378行）年区分1＋支店区分2＋施主区分1＋空白2
+        self.WK_NEN_KUBUN = ''
+        self.WK_SITEN_KUBUN = ''
+        self.WK_SESHU_KUBUN = ''
 
     # ── 画面の項目を楽に読み書きする ───────────────
     def g(self, na):
@@ -171,11 +179,12 @@ class A10040PO:
         gun = self.SAVE_GROUP
         if gun == 'GRPA01':
             self.GRPA01_RTN()
-        elif gun in ('GRPA02', 'GRPA03', 'GRPA04',
-                     'GRPA05', 'GRPA06', 'GRPA07'):
-            raise 未実装('%s-RTN' % gun, {'GRPA02': 745, 'GRPA03': 788,
-                                          'GRPA04': 866, 'GRPA05': 0,
-                                          'GRPA06': 0, 'GRPA07': 0}[gun])
+        elif gun == 'GRPA02':
+            self.GRPA02_RTN()
+        elif gun in ('GRPA03', 'GRPA04', 'GRPA05', 'GRPA06', 'GRPA07'):
+            raise 未実装('%s-RTN' % gun, {'GRPA03': 788, 'GRPA04': 866,
+                                          'GRPA05': 0, 'GRPA06': 0,
+                                          'GRPA07': 0}[gun])
 
     # ================================================================
     #  第１項目群処理（657行）
@@ -237,6 +246,254 @@ class A10040PO:
             self.link.詰める('鑑画面処理区分', self.鑑処理区分[ku])
             if ku in (self.概算新規, self.概算修正):
                 self.gs('処理区', 0)
+
+    # ================================================================
+    #  第２項目群処理（745行）
+    # ================================================================
+    def GRPA02_RTN(self):
+        self.画面入力Ｒ()                                  # （747行）
+        self.画面.seigyo_shokika()                         # （748行）
+        self.TR_CNL_FLG = 0                                # （749行）
+        if self.DSP_FUNC == 'E000':
+            self.SAVE_GROUP = 'GRPA03'                     # （752行）
+            ku = self.数('処理区')
+            if ku == self.新規:
+                self.新規第２項目群()
+            elif ku == self.修正:
+                raise 未実装('修正第２項目群', 1362)
+            elif ku == self.変更:
+                raise 未実装('変更第２項目群', 1381)
+            elif ku == self.取消:
+                raise 未実装('取消第２項目群', 1400)
+            elif ku == self.複写１:
+                raise 未実装('複写物新第２項目群', 1428)
+            elif ku == self.複写２:
+                raise 未実装('複写物修第２項目群', 1480)
+            if self.TR_CNL_FLG == 0:                       # （762行）
+                self.XMROTEND()
+        elif self.DSP_FUNC == 'F005':
+            # ＰＦ５ 前の項目群へ戻る（765行）
+            for n in (1, 2, 3, 4):
+                self.画面.gun_shoukyo(n)
+            self.SAVE_GROUP = 'GRPA01'                     # （774行）
+            self.XMROTCNL()
+        else:
+            self.ERR_FLG = 1                               # （778行）
+            self.XMROTEND()
+
+    def 新規第２項目群(self):
+        """（1258行）担当者と施主大分類を確かめ、見積番号と物件番号を発番する。"""
+        self.SAVE_GROUP = 'GRPA03'                         # （1259行）
+        self.gs('変更回数', 0)                             # （1260行）
+        self.画面初期設定()                                # （1261行）
+
+        if self.g('担当者ＣＤ').strip() == '':             # （1263行）
+            self._あかい('担当者ＣＤ'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+            return
+        st = self.担当者よみ()
+        if st == fairu.NASHI:                              # （1280行）
+            self._あかい('担当者ＣＤ'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+            return
+        # IF ASOS-STSCD = "00"（1296行）
+        if self.g('施主大分類ＣＤ').strip() == '':         # （1297行）
+            self.ERR_FLG = 2; self.SAVE_GROUP = 'GRPA02'
+            self._あかい('施主大分類ＣＤ')
+            return
+        f = self.ファイル['ANAMML1']
+        if f.yomu('00', self.g('施主大分類ＣＤ')) == fairu.NASHI:   # （1341行）
+            self._あかい('施主大分類ＣＤ'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+            return
+        self.gs('施主大分類名', f['RYAKU'])                # （1311行）
+
+        # 見積番号の発番（1313行）
+        self.発番区分 = self.見積
+        self.見積発番処理Ｒ()
+        if self.g('見積なんば').strip() == '':             # （1315行）
+            self.ERR_FLG = 7; self.SAVE_GROUP = 'GRPA02'
+            self.XMROTCNL(); self.TR_CNL_FLG = 1
+            return
+        # 物件番号の発番（1323行）
+        self.発番区分 = self.物件
+        self.見積発番処理Ｒ()
+        if self.g('物件ナンバー').strip() == '':           # （1325行）
+            self.ERR_FLG = 8; self.SAVE_GROUP = 'GRPA02'
+            self.XMROTCNL(); self.TR_CNL_FLG = 1
+            return
+        o = self.ファイル['ASOSML1']
+        self.gs('作成部所名', o['BSYNAM'])                 # （1333行）
+        self.gs('担当者名', o['TANNAM'])
+        self.チェックＦ出力処理Ｒ(self.g('見積なんば'))    # （1336行）
+
+    # ── 判定（1641／1724行）────────────────────
+    def 担当者コード判定(self):
+        """（1642行）"""
+        self.SAVE_GROUP = 'GRPA03'
+        if self.g('担当者ＣＤ').strip() == '':
+            self._あかい('担当者ＣＤ'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+            return
+        if self.担当者よみ() == fairu.NASHI:
+            self._あかい('担当者ＣＤ'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+
+    def 施主大分類判定(self):
+        """（1725行）"""
+        self.SAVE_GROUP = 'GRPA03'
+        if self.g('施主大分類ＣＤ').strip() == '':
+            self.ERR_FLG = 2; self.SAVE_GROUP = 'GRPA02'
+            self._あかい('施主大分類ＣＤ')
+            return
+        f = self.ファイル['ANAMML1']
+        if f.yomu('00', self.g('施主大分類ＣＤ')) == fairu.SEIJOU:
+            self.gs('施主大分類名', f['RYAKU'])
+        else:
+            self._あかい('施主大分類ＣＤ'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+
+    def 担当者よみ(self):
+        """担当者ＣＤ（4桁）＝ 部所２桁＋担当２桁 で組織マスタを引く（1272行）"""
+        cd = self.g('担当者ＣＤ')
+        f = self.ファイル['ASOSML1']
+        st = f.yomu(cd[0:2], cd[2:4])
+        if st == fairu.SEIJOU:
+            self.gs('作成部所名', f['BSYNAM'])             # （1278行）
+            self.gs('担当者名', f['TANNAM'])
+        return st
+
+    def _あかい(self, na):
+        """誤りの項目を赤くして、カーソルを置く。"""
+        self.画面.zoku(na, 'EDIT-COLOR', 'R')
+        self.画面.zoku(na, 'EDIT-CURSOR', 'C')
+
+    # ================================================================
+    #  発番（3374／3492／3506／3427／3466行）
+    # ================================================================
+    def 画面初期設定(self):
+        """（4079行）新規のときの決まり文句と、掛率の初期値１"""
+        self.gs('納入期日', '御打ち合わせの上')
+        self.gs('受渡場所', '車上渡し')
+        self.gs('支払条件', '従来通り')
+        self.gs('荷造及び運賃', '含入')
+        self.gs('見積有効期限', '６０日')
+        for n in ('掛率配電盤', '掛率制御盤', '掛率分電盤', '掛率その他'):
+            self.gs(n, 1)
+
+    def 発番キー設定Ｒ(self):
+        """（3506行）年の下1桁＋支店2桁＋施主1桁。区分は見積=01／物件=00"""
+        self.WK_NEN_KUBUN = '%02d' % self.WK_NEN
+        self.WK_NEN_KUBUN = self.WK_NEN_KUBUN[1]           # WK-NEN(2:1)
+        self.WK_SITEN_KUBUN = self.g('担当者ＣＤ')[0:2]
+        self.WK_SESHU_KUBUN = self.g('施主大分類ＣＤ')[0:1]
+        f = self.ファイル['AHATML1']
+        f['HATKBN'] = '01' if self.発番区分 == self.見積 else '00'
+        f['HATUCD'] = self.発番用ワーク()
+        return f
+
+    def 発番用ワーク(self):
+        """発番用ワーク（378行）年1＋支店2＋施主1＋空白2 ＝ 6桁"""
+        return '%s%s%s%s' % (self.WK_NEN_KUBUN,
+                             self.WK_SITEN_KUBUN.ljust(2),
+                             self.WK_SESHU_KUBUN.ljust(1), '  ')
+
+    def 発番編集Ｒ(self):
+        """（3492行）発番用ワークの先頭4桁＋連番4桁 ＝ 8桁"""
+        f = self.ファイル['AHATML1']
+        edit = self.発番用ワーク()[:4] + '%04d' % int(f['RENBAN'] or 0)
+        if self.発番区分 == self.見積:
+            self.gs('見積なんば', edit)
+        else:
+            self.gs('物件ナンバー', edit)
+
+    def _発番を空に(self):
+        if self.発番区分 == self.見積:
+            self.gs('見積なんば', '')
+        else:
+            self.gs('物件ナンバー', '')
+
+    def 見積発番処理Ｒ(self):
+        """（3374行）"""
+        f = self.発番キー設定Ｒ()
+        st = f.yomu(f['HATKBN'], f['HATUCD'])
+        if st == fairu.SEIJOU:
+            self.AHATML1_PROC_RTN_1()
+            return
+        if st != fairu.NASHI:
+            raise Abend('AHATML1', 'READ', st)
+        # "23"＝その年の発番レコードが無い（3382行）
+        # 前の年で引き直す。年が0なら99にする（3388行）
+        self.WK_NEN = 99 if self.WK_NEN == 0 else self.WK_NEN - 1
+        f = self.発番キー設定Ｒ()
+        st = f.yomu(f['HATKBN'], f['HATUCD'])
+        if st == fairu.NASHI:                              # （3398行）
+            self.WK_NEN += 1
+            self._発番を空に()
+        elif st == fairu.SEIJOU:
+            self.AHATML1_PROC_RTN_3()                      # （3407行）
+        else:
+            raise Abend('AHATML1', 'READ', st)
+
+    def AHATML1_PROC_RTN_1(self):
+        """（3427行）連番を1つ進める。上限に達していたら空にする。"""
+        f = self.ファイル['AHATML1']
+        if int(f['RENBAN'] or 0) == int(f['RJOGEN'] or 0):
+            self._発番を空に()
+            return
+        f['RENBAN'] = int(f['RENBAN'] or 0) + 1
+        st = self.AHATML1_REWRITE_RTN()
+        if st == fairu.SEIJOU:
+            self.発番編集Ｒ()
+        else:
+            self._発番を空に()
+            raise Abend('AHATML1', 'REWRITE', st)
+
+    def AHATML1_PROC_RTN_3(self):
+        """（3466行）前の年のレコードがあったので、今年のレコードを作る。"""
+        self.WK_NEN += 1
+        f = self.発番キー設定Ｒ()
+        st = self.AHATML1_WRITE_RTN()
+        if st == fairu.SEIJOU:
+            self.発番編集Ｒ()
+        else:
+            self.gs('見積なんば', '')
+            raise Abend('AHATML1', 'WRITE', st)
+
+    def AHATML1_WRITE_RTN(self):
+        """（3861行）下限0・連番1・上限9999で作る。"""
+        f = self.ファイル['AHATML1']
+        f['RKAGEN'] = 0
+        f['RENBAN'] = 1
+        f['RJOGEN'] = 9999
+        f['CRTDAY'] = self.WK_YMD
+        f['UPDDAY'] = self.WK_YMD
+        f['UPDTIM'] = self.WK_TIME
+        f['WSID'] = self.端末ＩＤ
+        return f.kaku()
+
+    def AHATML1_REWRITE_RTN(self):
+        """（3845行）"""
+        f = self.ファイル['AHATML1']
+        f['UPDDAY'] = self.WK_YMD
+        f['UPDTIM'] = self.WK_TIME
+        f['WSID'] = self.端末ＩＤ
+        return f.kakinaosu()
+
+    def チェックＦ出力処理Ｒ(self, mituno):
+        """（3166行）同時に触らせないための札を立てる。"""
+        f = self.ファイル['ACHKFL1']
+        f.rec = {'MITUNO': mituno, 'TENKFK': '0', 'TENKFM': '0',
+                 'YOBIF': '', 'YOBI': '',
+                 'CRTDAY': self.WK_YMD, 'UPDDAY': self.WK_YMD,
+                 'UPDTIM': self.WK_TIME, 'WSID': self.端末ＩＤ}
+        st = f.kaku()
+        if st != fairu.SEIJOU:
+            raise Abend('ACHKFL1', 'WRITE', st)
+        return st
+
+    def XMROTCNL(self):
+        """取引の取消（776行ほか）。試作では何もしない。"""
 
     # ================================================================
     #  画面まわり（3271／3299／3336／3353行）
