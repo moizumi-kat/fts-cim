@@ -202,6 +202,31 @@ PDFは**画像のみ（テキスト層なし）**なので、読むにはOCR／V
 その連結は仕様書の「ユニット連結フロー」に描かれている。
 ＝ **呼び出しグラフはカセットの内側を見ていない**ことを前提に扱うこと。
 
+## 2.43 索引（キー）は FILE-CONTROL に書いてある ＝ XFDLIB は要らない
+
+子6本が `COPY xxx OF XFDLIB` で取り込む記述体21本は未入手だが、
+**索引（どの項目をキーにしているか）は COBOL の FILE-CONTROL に書いてある。**
+
+    SELECT 鑑ファイル ASSIGN TO DA-01-VI-AJBGFL1
+           ORGANIZATION IS INDEXED
+           RECORD KEY   IS AJBG-MITUNO          ← これ
+           ACCESS MODE  IS DYNAMIC
+           FILE STATUS  IS AJBG-STSCD
+
+名前の対応も素直。**`AWKG-MITUNO` の「-」より後ろが表の列名**（実測）。
+論理ファイル `AWKGFL1` → 物理表 `AWKGFP`。
+
+`bin/gen_fairu.py` がこれを読んで `fairu_<プログラム>.py` を起こす。
+A10040PO は **18本すべて**表とキーに辿れた。
+
+ひとつだけ集団項目があった。`ASUNML1` のキー `ASUN-SUNPO` は表に無く、
+**巾・高さ・奥行（WIDTH＋HIGH＋DEPTH）をまとめた集団項目**だった
+（4478-4480行の注記に `MOVE AWKM-DW/DH/DD TO ASUN-WIDTH/HIGH/DEPTH`、
+4348行に `MOVE HIGH-VALUE TO ASUN-SUNPO`）。生成器に根拠つきで持たせてある。
+
+→ **XFDLIB21本のお願いは、さらに優先度が下がった**（レコードの並びはレコード
+　 リストから、索引は FILE-CONTROL から取れている）。
+
 ## 2.44 オフコン（ASP V29）のマニュアル
 
 ＣＬの文法・ＣＯＢＯＬの文法・コマンドは、**推測せずマニュアルを引く**
@@ -274,6 +299,7 @@ UTF-8 に直したときに落ちている。つまり
 | `bin/shirabe18.py` | 定義が無い表が、どこでどう宣言・使用されているかを洗い出す |
 | `bin/oginai_kensan.py` | 補った表の検算（列数・レコード長・写し元との一致） |
 | `bin/shirabe_ko6.py` | 工程11-1の子6本の骨格（画面定義・COPY・使うファイル・CALL・段落）を調べる |
+| `bin/gen_fairu.py` | COBOL の FILE-CONTROL から、ファイルの表名とキーを起こす |
 | `bin/shirabe_tarinai.py` | 「呼ばれているのにソースが無い」プログラムを数える（PGM- を外す・CLコマンド語を分ける） |
 | `bin/caset_mokuroku.py` | CASET／DPS仕様書の目録を作る（`work_caset.json`） |
 | `bin/cl_honbun.py` | **ＣＬのコメント（`/.`〜`./`）を外す。ＣＬを読むときは必ず通す** |
