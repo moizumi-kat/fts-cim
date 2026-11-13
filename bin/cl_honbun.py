@@ -17,25 +17,38 @@ KOMENTO = re.compile(r'/\.(.*?)(?:\./|$)', re.S)
 
 
 def honbun(t, uzume=' '):
-    """コメントを uzume で潰した本文を返す（行数・桁は変えない）。"""
+    """注釈を uzume で潰した本文を返す（行数・桁は変えない）。
+
+       ■ マニュアルの規則（システム開発手引書 4_4.html・2026-11-13 に確認）
+         ・注釈は「/.」と「./」で囲む。数行にわたって書ける。
+         ・空白を書けるところならどこに置いてもよい。
+         ・**注釈と文字ストリング型直定数は、先に始まったほうが優先。**
+           したがって
+             − 注釈の中の引用符「'」は注釈の一部
+             − **文字ストリング型直定数の中の「/.」「./」は、その値の一部**
+           ＝ 引用符の中の「/.」は注釈の始まりではない。
+         村上様のご教示（2026-11-12）に、この引用符の扱いを足したもの。
+         （手元のCL587本では引用符の中に「/.」は0件だったので、
+           いまの数には影響しない。規則として正しくしておく。）
+    """
     out, i, n = [], 0, len(t)
-    while True:
-        a = t.find('/.', i)
-        if a < 0:
-            out.append(t[i:])
-            break
-        out.append(t[i:a])
-        b = t.find('./', a + 2)
-        if b < 0:                      # 閉じていない＝そこから末尾まで注記
-            b = n
-            naka = t[a:]
-            owari = n
-        else:
-            naka = t[a:b + 2]
-            owari = b + 2
-        # 改行は残す（行番号がずれないように）
-        out.append(''.join('\n' if c == '\n' else uzume for c in naka))
-        i = owari
+    while i < n:
+        c = t[i]
+        if c == "'":                       # 文字ストリング型直定数
+            j = t.find("'", i + 1)
+            if j < 0:                      # 閉じていない
+                out.append(t[i:]); break
+            out.append(t[i:j + 1]); i = j + 1
+            continue
+        if t.startswith('/.', i):          # 注釈
+            b = t.find('./', i + 2)
+            owari = n if b < 0 else b + 2
+            naka = t[i:owari]
+            # 改行は残す（行番号がずれないように）
+            out.append(''.join('\n' if ch == '\n' else uzume for ch in naka))
+            i = owari
+            continue
+        out.append(c); i += 1
     return ''.join(out)
 
 
