@@ -21,7 +21,7 @@
 """
 import datetime
 
-from . import vld, fairu
+from . import vld, fairu, vld_msg
 from . import gamen_a10040d1 as 画面定義
 from .fairu_a10040po import FAIRU
 from .a10010po import Linkage, Abend
@@ -95,6 +95,10 @@ class A10040PO:
         self.WK_NEN_KUBUN = ''
         self.WK_SITEN_KUBUN = ''
         self.WK_SESHU_KUBUN = ''
+        # 更新用ＶＬＤ（うしろの更新処理へ渡すメッセージ）
+        self.VLD1, self.VLD2 = vld_msg.tsukuru()
+        self.作業見積ＮＯ = ''
+        self.作業複写元見積ＮＯ = ''
 
     # ── 画面の項目を楽に読み書きする ───────────────
     def g(self, na):
@@ -491,6 +495,68 @@ class A10040PO:
         if st != fairu.SEIJOU:
             raise Abend('ACHKFL1', 'WRITE', st)
         return st
+
+    # ================================================================
+    #  バック開始処理（4095／4133／4181行）
+    #    うしろで動く更新処理へ「この見積を処理せよ」と知らせる
+    # ================================================================
+    # 処理区 → 処理ＩＤ（4104・4147行）
+    _SHORI_ID = {1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6'}
+
+    def バック開始処理１(self):
+        """（4095行）ＶＬＤ１へ1件。データ長は9（見積ＮＯ8＋処理ＩＤ1）。"""
+        m = self.VLD1.atarashii()                      # INITIALIZE REC1
+        m['見積ＮＯ１'] = self.作業見積ＮＯ
+        m['論理宛先名１'] = self.link.ＶＬＤ一
+        m['処理種別１'] = 'WT'
+        m['データ長１'] = 9
+        m['優先順位１'] = 9
+        m['処理ＩＤ１'] = self._SHORI_ID.get(self.数('処理区'), ' ')
+        st = self.VLD1.kaku(m)
+        if st != vld_msg.SEIJOU:
+            raise Abend('VLDA1001', 'WRITE', st)
+        return m
+
+    def バック開始処理２(self):
+        """（4133行）ＶＬＤ２へ1件。データ長は17。
+           複写のときだけ「複写元→複写先」の向きで入れる（4136行）。"""
+        m = self.VLD2.atarashii()                      # INITIALIZE REC2
+        ku = self.数('処理区')
+        if ku in (self.複写１, self.複写２):
+            m['見積ＮＯ２'] = self.作業複写元見積ＮＯ
+            m['複写先見積ＮＯ２'] = self.作業見積ＮＯ
+        else:
+            m['見積ＮＯ２'] = self.作業見積ＮＯ
+            m['複写先見積ＮＯ２'] = ''
+        m['論理宛先名２'] = self.link.ＶＬＤ二
+        m['処理種別２'] = 'WT'
+        m['データ長２'] = 17
+        if ku in self._SHORI_ID:
+            m['処理ＩＤ２'] = self._SHORI_ID[ku]
+        elif ku in (self.概算新規, self.概算修正):
+            pass                                        # CONTINUE（4160行）
+        else:
+            m['処理ＩＤ２'] = '7'                       # （4165行）
+        m['優先順位２'] = 9
+        st = self.VLD2.kaku(m)
+        if st != vld_msg.SEIJOU:
+            raise Abend('VLDA1002', 'WRITE', st)
+        return m
+
+    def バック開始処理３(self):
+        """（4181行）ＶＬＤ２へ1件。処理ＩＤは必ず "7"。"""
+        m = self.VLD2.atarashii()
+        m['見積ＮＯ２'] = self.作業見積ＮＯ
+        m['複写先見積ＮＯ２'] = ''
+        m['論理宛先名２'] = self.link.ＶＬＤ二
+        m['処理種別２'] = 'WT'
+        m['データ長２'] = 17
+        m['処理ＩＤ２'] = '7'
+        m['優先順位２'] = 9
+        st = self.VLD2.kaku(m)
+        if st != vld_msg.SEIJOU:
+            raise Abend('VLDA1002', 'WRITE', st)
+        return m
 
     def XMROTCNL(self):
         """取引の取消（776行ほか）。試作では何もしない。"""
