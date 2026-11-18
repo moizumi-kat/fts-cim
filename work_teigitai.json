@@ -1,0 +1,3700 @@
+{
+ "A11110P1": {
+  "shurui": "帳票定義体",
+  "bytes": 5376,
+  "koumoku": 65,
+  "rw": 32,
+  "tsukau": []
+ },
+ "A11120P1": {
+  "shurui": "帳票定義体",
+  "bytes": 6400,
+  "koumoku": 185,
+  "rw": 177,
+  "tsukau": []
+ },
+ "A11130P1": {
+  "shurui": "帳票定義体",
+  "bytes": 2560,
+  "koumoku": 25,
+  "rw": 15,
+  "tsukau": []
+ },
+ "A11210P1": {
+  "shurui": "帳票定義体",
+  "bytes": 10496,
+  "koumoku": 133,
+  "rw": 104,
+  "tsukau": []
+ },
+ "A11210P2": {
+  "shurui": "帳票定義体",
+  "bytes": 6656,
+  "koumoku": 184,
+  "rw": 177,
+  "tsukau": []
+ },
+ "A11230P1": {
+  "shurui": "帳票定義体",
+  "bytes": 2048,
+  "koumoku": 23,
+  "rw": 15,
+  "tsukau": []
+ },
+ "A11310P1": {
+  "shurui": "帳票定義体",
+  "bytes": 5120,
+  "koumoku": 63,
+  "rw": 30,
+  "tsukau": []
+ },
+ "A11320P1": {
+  "shurui": "帳票定義体",
+  "bytes": 13056,
+  "koumoku": 167,
+  "rw": 149,
+  "tsukau": []
+ },
+ "A11320P2": {
+  "shurui": "帳票定義体",
+  "bytes": 9472,
+  "koumoku": 184,
+  "rw": 177,
+  "tsukau": []
+ },
+ "A11320P3": {
+  "shurui": "帳票定義体",
+  "bytes": 4352,
+  "koumoku": 66,
+  "rw": 41,
+  "tsukau": []
+ },
+ "A11330P1": {
+  "shurui": "帳票定義体",
+  "bytes": 2048,
+  "koumoku": 25,
+  "rw": 16,
+  "tsukau": []
+ },
+ "A11430P1": {
+  "shurui": "帳票定義体",
+  "bytes": 2560,
+  "koumoku": 25,
+  "rw": 15,
+  "tsukau": []
+ },
+ "A12110P1": {
+  "shurui": "帳票定義体",
+  "bytes": 5376,
+  "koumoku": 65,
+  "rw": 32,
+  "tsukau": []
+ },
+ "A12120P1": {
+  "shurui": "帳票定義体",
+  "bytes": 7168,
+  "koumoku": 214,
+  "rw": 206,
+  "tsukau": []
+ },
+ "A12130P1": {
+  "shurui": "帳票定義体",
+  "bytes": 2304,
+  "koumoku": 28,
+  "rw": 18,
+  "tsukau": []
+ },
+ "A12210P1": {
+  "shurui": "帳票定義体",
+  "bytes": 17152,
+  "koumoku": 223,
+  "rw": 194,
+  "tsukau": []
+ },
+ "A12210P2": {
+  "shurui": "帳票定義体",
+  "bytes": 17664,
+  "koumoku": 358,
+  "rw": 351,
+  "tsukau": []
+ },
+ "A12230P1": {
+  "shurui": "帳票定義体",
+  "bytes": 2048,
+  "koumoku": 25,
+  "rw": 17,
+  "tsukau": []
+ },
+ "A12430P1": {
+  "shurui": "帳票定義体",
+  "bytes": 2304,
+  "koumoku": 28,
+  "rw": 18,
+  "tsukau": []
+ },
+ "A13120P1": {
+  "shurui": "帳票定義体",
+  "bytes": 7168,
+  "koumoku": 214,
+  "rw": 206,
+  "tsukau": []
+ },
+ "A13210P1": {
+  "shurui": "帳票定義体",
+  "bytes": 17152,
+  "koumoku": 223,
+  "rw": 194,
+  "tsukau": []
+ },
+ "A13210P2": {
+  "shurui": "帳票定義体",
+  "bytes": 17664,
+  "koumoku": 358,
+  "rw": 351,
+  "tsukau": []
+ },
+ "A13430P1": {
+  "shurui": "帳票定義体",
+  "bytes": 2304,
+  "koumoku": 29,
+  "rw": 19,
+  "tsukau": []
+ },
+ "A30120P1": {
+  "shurui": "帳票定義体",
+  "bytes": 13568,
+  "koumoku": 407,
+  "rw": 392,
+  "tsukau": [
+   "A30120PP"
+  ]
+ },
+ "A30130P1": {
+  "shurui": "帳票定義体",
+  "bytes": 29184,
+  "koumoku": 381,
+  "rw": 328,
+  "tsukau": [
+   "A30130PP"
+  ]
+ },
+ "A30140P1": {
+  "shurui": "帳票定義体",
+  "bytes": 6144,
+  "koumoku": 76,
+  "rw": 36,
+  "tsukau": [
+   "A30140PP"
+  ]
+ },
+ "B10010P1": {
+  "shurui": "帳票定義体",
+  "bytes": 30464,
+  "koumoku": 414,
+  "rw": 349,
+  "tsukau": []
+ },
+ "B10020P1": {
+  "shurui": "帳票定義体",
+  "bytes": 29440,
+  "koumoku": 413,
+  "rw": 280,
+  "tsukau": []
+ },
+ "B10030P1": {
+  "shurui": "帳票定義体",
+  "bytes": 24832,
+  "koumoku": 335,
+  "rw": 280,
+  "tsukau": []
+ },
+ "B10040P1": {
+  "shurui": "帳票定義体",
+  "bytes": 23296,
+  "koumoku": 326,
+  "rw": 202,
+  "tsukau": []
+ },
+ "B10050P1": {
+  "shurui": "帳票定義体",
+  "bytes": 24576,
+  "koumoku": 330,
+  "rw": 280,
+  "tsukau": []
+ },
+ "B10060P1": {
+  "shurui": "帳票定義体",
+  "bytes": 23296,
+  "koumoku": 326,
+  "rw": 202,
+  "tsukau": []
+ },
+ "B10100P1": {
+  "shurui": "帳票定義体",
+  "bytes": 36864,
+  "koumoku": 760,
+  "rw": 740,
+  "tsukau": []
+ },
+ "B10120P1": {
+  "shurui": "帳票定義体",
+  "bytes": 14080,
+  "koumoku": 287,
+  "rw": 269,
+  "tsukau": []
+ },
+ "B10140P1": {
+  "shurui": "帳票定義体",
+  "bytes": 8960,
+  "koumoku": 278,
+  "rw": 257,
+  "tsukau": []
+ },
+ "B10160P1": {
+  "shurui": "帳票定義体",
+  "bytes": 23552,
+  "koumoku": 309,
+  "rw": 261,
+  "tsukau": []
+ },
+ "B10160P2": {
+  "shurui": "帳票定義体",
+  "bytes": 17408,
+  "koumoku": 328,
+  "rw": 297,
+  "tsukau": []
+ },
+ "B10200P1": {
+  "shurui": "帳票定義体",
+  "bytes": 21760,
+  "koumoku": 403,
+  "rw": 381,
+  "tsukau": []
+ },
+ "B10210P1": {
+  "shurui": "帳票定義体",
+  "bytes": 2560,
+  "koumoku": 42,
+  "rw": 26,
+  "tsukau": []
+ },
+ "B10320P1": {
+  "shurui": "帳票定義体",
+  "bytes": 18944,
+  "koumoku": 354,
+  "rw": 296,
+  "tsukau": []
+ },
+ "B10320PA": {
+  "shurui": "帳票定義体",
+  "bytes": 18944,
+  "koumoku": 354,
+  "rw": 296,
+  "tsukau": []
+ },
+ "B20120P1": {
+  "shurui": "帳票定義体",
+  "bytes": 28160,
+  "koumoku": 588,
+  "rw": 560,
+  "tsukau": []
+ },
+ "B20120P2": {
+  "shurui": "帳票定義体",
+  "bytes": 8448,
+  "koumoku": 156,
+  "rw": 74,
+  "tsukau": []
+ },
+ "B30010P1": {
+  "shurui": "帳票定義体",
+  "bytes": 30464,
+  "koumoku": 413,
+  "rw": 352,
+  "tsukau": []
+ },
+ "B30020P1": {
+  "shurui": "帳票定義体",
+  "bytes": 38912,
+  "koumoku": 532,
+  "rw": 387,
+  "tsukau": []
+ },
+ "B30030P1": {
+  "shurui": "帳票定義体",
+  "bytes": 24832,
+  "koumoku": 334,
+  "rw": 283,
+  "tsukau": []
+ },
+ "B30040P1": {
+  "shurui": "帳票定義体",
+  "bytes": 28416,
+  "koumoku": 392,
+  "rw": 283,
+  "tsukau": []
+ },
+ "B30050P1": {
+  "shurui": "帳票定義体",
+  "bytes": 24576,
+  "koumoku": 329,
+  "rw": 283,
+  "tsukau": []
+ },
+ "B30060P1": {
+  "shurui": "帳票定義体",
+  "bytes": 28416,
+  "koumoku": 392,
+  "rw": 283,
+  "tsukau": []
+ },
+ "BANCH1P1": {
+  "shurui": "帳票定義体",
+  "bytes": 41472,
+  "koumoku": 734,
+  "rw": 705,
+  "tsukau": [
+   "BANCH2CP"
+  ]
+ },
+ "BANJO1P1": {
+  "shurui": "帳票定義体",
+  "bytes": 40704,
+  "koumoku": 600,
+  "rw": 564,
+  "tsukau": [
+   "BANJO1CP"
+  ]
+ },
+ "BANKIN01": {
+  "shurui": "帳票定義体",
+  "bytes": 29696,
+  "koumoku": 450,
+  "rw": 427,
+  "tsukau": [
+   "BANKIN1S"
+  ]
+ },
+ "BUKAI1PA": {
+  "shurui": "帳票定義体",
+  "bytes": 23808,
+  "koumoku": 324,
+  "rw": 234,
+  "tsukau": [
+   "BUKAI1CP"
+  ]
+ },
+ "BUTAN6P1": {
+  "shurui": "帳票定義体",
+  "bytes": 10752,
+  "koumoku": 123,
+  "rw": 108,
+  "tsukau": [
+   "BUTAN6CP"
+  ]
+ },
+ "CHKJBK03": {
+  "shurui": "帳票定義体",
+  "bytes": 14336,
+  "koumoku": 249,
+  "rw": 230,
+  "tsukau": [
+   "CHKJB4CP",
+   "CHKJB5CP"
+  ]
+ },
+ "D20040P1": {
+  "shurui": "帳票定義体",
+  "bytes": 25856,
+  "koumoku": 669,
+  "rw": 2,
+  "tsukau": []
+ },
+ "D20170P1": {
+  "shurui": "帳票定義体",
+  "bytes": 24576,
+  "koumoku": 695,
+  "rw": 0,
+  "tsukau": []
+ },
+ "E1002NP1": {
+  "shurui": "帳票定義体",
+  "bytes": 37120,
+  "koumoku": 540,
+  "rw": 510,
+  "tsukau": [
+   "E1002NCP"
+  ]
+ },
+ "EGKAN1P1": {
+  "shurui": "帳票定義体",
+  "bytes": 33024,
+  "koumoku": 488,
+  "rw": 392,
+  "tsukau": [
+   "EGKAN1CP"
+  ]
+ },
+ "EGKAN1PA": {
+  "shurui": "帳票定義体",
+  "bytes": 32768,
+  "koumoku": 485,
+  "rw": 392,
+  "tsukau": [
+   "EGKANACP"
+  ]
+ },
+ "EGKAN2PA": {
+  "shurui": "帳票定義体",
+  "bytes": 32768,
+  "koumoku": 486,
+  "rw": 392,
+  "tsukau": [
+   "EGKANBCP"
+  ]
+ },
+ "EITANPR2": {
+  "shurui": "帳票定義体",
+  "bytes": 50688,
+  "koumoku": 741,
+  "rw": 705,
+  "tsukau": [
+   "ETANP02S"
+  ]
+ },
+ "EITANPR3": {
+  "shurui": "帳票定義体",
+  "bytes": 17664,
+  "koumoku": 256,
+  "rw": 216,
+  "tsukau": [
+   "ETANP03S"
+  ]
+ },
+ "F10220P1": {
+  "shurui": "帳票定義体",
+  "bytes": 11264,
+  "koumoku": 270,
+  "rw": 0,
+  "tsukau": [
+   "F10220PP",
+   "F10230PB"
+  ]
+ },
+ "F10270P1": {
+  "shurui": "帳票定義体",
+  "bytes": 5376,
+  "koumoku": 46,
+  "rw": 1,
+  "tsukau": [
+   "F10270PP",
+   "SHIZI78P",
+   "SHIZI79P"
+  ]
+ },
+ "F10315P1": {
+  "shurui": "帳票定義体",
+  "bytes": 17408,
+  "koumoku": 491,
+  "rw": 0,
+  "tsukau": [
+   "F10305PB",
+   "F10315PP"
+  ]
+ },
+ "F10365P1": {
+  "shurui": "帳票定義体",
+  "bytes": 18432,
+  "koumoku": 499,
+  "rw": 0,
+  "tsukau": [
+   "F10365PP",
+   "F10366PB"
+  ]
+ },
+ "F10430P1": {
+  "shurui": "帳票定義体",
+  "bytes": 13824,
+  "koumoku": 345,
+  "rw": 0,
+  "tsukau": [
+   "F10430PP"
+  ]
+ },
+ "F10530P1": {
+  "shurui": "帳票定義体",
+  "bytes": 9984,
+  "koumoku": 225,
+  "rw": 0,
+  "tsukau": [
+   "F10530PP"
+  ]
+ },
+ "F10560P1": {
+  "shurui": "帳票定義体",
+  "bytes": 8704,
+  "koumoku": 195,
+  "rw": 0,
+  "tsukau": [
+   "F10560PP"
+  ]
+ },
+ "F10590P1": {
+  "shurui": "帳票定義体",
+  "bytes": 9472,
+  "koumoku": 248,
+  "rw": 0,
+  "tsukau": [
+   "F10590PP"
+  ]
+ },
+ "F10595P1": {
+  "shurui": "帳票定義体",
+  "bytes": 11008,
+  "koumoku": 257,
+  "rw": 0,
+  "tsukau": [
+   "F10595PP"
+  ]
+ },
+ "F10720P1": {
+  "shurui": "帳票定義体",
+  "bytes": 9216,
+  "koumoku": 219,
+  "rw": 0,
+  "tsukau": [
+   "F10720PP"
+  ]
+ },
+ "F10750P1": {
+  "shurui": "帳票定義体",
+  "bytes": 30208,
+  "koumoku": 839,
+  "rw": 0,
+  "tsukau": [
+   "F10750PP"
+  ]
+ },
+ "F10875P1": {
+  "shurui": "帳票定義体",
+  "bytes": 13312,
+  "koumoku": 351,
+  "rw": 0,
+  "tsukau": [
+   "F10875PP"
+  ]
+ },
+ "F11090P1": {
+  "shurui": "帳票定義体",
+  "bytes": 6912,
+  "koumoku": 165,
+  "rw": 1,
+  "tsukau": [
+   "F11090PP"
+  ]
+ },
+ "F20150P1": {
+  "shurui": "帳票定義体",
+  "bytes": 12800,
+  "koumoku": 330,
+  "rw": 0,
+  "tsukau": [
+   "F20150PP"
+  ]
+ },
+ "FSIK22P1": {
+  "shurui": "帳票定義体",
+  "bytes": 49152,
+  "koumoku": 727,
+  "rw": 705,
+  "tsukau": [
+   "FSIK22CP"
+  ]
+ },
+ "FUJISPX2": {
+  "shurui": "帳票定義体",
+  "bytes": 20480,
+  "koumoku": 329,
+  "rw": 311,
+  "tsukau": [
+   "FUJISX2S"
+  ]
+ },
+ "FUNA04P1": {
+  "shurui": "帳票定義体",
+  "bytes": 16896,
+  "koumoku": 284,
+  "rw": 263,
+  "tsukau": [
+   "FUNA04CP"
+  ]
+ },
+ "FUNA05P1": {
+  "shurui": "帳票定義体",
+  "bytes": 15872,
+  "koumoku": 224,
+  "rw": 203,
+  "tsukau": [
+   "FUNA05CP"
+  ]
+ },
+ "GAIHI2P1": {
+  "shurui": "帳票定義体",
+  "bytes": 58112,
+  "koumoku": 867,
+  "rw": 854,
+  "tsukau": [
+   "GAIHI2CP"
+  ]
+ },
+ "GAISEIP1": {
+  "shurui": "帳票定義体",
+  "bytes": 27904,
+  "koumoku": 412,
+  "rw": 394,
+  "tsukau": []
+ },
+ "GENCHFP1": {
+  "shurui": "帳票定義体",
+  "bytes": 48384,
+  "koumoku": 707,
+  "rw": 689,
+  "tsukau": [
+   "GENKE7CP"
+  ]
+ },
+ "GENKEAP1": {
+  "shurui": "帳票定義体",
+  "bytes": 10752,
+  "koumoku": 127,
+  "rw": 107,
+  "tsukau": [
+   "GENKEACP"
+  ]
+ },
+ "GENKEAP2": {
+  "shurui": "帳票定義体",
+  "bytes": 11264,
+  "koumoku": 128,
+  "rw": 116,
+  "tsukau": [
+   "GENKEACP"
+  ]
+ },
+ "HKANPD01": {
+  "shurui": "帳票定義体",
+  "bytes": 28160,
+  "koumoku": 388,
+  "rw": 367,
+  "tsukau": [
+   "HKANP01S"
+  ]
+ },
+ "HKGENMP1": {
+  "shurui": "帳票定義体",
+  "bytes": 17152,
+  "koumoku": 236,
+  "rw": 199,
+  "tsukau": [
+   "HKGENNCP"
+  ]
+ },
+ "HOJYO2P1": {
+  "shurui": "帳票定義体",
+  "bytes": 44800,
+  "koumoku": 648,
+  "rw": 617,
+  "tsukau": [
+   "HOJYO2CP"
+  ]
+ },
+ "JISEK3P1": {
+  "shurui": "帳票定義体",
+  "bytes": 54016,
+  "koumoku": 878,
+  "rw": 854,
+  "tsukau": [
+   "JISEK3CP"
+  ]
+ },
+ "JISEK4P1": {
+  "shurui": "帳票定義体",
+  "bytes": 38912,
+  "koumoku": 623,
+  "rw": 604,
+  "tsukau": [
+   "JISEK4CP"
+  ]
+ },
+ "JITUPRP1": {
+  "shurui": "帳票定義体",
+  "bytes": 47872,
+  "koumoku": 664,
+  "rw": 512,
+  "tsukau": [
+   "JITUP1CP",
+   "JITUP2CP"
+  ]
+ },
+ "JUSUI1P1": {
+  "shurui": "帳票定義体",
+  "bytes": 35328,
+  "koumoku": 483,
+  "rw": 361,
+  "tsukau": []
+ },
+ "JUSUI2P1": {
+  "shurui": "帳票定義体",
+  "bytes": 25856,
+  "koumoku": 356,
+  "rw": 244,
+  "tsukau": []
+ },
+ "JUSUI3P1": {
+  "shurui": "帳票定義体",
+  "bytes": 25856,
+  "koumoku": 355,
+  "rw": 244,
+  "tsukau": []
+ },
+ "JYUNK2P1": {
+  "shurui": "帳票定義体",
+  "bytes": 28416,
+  "koumoku": 380,
+  "rw": 365,
+  "tsukau": [
+   "JYUNKN2P"
+  ]
+ },
+ "JYUNK6P1": {
+  "shurui": "帳票定義体",
+  "bytes": 29440,
+  "koumoku": 394,
+  "rw": 371,
+  "tsukau": [
+   "JYUNKN6P"
+  ]
+ },
+ "JYUNK8P1": {
+  "shurui": "帳票定義体",
+  "bytes": 29440,
+  "koumoku": 393,
+  "rw": 371,
+  "tsukau": [
+   "JYUNKN8P"
+  ]
+ },
+ "JYURIMD1": {
+  "shurui": "帳票定義体",
+  "bytes": 45824,
+  "koumoku": 675,
+  "rw": 653,
+  "tsukau": [
+   "JYURUI2S"
+  ]
+ },
+ "JYURIMD2": {
+  "shurui": "帳票定義体",
+  "bytes": 45824,
+  "koumoku": 677,
+  "rw": 654,
+  "tsukau": [
+   "JYURUI3S"
+  ]
+ },
+ "KAJYUPR1": {
+  "shurui": "帳票定義体",
+  "bytes": 32256,
+  "koumoku": 437,
+  "rw": 424,
+  "tsukau": [
+   "KARJYU1S"
+  ]
+ },
+ "KAKUNINP": {
+  "shurui": "帳票定義体",
+  "bytes": 3328,
+  "koumoku": 34,
+  "rw": 8,
+  "tsukau": [
+   "NTAN23CP",
+   "NTANJJCP"
+  ]
+ },
+ "KANGEN03": {
+  "shurui": "帳票定義体",
+  "bytes": 57344,
+  "koumoku": 915,
+  "rw": 878,
+  "tsukau": []
+ },
+ "KANGENP1": {
+  "shurui": "帳票定義体",
+  "bytes": 13056,
+  "koumoku": 174,
+  "rw": 105,
+  "tsukau": [
+   "GENKA4CP"
+  ]
+ },
+ "KANPRD01": {
+  "shurui": "帳票定義体",
+  "bytes": 29696,
+  "koumoku": 424,
+  "rw": 410,
+  "tsukau": [
+   "KANPR01S"
+  ]
+ },
+ "KANRIPR1": {
+  "shurui": "帳票定義体",
+  "bytes": 23296,
+  "koumoku": 321,
+  "rw": 305,
+  "tsukau": [
+   "KANRPR1S"
+  ]
+ },
+ "KARIUMD1": {
+  "shurui": "帳票定義体",
+  "bytes": 16384,
+  "koumoku": 232,
+  "rw": 214,
+  "tsukau": [
+   "KARIU03S"
+  ]
+ },
+ "KARIUMD2": {
+  "shurui": "帳票定義体",
+  "bytes": 16384,
+  "koumoku": 232,
+  "rw": 214,
+  "tsukau": [
+   "KARIU13S"
+  ]
+ },
+ "KRCH02P1": {
+  "shurui": "帳票定義体",
+  "bytes": 43776,
+  "koumoku": 634,
+  "rw": 574,
+  "tsukau": [
+   "KRCH02CP"
+  ]
+ },
+ "KRCH02P2": {
+  "shurui": "帳票定義体",
+  "bytes": 47872,
+  "koumoku": 698,
+  "rw": 671,
+  "tsukau": [
+   "KRCH02CP"
+  ]
+ },
+ "KYAHN2P1": {
+  "shurui": "帳票定義体",
+  "bytes": 12032,
+  "koumoku": 166,
+  "rw": 74,
+  "tsukau": [
+   "KYAHN2CG",
+   "KYAHN6CP"
+  ]
+ },
+ "KYAHN7P1": {
+  "shurui": "帳票定義体",
+  "bytes": 12032,
+  "koumoku": 167,
+  "rw": 74,
+  "tsukau": [
+   "KYAHN7CP"
+  ]
+ },
+ "KYAHN8P1": {
+  "shurui": "帳票定義体",
+  "bytes": 23040,
+  "koumoku": 336,
+  "rw": 317,
+  "tsukau": [
+   "KYAHN8CP"
+  ]
+ },
+ "KYAHNAP1": {
+  "shurui": "帳票定義体",
+  "bytes": 24576,
+  "koumoku": 372,
+  "rw": 354,
+  "tsukau": [
+   "KYAHNACP"
+  ]
+ },
+ "KYAHNNP1": {
+  "shurui": "帳票定義体",
+  "bytes": 31232,
+  "koumoku": 455,
+  "rw": 423,
+  "tsukau": [
+   "KYAHNNCP"
+  ]
+ },
+ "M30221P1": {
+  "shurui": "帳票定義体",
+  "bytes": 12032,
+  "koumoku": 352,
+  "rw": 1,
+  "tsukau": [
+   "M30221PP"
+  ]
+ },
+ "M30311P1": {
+  "shurui": "帳票定義体",
+  "bytes": 19456,
+  "koumoku": 610,
+  "rw": 1,
+  "tsukau": [
+   "M30311PP"
+  ]
+ },
+ "M38210P1": {
+  "shurui": "帳票定義体",
+  "bytes": 8704,
+  "koumoku": 216,
+  "rw": 2,
+  "tsukau": [
+   "M38210PP"
+  ]
+ },
+ "MIJUK9P1": {
+  "shurui": "帳票定義体",
+  "bytes": 11008,
+  "koumoku": 129,
+  "rw": 107,
+  "tsukau": [
+   "MIJU09CP"
+  ]
+ },
+ "MIJUK9P2": {
+  "shurui": "帳票定義体",
+  "bytes": 11264,
+  "koumoku": 128,
+  "rw": 116,
+  "tsukau": [
+   "MIJU09CP"
+  ]
+ },
+ "MISUK2P1": {
+  "shurui": "帳票定義体",
+  "bytes": 16128,
+  "koumoku": 217,
+  "rw": 179,
+  "tsukau": [
+   "MISUK2CP"
+  ]
+ },
+ "MITMEIP1": {
+  "shurui": "帳票定義体",
+  "bytes": 32000,
+  "koumoku": 459,
+  "rw": 448,
+  "tsukau": [
+   "MITME1CP",
+   "MITME2CP"
+  ]
+ },
+ "MJS040P1": {
+  "shurui": "帳票定義体",
+  "bytes": 17920,
+  "koumoku": 256,
+  "rw": 134,
+  "tsukau": [
+   "MJS040CF"
+  ]
+ },
+ "MJS070P1": {
+  "shurui": "帳票定義体",
+  "bytes": 8960,
+  "koumoku": 119,
+  "rw": 46,
+  "tsukau": [
+   "MJS070CP"
+  ]
+ },
+ "MTGEPPD1": {
+  "shurui": "帳票定義体",
+  "bytes": 22272,
+  "koumoku": 325,
+  "rw": 309,
+  "tsukau": [
+   "MTGEP02S"
+  ]
+ },
+ "NIPPRD01": {
+  "shurui": "帳票定義体",
+  "bytes": 7936,
+  "koumoku": 91,
+  "rw": 85,
+  "tsukau": [
+   "NIPPR01S"
+  ]
+ },
+ "NIPPRD02": {
+  "shurui": "帳票定義体",
+  "bytes": 5888,
+  "koumoku": 67,
+  "rw": 61,
+  "tsukau": [
+   "NIPPR02S"
+  ]
+ },
+ "NOKIIDP1": {
+  "shurui": "帳票定義体",
+  "bytes": 17664,
+  "koumoku": 234,
+  "rw": 220,
+  "tsukau": [
+   "NOKIID3S",
+   "NOKIID4S"
+  ]
+ },
+ "NOKIIDPA": {
+  "shurui": "帳票定義体",
+  "bytes": 18944,
+  "koumoku": 263,
+  "rw": 249,
+  "tsukau": [
+   "NOKIID2S"
+  ]
+ },
+ "NOKIKPR5": {
+  "shurui": "帳票定義体",
+  "bytes": 24064,
+  "koumoku": 357,
+  "rw": 315,
+  "tsukau": [
+   "NTAN11DP",
+   "NTAN23CP",
+   "NTANAADP",
+   "NTANJJCP"
+  ]
+ },
+ "NOKIKPR6": {
+  "shurui": "帳票定義体",
+  "bytes": 18944,
+  "koumoku": 310,
+  "rw": 288,
+  "tsukau": [
+   "NNOKI77S",
+   "NOKIK57S"
+  ]
+ },
+ "NOKIKPRA": {
+  "shurui": "帳票定義体",
+  "bytes": 35584,
+  "koumoku": 550,
+  "rw": 514,
+  "tsukau": []
+ },
+ "NOUKIJUP": {
+  "shurui": "帳票定義体",
+  "bytes": 15616,
+  "koumoku": 216,
+  "rw": 198,
+  "tsukau": [
+   "NOUJU02S"
+  ]
+ },
+ "NTAN11P1": {
+  "shurui": "帳票定義体",
+  "bytes": 23808,
+  "koumoku": 338,
+  "rw": 283,
+  "tsukau": [
+   "NTAN11DP",
+   "NTAN23CP",
+   "NTANAADP",
+   "NTANJJCP"
+  ]
+ },
+ "R10180P1": {
+  "shurui": "帳票定義体",
+  "bytes": 33024,
+  "koumoku": 441,
+  "rw": 381,
+  "tsukau": []
+ },
+ "RENHYOP1": {
+  "shurui": "帳票定義体",
+  "bytes": 34048,
+  "koumoku": 556,
+  "rw": 515,
+  "tsukau": [
+   "RENHY1CP"
+  ]
+ },
+ "RENRK6P1": {
+  "shurui": "帳票定義体",
+  "bytes": 34304,
+  "koumoku": 558,
+  "rw": 516,
+  "tsukau": [
+   "RENRK6CP"
+  ]
+ },
+ "RENRK7P1": {
+  "shurui": "帳票定義体",
+  "bytes": 30976,
+  "koumoku": 432,
+  "rw": 402,
+  "tsukau": [
+   "RENRK7CP"
+  ]
+ },
+ "RENRK8P1": {
+  "shurui": "帳票定義体",
+  "bytes": 17920,
+  "koumoku": 253,
+  "rw": 224,
+  "tsukau": [
+   "RENRKECP"
+  ]
+ },
+ "RENRKAP1": {
+  "shurui": "帳票定義体",
+  "bytes": 34304,
+  "koumoku": 559,
+  "rw": 516,
+  "tsukau": [
+   "RENRKACP"
+  ]
+ },
+ "RENRKBP1": {
+  "shurui": "帳票定義体",
+  "bytes": 30976,
+  "koumoku": 432,
+  "rw": 401,
+  "tsukau": [
+   "RENRKBCP"
+  ]
+ },
+ "SAKJY4P1": {
+  "shurui": "帳票定義体",
+  "bytes": 49920,
+  "koumoku": 701,
+  "rw": 687,
+  "tsukau": [
+   "SAKJY4CP"
+  ]
+ },
+ "SAKJY5P1": {
+  "shurui": "帳票定義体",
+  "bytes": 49920,
+  "koumoku": 702,
+  "rw": 687,
+  "tsukau": [
+   "SAKJY5CP"
+  ]
+ },
+ "SAKUZUP1": {
+  "shurui": "帳票定義体",
+  "bytes": 35840,
+  "koumoku": 498,
+  "rw": 483,
+  "tsukau": [
+   "SAKUZU2S"
+  ]
+ },
+ "SAKUZUP2": {
+  "shurui": "帳票定義体",
+  "bytes": 36096,
+  "koumoku": 499,
+  "rw": 483,
+  "tsukau": [
+   "SAKUZU3S"
+  ]
+ },
+ "SEISN5P1": {
+  "shurui": "帳票定義体",
+  "bytes": 49920,
+  "koumoku": 813,
+  "rw": 787,
+  "tsukau": [
+   "SEISN7CP"
+  ]
+ },
+ "SEJYO1P1": {
+  "shurui": "帳票定義体",
+  "bytes": 5120,
+  "koumoku": 63,
+  "rw": 28,
+  "tsukau": [
+   "SEJYO2CP"
+  ]
+ },
+ "SEKJT3P1": {
+  "shurui": "帳票定義体",
+  "bytes": 56832,
+  "koumoku": 829,
+  "rw": 804,
+  "tsukau": [
+   "SEKJT3CP"
+  ]
+ },
+ "SEKJT4P1": {
+  "shurui": "帳票定義体",
+  "bytes": 40960,
+  "koumoku": 590,
+  "rw": 556,
+  "tsukau": [
+   "SEKJT4CP"
+  ]
+ },
+ "SEMICHP1": {
+  "shurui": "帳票定義体",
+  "bytes": 16384,
+  "koumoku": 456,
+  "rw": 0,
+  "tsukau": []
+ },
+ "SETKE2P1": {
+  "shurui": "帳票定義体",
+  "bytes": 46848,
+  "koumoku": 782,
+  "rw": 755,
+  "tsukau": [
+   "SETKE2CP"
+  ]
+ },
+ "SETKE3P1": {
+  "shurui": "帳票定義体",
+  "bytes": 22528,
+  "koumoku": 315,
+  "rw": 291,
+  "tsukau": [
+   "SETKE3CP"
+  ]
+ },
+ "SETKE4P1": {
+  "shurui": "帳票定義体",
+  "bytes": 8192,
+  "koumoku": 107,
+  "rw": 80,
+  "tsukau": [
+   "SETKE4CP"
+  ]
+ },
+ "SETUK1PY": {
+  "shurui": "帳票定義体",
+  "bytes": 12288,
+  "koumoku": 164,
+  "rw": 23,
+  "tsukau": [
+   "SETUKYCP"
+  ]
+ },
+ "SETUK2P1": {
+  "shurui": "帳票定義体",
+  "bytes": 16384,
+  "koumoku": 243,
+  "rw": 198,
+  "tsukau": [
+   "SETUK2NP"
+  ]
+ },
+ "SETUK2P2": {
+  "shurui": "帳票定義体",
+  "bytes": 18688,
+  "koumoku": 280,
+  "rw": 249,
+  "tsukau": [
+   "SETUK2NP"
+  ]
+ },
+ "SETUKCP1": {
+  "shurui": "帳票定義体",
+  "bytes": 12288,
+  "koumoku": 155,
+  "rw": 79,
+  "tsukau": [
+   "SETUKCCP"
+  ]
+ },
+ "SETUKCP2": {
+  "shurui": "帳票定義体",
+  "bytes": 12288,
+  "koumoku": 149,
+  "rw": 112,
+  "tsukau": [
+   "SETUKCCP"
+  ]
+ },
+ "SETVE9P1": {
+  "shurui": "帳票定義体",
+  "bytes": 11264,
+  "koumoku": 133,
+  "rw": 112,
+  "tsukau": [
+   "SETVE9CP"
+  ]
+ },
+ "SETVE9P2": {
+  "shurui": "帳票定義体",
+  "bytes": 11520,
+  "koumoku": 132,
+  "rw": 118,
+  "tsukau": [
+   "SETVE9CP"
+  ]
+ },
+ "SGENKPP1": {
+  "shurui": "帳票定義体",
+  "bytes": 10496,
+  "koumoku": 135,
+  "rw": 80,
+  "tsukau": [
+   "SGENKP1S"
+  ]
+ },
+ "SGENKPP2": {
+  "shurui": "帳票定義体",
+  "bytes": 55808,
+  "koumoku": 820,
+  "rw": 759,
+  "tsukau": [
+   "SGENKP2S"
+  ]
+ },
+ "SGENKPPB": {
+  "shurui": "帳票定義体",
+  "bytes": 12544,
+  "koumoku": 166,
+  "rw": 106,
+  "tsukau": [
+   "SGENKPAS"
+  ]
+ },
+ "SHIZIMD3": {
+  "shurui": "帳票定義体",
+  "bytes": 16384,
+  "koumoku": 226,
+  "rw": 0,
+  "tsukau": [
+   "SHIZI76P"
+  ]
+ },
+ "SIZAIPD2": {
+  "shurui": "帳票定義体",
+  "bytes": 5376,
+  "koumoku": 47,
+  "rw": 1,
+  "tsukau": [
+   "SHIZI77P"
+  ]
+ },
+ "SKUMJTP1": {
+  "shurui": "帳票定義体",
+  "bytes": 20480,
+  "koumoku": 293,
+  "rw": 269,
+  "tsukau": [
+   "KUMKAN5S"
+  ]
+ },
+ "SUIHY1P1": {
+  "shurui": "帳票定義体",
+  "bytes": 24064,
+  "koumoku": 329,
+  "rw": 257,
+  "tsukau": []
+ },
+ "SUIHY2P1": {
+  "shurui": "帳票定義体",
+  "bytes": 33024,
+  "koumoku": 457,
+  "rw": 338,
+  "tsukau": []
+ },
+ "SYUSI2P1": {
+  "shurui": "帳票定義体",
+  "bytes": 32000,
+  "koumoku": 453,
+  "rw": 432,
+  "tsukau": [
+   "SYUSI2CP"
+  ]
+ },
+ "SYUSKMPA": {
+  "shurui": "帳票定義体",
+  "bytes": 17920,
+  "koumoku": 256,
+  "rw": 134,
+  "tsukau": [
+   "SYUSG04P",
+   "SYUSKMFP"
+  ]
+ },
+ "SYUSKMPB": {
+  "shurui": "帳票定義体",
+  "bytes": 18176,
+  "koumoku": 261,
+  "rw": 136,
+  "tsukau": [
+   "SYUSG04P",
+   "SYUSKMFP"
+  ]
+ },
+ "SYUSKMPC": {
+  "shurui": "帳票定義体",
+  "bytes": 56576,
+  "koumoku": 914,
+  "rw": 877,
+  "tsukau": [
+   "SYUSG04P",
+   "SYUSKMFP"
+  ]
+ },
+ "SYUTZPR1": {
+  "shurui": "帳票定義体",
+  "bytes": 19712,
+  "koumoku": 308,
+  "rw": 275,
+  "tsukau": [
+   "SYUTZP3P",
+   "SYUTZP4P"
+  ]
+ },
+ "SYUTZPR2": {
+  "shurui": "帳票定義体",
+  "bytes": 20992,
+  "koumoku": 335,
+  "rw": 297,
+  "tsukau": [
+   "SYUTZP2S"
+  ]
+ },
+ "TEMOCHP1": {
+  "shurui": "帳票定義体",
+  "bytes": 23552,
+  "koumoku": 337,
+  "rw": 311,
+  "tsukau": [
+   "TEMOPRAS"
+  ]
+ },
+ "TEMOCHP2": {
+  "shurui": "帳票定義体",
+  "bytes": 21504,
+  "koumoku": 391,
+  "rw": 367,
+  "tsukau": [
+   "TEMOPRBS"
+  ]
+ },
+ "TEMOPR02": {
+  "shurui": "帳票定義体",
+  "bytes": 30464,
+  "koumoku": 426,
+  "rw": 405,
+  "tsukau": [
+   "TEMOCH4S"
+  ]
+ },
+ "TEMPRD01": {
+  "shurui": "帳票定義体",
+  "bytes": 10496,
+  "koumoku": 138,
+  "rw": 123,
+  "tsukau": [
+   "TEMOCH2S"
+  ]
+ },
+ "TEMPRD02": {
+  "shurui": "帳票定義体",
+  "bytes": 10496,
+  "koumoku": 138,
+  "rw": 123,
+  "tsukau": [
+   "TEMOCH5S"
+  ]
+ },
+ "TEST30P1": {
+  "shurui": "帳票定義体",
+  "bytes": 5376,
+  "koumoku": 46,
+  "rw": 1,
+  "tsukau": [
+   "SHANDN1S"
+  ]
+ },
+ "TKA020P1": {
+  "shurui": "帳票定義体",
+  "bytes": 20736,
+  "koumoku": 572,
+  "rw": 0,
+  "tsukau": [
+   "TKA020PP"
+  ]
+ },
+ "TKANRYP1": {
+  "shurui": "帳票定義体",
+  "bytes": 23040,
+  "koumoku": 333,
+  "rw": 305,
+  "tsukau": [
+   "TKANRY2S"
+  ]
+ },
+ "TKANRYP2": {
+  "shurui": "帳票定義体",
+  "bytes": 18688,
+  "koumoku": 287,
+  "rw": 263,
+  "tsukau": [
+   "TKANRY3S"
+  ]
+ },
+ "TREN11P1": {
+  "shurui": "帳票定義体",
+  "bytes": 29696,
+  "koumoku": 449,
+  "rw": 396,
+  "tsukau": [
+   "TREN11CP"
+  ]
+ },
+ "UKAKUPRA": {
+  "shurui": "帳票定義体",
+  "bytes": 18176,
+  "koumoku": 254,
+  "rw": 229,
+  "tsukau": [
+   "UKAKU3CP"
+  ]
+ },
+ "UKAKUPRB": {
+  "shurui": "帳票定義体",
+  "bytes": 17920,
+  "koumoku": 250,
+  "rw": 229,
+  "tsukau": [
+   "UKAKUACP"
+  ]
+ },
+ "UNCHN5P1": {
+  "shurui": "帳票定義体",
+  "bytes": 32512,
+  "koumoku": 612,
+  "rw": 580,
+  "tsukau": [
+   "UNCHN5CP"
+  ]
+ },
+ "UNCHN7P1": {
+  "shurui": "帳票定義体",
+  "bytes": 10496,
+  "koumoku": 167,
+  "rw": 134,
+  "tsukau": [
+   "UNCHN6CP"
+  ]
+ },
+ "UNCHN7P2": {
+  "shurui": "帳票定義体",
+  "bytes": 9728,
+  "koumoku": 129,
+  "rw": 100,
+  "tsukau": [
+   "UNCHN8CP"
+  ]
+ },
+ "UNCHN7P3": {
+  "shurui": "帳票定義体",
+  "bytes": 7424,
+  "koumoku": 101,
+  "rw": 79,
+  "tsukau": [
+   "UNCHN7CP"
+  ]
+ },
+ "UNCHNBP1": {
+  "shurui": "帳票定義体",
+  "bytes": 42496,
+  "koumoku": 747,
+  "rw": 722,
+  "tsukau": [
+   "UNCHNBCS"
+  ]
+ },
+ "UNCHNFP1": {
+  "shurui": "帳票定義体",
+  "bytes": 40960,
+  "koumoku": 600,
+  "rw": 580,
+  "tsukau": [
+   "UNCHNFCP"
+  ]
+ },
+ "URIPRD01": {
+  "shurui": "帳票定義体",
+  "bytes": 8192,
+  "koumoku": 99,
+  "rw": 87,
+  "tsukau": [
+   "URIPR01S",
+   "URIPR05S"
+  ]
+ },
+ "URIPRD02": {
+  "shurui": "帳票定義体",
+  "bytes": 26112,
+  "koumoku": 463,
+  "rw": 445,
+  "tsukau": [
+   "URIPR02S"
+  ]
+ },
+ "URISO2PX": {
+  "shurui": "帳票定義体",
+  "bytes": 13056,
+  "koumoku": 169,
+  "rw": 119,
+  "tsukau": [
+   "URISO2CP"
+  ]
+ },
+ "URISOXP1": {
+  "shurui": "帳票定義体",
+  "bytes": 6912,
+  "koumoku": 83,
+  "rw": 50,
+  "tsukau": [
+   "URISO1CP"
+  ]
+ },
+ "YAMAPR01": {
+  "shurui": "帳票定義体",
+  "bytes": 21760,
+  "koumoku": 306,
+  "rw": 278,
+  "tsukau": [
+   "YAMAPR2S"
+  ]
+ },
+ "YAMAPR04": {
+  "shurui": "帳票定義体",
+  "bytes": 22528,
+  "koumoku": 325,
+  "rw": 297,
+  "tsukau": [
+   "YAMAPR4S"
+  ]
+ },
+ "ZAIPRD01": {
+  "shurui": "帳票定義体",
+  "bytes": 46080,
+  "koumoku": 668,
+  "rw": 645,
+  "tsukau": [
+   "SHIZAI1S"
+  ]
+ },
+ "ZAIPRD02": {
+  "shurui": "帳票定義体",
+  "bytes": 42496,
+  "koumoku": 621,
+  "rw": 605,
+  "tsukau": [
+   "SHIZAI2S"
+  ]
+ },
+ "ZAREN3P1": {
+  "shurui": "帳票定義体",
+  "bytes": 25856,
+  "koumoku": 367,
+  "rw": 351,
+  "tsukau": [
+   "ZAREN3CP"
+  ]
+ },
+ "A10040D1": {
+  "shurui": "画面定義体",
+  "bytes": 8960,
+  "koumoku": 117,
+  "rw": 55,
+  "tsukau": [
+   "A10010PO",
+   "A10040PO"
+  ]
+ },
+ "A10050D1": {
+  "shurui": "画面定義体",
+  "bytes": 5888,
+  "koumoku": 81,
+  "rw": 25,
+  "tsukau": [
+   "A10010PO",
+   "A10050PO"
+  ]
+ },
+ "A10060D1": {
+  "shurui": "画面定義体",
+  "bytes": 8960,
+  "koumoku": 204,
+  "rw": 25,
+  "tsukau": [
+   "A10010PO",
+   "A10060PO"
+  ]
+ },
+ "A10070D1": {
+  "shurui": "画面定義体",
+  "bytes": 9984,
+  "koumoku": 192,
+  "rw": 38,
+  "tsukau": [
+   "A10010PO",
+   "A10070PO"
+  ]
+ },
+ "A10080D1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 43,
+  "rw": 15,
+  "tsukau": [
+   "A10010PO"
+  ]
+ },
+ "A10090D1": {
+  "shurui": "画面定義体",
+  "bytes": 3840,
+  "koumoku": 68,
+  "rw": 36,
+  "tsukau": [
+   "A10010PO"
+  ]
+ },
+ "A11010D1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 38,
+  "rw": 14,
+  "tsukau": []
+ },
+ "A17000D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 24,
+  "rw": 13,
+  "tsukau": [
+   "A17000PO"
+  ]
+ },
+ "A18030D1": {
+  "shurui": "画面定義体",
+  "bytes": 2304,
+  "koumoku": 29,
+  "rw": 9,
+  "tsukau": [
+   "A18030PO"
+  ]
+ },
+ "A18040D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 22,
+  "rw": 11,
+  "tsukau": [
+   "A18040PO"
+  ]
+ },
+ "A30010D1": {
+  "shurui": "画面定義体",
+  "bytes": 4352,
+  "koumoku": 51,
+  "rw": 18,
+  "tsukau": [
+   "A30020PO"
+  ]
+ },
+ "A30010D2": {
+  "shurui": "画面定義体",
+  "bytes": 9216,
+  "koumoku": 271,
+  "rw": 13,
+  "tsukau": [
+   "A30020PO"
+  ]
+ },
+ "B10010D1": {
+  "shurui": "画面定義体",
+  "bytes": 7680,
+  "koumoku": 228,
+  "rw": 129,
+  "tsukau": []
+ },
+ "B10510D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 38,
+  "rw": 16,
+  "tsukau": []
+ },
+ "B10520D1": {
+  "shurui": "画面定義体",
+  "bytes": 4096,
+  "koumoku": 45,
+  "rw": 19,
+  "tsukau": [
+   "B10520PO"
+  ]
+ },
+ "B20030D1": {
+  "shurui": "画面定義体",
+  "bytes": 6912,
+  "koumoku": 147,
+  "rw": 4,
+  "tsukau": []
+ },
+ "B30100D1": {
+  "shurui": "画面定義体",
+  "bytes": 6912,
+  "koumoku": 137,
+  "rw": 31,
+  "tsukau": [
+   "B30100PO"
+  ]
+ },
+ "BANCH1D1": {
+  "shurui": "画面定義体",
+  "bytes": 16640,
+  "koumoku": 269,
+  "rw": 106,
+  "tsukau": [
+   "BANCH2CP"
+  ]
+ },
+ "BANJO1D1": {
+  "shurui": "画面定義体",
+  "bytes": 9984,
+  "koumoku": 161,
+  "rw": 70,
+  "tsukau": [
+   "BANJO1CF"
+  ]
+ },
+ "BUHNMED1": {
+  "shurui": "画面定義体",
+  "bytes": 11520,
+  "koumoku": 204,
+  "rw": 0,
+  "tsukau": [
+   "BUHNSY1S"
+  ]
+ },
+ "BUHNMED2": {
+  "shurui": "画面定義体",
+  "bytes": 6912,
+  "koumoku": 136,
+  "rw": 0,
+  "tsukau": [
+   "BUHNSY1S"
+  ]
+ },
+ "BUTAN4D1": {
+  "shurui": "画面定義体",
+  "bytes": 3328,
+  "koumoku": 40,
+  "rw": 14,
+  "tsukau": [
+   "BUTAN4CG"
+  ]
+ },
+ "BUTKN1D1": {
+  "shurui": "画面定義体",
+  "bytes": 11008,
+  "koumoku": 188,
+  "rw": 55,
+  "tsukau": [
+   "BUTKN1CG"
+  ]
+ },
+ "D20010D1": {
+  "shurui": "画面定義体",
+  "bytes": 12544,
+  "koumoku": 224,
+  "rw": 0,
+  "tsukau": []
+ },
+ "D20020D1": {
+  "shurui": "画面定義体",
+  "bytes": 7168,
+  "koumoku": 121,
+  "rw": 0,
+  "tsukau": []
+ },
+ "D20080D1": {
+  "shurui": "画面定義体",
+  "bytes": 11520,
+  "koumoku": 211,
+  "rw": 0,
+  "tsukau": []
+ },
+ "D20090D1": {
+  "shurui": "画面定義体",
+  "bytes": 12288,
+  "koumoku": 219,
+  "rw": 0,
+  "tsukau": []
+ },
+ "D20100D1": {
+  "shurui": "画面定義体",
+  "bytes": 7168,
+  "koumoku": 118,
+  "rw": 0,
+  "tsukau": []
+ },
+ "D20110D1": {
+  "shurui": "画面定義体",
+  "bytes": 15616,
+  "koumoku": 263,
+  "rw": 8,
+  "tsukau": [
+   "D2011XPO"
+  ]
+ },
+ "D20110D2": {
+  "shurui": "画面定義体",
+  "bytes": 11264,
+  "koumoku": 279,
+  "rw": 0,
+  "tsukau": [
+   "D2011XPO"
+  ]
+ },
+ "EGKAN1D1": {
+  "shurui": "画面定義体",
+  "bytes": 1792,
+  "koumoku": 12,
+  "rw": 5,
+  "tsukau": [
+   "EGKAN1CP",
+   "EGKANACP",
+   "EGKANBCP"
+  ]
+ },
+ "EGNIPSY1": {
+  "shurui": "画面定義体",
+  "bytes": 13568,
+  "koumoku": 226,
+  "rw": 143,
+  "tsukau": []
+ },
+ "EGNIPSY2": {
+  "shurui": "画面定義体",
+  "bytes": 13568,
+  "koumoku": 227,
+  "rw": 143,
+  "tsukau": []
+ },
+ "EM1100D1": {
+  "shurui": "画面定義体",
+  "bytes": 3840,
+  "koumoku": 41,
+  "rw": 13,
+  "tsukau": []
+ },
+ "EXECC1D1": {
+  "shurui": "画面定義体",
+  "bytes": 2304,
+  "koumoku": 25,
+  "rw": 8,
+  "tsukau": [
+   "EXECCHKG"
+  ]
+ },
+ "EXECE1D1": {
+  "shurui": "画面定義体",
+  "bytes": 2048,
+  "koumoku": 24,
+  "rw": 8,
+  "tsukau": [
+   "EXECENDG"
+  ]
+ },
+ "F10110D1": {
+  "shurui": "画面定義体",
+  "bytes": 12032,
+  "koumoku": 183,
+  "rw": 0,
+  "tsukau": [
+   "F10110RC"
+  ]
+ },
+ "F10110D2": {
+  "shurui": "画面定義体",
+  "bytes": 6656,
+  "koumoku": 174,
+  "rw": 0,
+  "tsukau": [
+   "F10110RC"
+  ]
+ },
+ "F10120D1": {
+  "shurui": "画面定義体",
+  "bytes": 8704,
+  "koumoku": 180,
+  "rw": 0,
+  "tsukau": [
+   "F10120PO"
+  ]
+ },
+ "F10260D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 22,
+  "rw": 0,
+  "tsukau": [
+   "F10260PO"
+  ]
+ },
+ "F10280D1": {
+  "shurui": "画面定義体",
+  "bytes": 9984,
+  "koumoku": 208,
+  "rw": 0,
+  "tsukau": [
+   "F10280PO"
+  ]
+ },
+ "F10320D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 25,
+  "rw": 9,
+  "tsukau": [
+   "F10320PO"
+  ]
+ },
+ "F10325D1": {
+  "shurui": "画面定義体",
+  "bytes": 2048,
+  "koumoku": 16,
+  "rw": 7,
+  "tsukau": [
+   "F10325PO"
+  ]
+ },
+ "F10350D1": {
+  "shurui": "画面定義体",
+  "bytes": 9984,
+  "koumoku": 208,
+  "rw": 0,
+  "tsukau": [
+   "F10350PO"
+  ]
+ },
+ "F10360D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 25,
+  "rw": 9,
+  "tsukau": [
+   "F10360PO"
+  ]
+ },
+ "F10370D1": {
+  "shurui": "画面定義体",
+  "bytes": 2048,
+  "koumoku": 16,
+  "rw": 7,
+  "tsukau": [
+   "F10370PO"
+  ]
+ },
+ "F10410D1": {
+  "shurui": "画面定義体",
+  "bytes": 7680,
+  "koumoku": 99,
+  "rw": 0,
+  "tsukau": [
+   "F10412PO",
+   "SIZAI02S"
+  ]
+ },
+ "F10510D1": {
+  "shurui": "画面定義体",
+  "bytes": 8192,
+  "koumoku": 190,
+  "rw": 0,
+  "tsukau": [
+   "F10510PO"
+  ]
+ },
+ "F10540D1": {
+  "shurui": "画面定義体",
+  "bytes": 6144,
+  "koumoku": 59,
+  "rw": 0,
+  "tsukau": [
+   "F10540PO",
+   "F10542PO"
+  ]
+ },
+ "F10570D1": {
+  "shurui": "画面定義体",
+  "bytes": 22784,
+  "koumoku": 460,
+  "rw": 417,
+  "tsukau": [
+   "F10570PO"
+  ]
+ },
+ "F10610D1": {
+  "shurui": "画面定義体",
+  "bytes": 6400,
+  "koumoku": 122,
+  "rw": 0,
+  "tsukau": [
+   "F10610PO"
+  ]
+ },
+ "F10610D2": {
+  "shurui": "画面定義体",
+  "bytes": 9216,
+  "koumoku": 180,
+  "rw": 0,
+  "tsukau": [
+   "F10610PO"
+  ]
+ },
+ "F10670D1": {
+  "shurui": "画面定義体",
+  "bytes": 10752,
+  "koumoku": 209,
+  "rw": 0,
+  "tsukau": [
+   "F10670PO"
+  ]
+ },
+ "F10730D1": {
+  "shurui": "画面定義体",
+  "bytes": 10752,
+  "koumoku": 160,
+  "rw": 0,
+  "tsukau": [
+   "F10730PO"
+  ]
+ },
+ "F10810D1": {
+  "shurui": "画面定義体",
+  "bytes": 5888,
+  "koumoku": 60,
+  "rw": 0,
+  "tsukau": [
+   "F10810PO"
+  ]
+ },
+ "F10890D1": {
+  "shurui": "画面定義体",
+  "bytes": 3328,
+  "koumoku": 50,
+  "rw": 9,
+  "tsukau": [
+   "F10890PO"
+  ]
+ },
+ "F20190D1": {
+  "shurui": "画面定義体",
+  "bytes": 8448,
+  "koumoku": 162,
+  "rw": 0,
+  "tsukau": [
+   "F20190PO"
+  ]
+ },
+ "FSIZIAD1": {
+  "shurui": "画面定義体",
+  "bytes": 13824,
+  "koumoku": 222,
+  "rw": 154,
+  "tsukau": [
+   "FSIZIBCS",
+   "SIZSY1CS"
+  ]
+ },
+ "FSIZIAD2": {
+  "shurui": "画面定義体",
+  "bytes": 11520,
+  "koumoku": 183,
+  "rw": 132,
+  "tsukau": [
+   "FSIZIBCS",
+   "SIZSY1CS"
+  ]
+ },
+ "FSIZIBD1": {
+  "shurui": "画面定義体",
+  "bytes": 13824,
+  "koumoku": 222,
+  "rw": 154,
+  "tsukau": [
+   "FSIZIDCS"
+  ]
+ },
+ "FSIZIBD2": {
+  "shurui": "画面定義体",
+  "bytes": 11520,
+  "koumoku": 183,
+  "rw": 132,
+  "tsukau": [
+   "FSIZIDCS"
+  ]
+ },
+ "FUCHU2D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 26,
+  "rw": 10,
+  "tsukau": [
+   "FUCHU2CG"
+  ]
+ },
+ "FUCHU3D1": {
+  "shurui": "画面定義体",
+  "bytes": 3072,
+  "koumoku": 33,
+  "rw": 14,
+  "tsukau": [
+   "FUCHU3CF"
+  ]
+ },
+ "FUCHU4D1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 29,
+  "rw": 13,
+  "tsukau": [
+   "FUCHU4CF"
+  ]
+ },
+ "FUJIMD01": {
+  "shurui": "画面定義体",
+  "bytes": 1792,
+  "koumoku": 14,
+  "rw": 6,
+  "tsukau": [
+   "FUJISX1S"
+  ]
+ },
+ "GAIHI1D1": {
+  "shurui": "画面定義体",
+  "bytes": 8704,
+  "koumoku": 125,
+  "rw": 80,
+  "tsukau": [
+   "GAIHI1CS",
+   "GAIHIACS"
+  ]
+ },
+ "GAIHI2D1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 28,
+  "rw": 11,
+  "tsukau": [
+   "GAIHI2CP"
+  ]
+ },
+ "GAIHI3D1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 28,
+  "rw": 11,
+  "tsukau": [
+   "GAIHI3CF"
+  ]
+ },
+ "GAIHIND1": {
+  "shurui": "画面定義体",
+  "bytes": 10496,
+  "koumoku": 163,
+  "rw": 55,
+  "tsukau": [
+   "GAIHI1CG"
+  ]
+ },
+ "GENK11D1": {
+  "shurui": "画面定義体",
+  "bytes": 12544,
+  "koumoku": 204,
+  "rw": 96,
+  "tsukau": [
+   "GENK11CS",
+   "GENK13CS",
+   "GENK14CS",
+   "GENK19CS",
+   "GENK21CS"
+  ]
+ },
+ "GENK1ND1": {
+  "shurui": "画面定義体",
+  "bytes": 12544,
+  "koumoku": 198,
+  "rw": 96,
+  "tsukau": [
+   "GENKA5CS"
+  ]
+ },
+ "GENKE1D1": {
+  "shurui": "画面定義体",
+  "bytes": 5888,
+  "koumoku": 82,
+  "rw": 49,
+  "tsukau": [
+   "GENKE1CG"
+  ]
+ },
+ "GMTOIMD8": {
+  "shurui": "画面定義体",
+  "bytes": 15104,
+  "koumoku": 273,
+  "rw": 225,
+  "tsukau": [
+   "GENK19CS"
+  ]
+ },
+ "HANKEIM1": {
+  "shurui": "画面定義体",
+  "bytes": 16128,
+  "koumoku": 211,
+  "rw": 171,
+  "tsukau": [
+   "GENMAS1S"
+  ]
+ },
+ "HANKEIMA": {
+  "shurui": "画面定義体",
+  "bytes": 16128,
+  "koumoku": 211,
+  "rw": 171,
+  "tsukau": [
+   "GENKMSBS"
+  ]
+ },
+ "HENREND3": {
+  "shurui": "画面定義体",
+  "bytes": 11264,
+  "koumoku": 200,
+  "rw": 101,
+  "tsukau": [
+   "RENRK2CG"
+  ]
+ },
+ "HENRENDB": {
+  "shurui": "画面定義体",
+  "bytes": 14336,
+  "koumoku": 228,
+  "rw": 155,
+  "tsukau": [
+   "RENRK2CG"
+  ]
+ },
+ "HENRENDN": {
+  "shurui": "画面定義体",
+  "bytes": 8448,
+  "koumoku": 142,
+  "rw": 45,
+  "tsukau": [
+   "RENRK2CG"
+  ]
+ },
+ "HINJUSY1": {
+  "shurui": "画面定義体",
+  "bytes": 4096,
+  "koumoku": 59,
+  "rw": 16,
+  "tsukau": [
+   "JYUSY11S"
+  ]
+ },
+ "HIZIMD01": {
+  "shurui": "画面定義体",
+  "bytes": 2304,
+  "koumoku": 18,
+  "rw": 8,
+  "tsukau": [
+   "HOZIM01S"
+  ]
+ },
+ "HKANMD01": {
+  "shurui": "画面定義体",
+  "bytes": 1792,
+  "koumoku": 13,
+  "rw": 5,
+  "tsukau": [
+   "HKANF01S"
+  ]
+ },
+ "HKGENND1": {
+  "shurui": "画面定義体",
+  "bytes": 6400,
+  "koumoku": 94,
+  "rw": 42,
+  "tsukau": [
+   "HKGENNCF"
+  ]
+ },
+ "HOJYO1D1": {
+  "shurui": "画面定義体",
+  "bytes": 3584,
+  "koumoku": 43,
+  "rw": 20,
+  "tsukau": [
+   "HOJYO1CF"
+  ]
+ },
+ "HYOKABD1": {
+  "shurui": "画面定義体",
+  "bytes": 5376,
+  "koumoku": 100,
+  "rw": 16,
+  "tsukau": [
+   "HYOKABCG"
+  ]
+ },
+ "JISEKAD1": {
+  "shurui": "画面定義体",
+  "bytes": 3840,
+  "koumoku": 45,
+  "rw": 14,
+  "tsukau": [
+   "JISEKACP"
+  ]
+ },
+ "JKAKU1D1": {
+  "shurui": "画面定義体",
+  "bytes": 2304,
+  "koumoku": 25,
+  "rw": 8,
+  "tsukau": [
+   "JKAKU1CG",
+   "JKAKU2CG"
+  ]
+ },
+ "JRUI03D1": {
+  "shurui": "画面定義体",
+  "bytes": 3072,
+  "koumoku": 34,
+  "rw": 11,
+  "tsukau": [
+   "JRUI03CK"
+  ]
+ },
+ "JYUSYMD1": {
+  "shurui": "画面定義体",
+  "bytes": 17920,
+  "koumoku": 288,
+  "rw": 182,
+  "tsukau": [
+   "JYUSY01S"
+  ]
+ },
+ "JYUSYMDA": {
+  "shurui": "画面定義体",
+  "bytes": 14592,
+  "koumoku": 268,
+  "rw": 154,
+  "tsukau": [
+   "JYUSY10S"
+  ]
+ },
+ "JYUSYMDN": {
+  "shurui": "画面定義体",
+  "bytes": 17408,
+  "koumoku": 276,
+  "rw": 171,
+  "tsukau": [
+   "NPJYU5CS"
+  ]
+ },
+ "JYUSYMDX": {
+  "shurui": "画面定義体",
+  "bytes": 17408,
+  "koumoku": 276,
+  "rw": 171,
+  "tsukau": [
+   "GENK11CS",
+   "GENK13CS",
+   "GENK14CS",
+   "GENK19CS",
+   "GENKA1CS",
+   "GENKA5CS",
+   "GMTOIT8S",
+   "NPJYU4CS"
+  ]
+ },
+ "KANGENM1": {
+  "shurui": "画面定義体",
+  "bytes": 1792,
+  "koumoku": 14,
+  "rw": 5,
+  "tsukau": [
+   "GENKA4CP"
+  ]
+ },
+ "KARIJUD1": {
+  "shurui": "画面定義体",
+  "bytes": 12288,
+  "koumoku": 223,
+  "rw": 83,
+  "tsukau": [
+   "KRCH02CP"
+  ]
+ },
+ "KENMITM2": {
+  "shurui": "画面定義体",
+  "bytes": 16128,
+  "koumoku": 309,
+  "rw": 193,
+  "tsukau": [
+   "GENK19CS"
+  ]
+ },
+ "KENTOU22": {
+  "shurui": "画面定義体",
+  "bytes": 12288,
+  "koumoku": 197,
+  "rw": 90,
+  "tsukau": [
+   "GMTOIT8S"
+  ]
+ },
+ "KOGYO1D1": {
+  "shurui": "画面定義体",
+  "bytes": 3328,
+  "koumoku": 41,
+  "rw": 14,
+  "tsukau": [
+   "KOGYO1CF"
+  ]
+ },
+ "KYAHN2D1": {
+  "shurui": "画面定義体",
+  "bytes": 9728,
+  "koumoku": 169,
+  "rw": 62,
+  "tsukau": [
+   "KYAHN2CG"
+  ]
+ },
+ "KYAHN6D1": {
+  "shurui": "画面定義体",
+  "bytes": 8192,
+  "koumoku": 133,
+  "rw": 52,
+  "tsukau": [
+   "KYAHN6CG"
+  ]
+ },
+ "KYAHN7D1": {
+  "shurui": "画面定義体",
+  "bytes": 3072,
+  "koumoku": 36,
+  "rw": 14,
+  "tsukau": [
+   "KYAHN7CP"
+  ]
+ },
+ "KYAHN8D1": {
+  "shurui": "画面定義体",
+  "bytes": 5376,
+  "koumoku": 87,
+  "rw": 30,
+  "tsukau": [
+   "KYAHN8CP"
+  ]
+ },
+ "KYAHNBD1": {
+  "shurui": "画面定義体",
+  "bytes": 14848,
+  "koumoku": 237,
+  "rw": 185,
+  "tsukau": [
+   "KYAHNBCS"
+  ]
+ },
+ "KYAHNBD2": {
+  "shurui": "画面定義体",
+  "bytes": 7936,
+  "koumoku": 137,
+  "rw": 53,
+  "tsukau": [
+   "KYAHNBCS",
+   "KYAHNCCS"
+  ]
+ },
+ "KYAHNCD1": {
+  "shurui": "画面定義体",
+  "bytes": 17152,
+  "koumoku": 288,
+  "rw": 211,
+  "tsukau": [
+   "KYAHNCCS"
+  ]
+ },
+ "KYAHNCD3": {
+  "shurui": "画面定義体",
+  "bytes": 8192,
+  "koumoku": 132,
+  "rw": 51,
+  "tsukau": [
+   "KYAHNCCS"
+  ]
+ },
+ "KYAHNND1": {
+  "shurui": "画面定義体",
+  "bytes": 5888,
+  "koumoku": 92,
+  "rw": 32,
+  "tsukau": [
+   "KYAHNNCP"
+  ]
+ },
+ "KYAKU4D1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 29,
+  "rw": 14,
+  "tsukau": [
+   "KYAHN5CG"
+  ]
+ },
+ "KYAKUAD1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 28,
+  "rw": 11,
+  "tsukau": [
+   "KYAHNACP"
+  ]
+ },
+ "KYAKUHD1": {
+  "shurui": "画面定義体",
+  "bytes": 11264,
+  "koumoku": 202,
+  "rw": 75,
+  "tsukau": [
+   "KYAHN3CG"
+  ]
+ },
+ "M15010D1": {
+  "shurui": "画面定義体",
+  "bytes": 3584,
+  "koumoku": 40,
+  "rw": 12,
+  "tsukau": [
+   "M15010PO"
+  ]
+ },
+ "M15020D1": {
+  "shurui": "画面定義体",
+  "bytes": 3328,
+  "koumoku": 38,
+  "rw": 12,
+  "tsukau": [
+   "M15020PO"
+  ]
+ },
+ "M15030D1": {
+  "shurui": "画面定義体",
+  "bytes": 3328,
+  "koumoku": 39,
+  "rw": 11,
+  "tsukau": [
+   "M15030PO"
+  ]
+ },
+ "M30110D1": {
+  "shurui": "画面定義体",
+  "bytes": 14336,
+  "koumoku": 359,
+  "rw": 0,
+  "tsukau": [
+   "M30110PO"
+  ]
+ },
+ "M30210D1": {
+  "shurui": "画面定義体",
+  "bytes": 9728,
+  "koumoku": 225,
+  "rw": 0,
+  "tsukau": [
+   "M30210PO"
+  ]
+ },
+ "M30220D1": {
+  "shurui": "画面定義体",
+  "bytes": 6400,
+  "koumoku": 122,
+  "rw": 0,
+  "tsukau": [
+   "M30220PO"
+  ]
+ },
+ "M30310D1": {
+  "shurui": "画面定義体",
+  "bytes": 8192,
+  "koumoku": 187,
+  "rw": 0,
+  "tsukau": [
+   "M30310PO"
+  ]
+ },
+ "M30410D1": {
+  "shurui": "画面定義体",
+  "bytes": 7424,
+  "koumoku": 160,
+  "rw": 1,
+  "tsukau": [
+   "M30410PO"
+  ]
+ },
+ "M30420D1": {
+  "shurui": "画面定義体",
+  "bytes": 7680,
+  "koumoku": 145,
+  "rw": 1,
+  "tsukau": [
+   "M30420PO"
+  ]
+ },
+ "M30510D1": {
+  "shurui": "画面定義体",
+  "bytes": 11520,
+  "koumoku": 203,
+  "rw": 0,
+  "tsukau": [
+   "M30510PO"
+  ]
+ },
+ "M30510D2": {
+  "shurui": "画面定義体",
+  "bytes": 6656,
+  "koumoku": 135,
+  "rw": 0,
+  "tsukau": [
+   "M30510PO"
+  ]
+ },
+ "M3051ND1": {
+  "shurui": "画面定義体",
+  "bytes": 11776,
+  "koumoku": 204,
+  "rw": 0,
+  "tsukau": [
+   "M30510PN"
+  ]
+ },
+ "M3051ND2": {
+  "shurui": "画面定義体",
+  "bytes": 6912,
+  "koumoku": 136,
+  "rw": 0,
+  "tsukau": [
+   "M30510PN"
+  ]
+ },
+ "M38200D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 24,
+  "rw": 7,
+  "tsukau": [
+   "M38200PO"
+  ]
+ },
+ "MATUBID1": {
+  "shurui": "画面定義体",
+  "bytes": 3840,
+  "koumoku": 47,
+  "rw": 16,
+  "tsukau": [
+   "MATUBICG"
+  ]
+ },
+ "MISUK1D1": {
+  "shurui": "画面定義体",
+  "bytes": 6400,
+  "koumoku": 104,
+  "rw": 27,
+  "tsukau": [
+   "MISUK1CG"
+  ]
+ },
+ "MISUK2D1": {
+  "shurui": "画面定義体",
+  "bytes": 3840,
+  "koumoku": 46,
+  "rw": 16,
+  "tsukau": [
+   "MISUK2CP"
+  ]
+ },
+ "MITUMED3": {
+  "shurui": "画面定義体",
+  "bytes": 5888,
+  "koumoku": 87,
+  "rw": 23,
+  "tsukau": [
+   "MITU010S"
+  ]
+ },
+ "MITUMED6": {
+  "shurui": "画面定義体",
+  "bytes": 10496,
+  "koumoku": 195,
+  "rw": 143,
+  "tsukau": [
+   "MJYO210S"
+  ]
+ },
+ "MJS050D1": {
+  "shurui": "画面定義体",
+  "bytes": 7168,
+  "koumoku": 124,
+  "rw": 29,
+  "tsukau": [
+   "MJS050CG"
+  ]
+ },
+ "MJS080D1": {
+  "shurui": "画面定義体",
+  "bytes": 11520,
+  "koumoku": 222,
+  "rw": 147,
+  "tsukau": []
+ },
+ "MJS080D2": {
+  "shurui": "画面定義体",
+  "bytes": 10240,
+  "koumoku": 224,
+  "rw": 47,
+  "tsukau": []
+ },
+ "MJS090D1": {
+  "shurui": "画面定義体",
+  "bytes": 7168,
+  "koumoku": 125,
+  "rw": 30,
+  "tsukau": []
+ },
+ "MJS100D1": {
+  "shurui": "画面定義体",
+  "bytes": 7168,
+  "koumoku": 125,
+  "rw": 30,
+  "tsukau": []
+ },
+ "MTSYO1D2": {
+  "shurui": "画面定義体",
+  "bytes": 13568,
+  "koumoku": 205,
+  "rw": 140,
+  "tsukau": [
+   "MTSYO2CS"
+  ]
+ },
+ "MTSYO3D1": {
+  "shurui": "画面定義体",
+  "bytes": 13568,
+  "koumoku": 208,
+  "rw": 139,
+  "tsukau": [
+   "MTSYO3CS"
+  ]
+ },
+ "MTSYO4D1": {
+  "shurui": "画面定義体",
+  "bytes": 13568,
+  "koumoku": 210,
+  "rw": 140,
+  "tsukau": [
+   "MTSYO4CS"
+  ]
+ },
+ "NGENKSD1": {
+  "shurui": "画面定義体",
+  "bytes": 12800,
+  "koumoku": 259,
+  "rw": 77,
+  "tsukau": [
+   "GENK11CS",
+   "GENK13CS",
+   "GENK14CS",
+   "GENKA1CS",
+   "GENKA5CS"
+  ]
+ },
+ "NGENKSD5": {
+  "shurui": "画面定義体",
+  "bytes": 12800,
+  "koumoku": 259,
+  "rw": 77,
+  "tsukau": [
+   "NPJYU5CS"
+  ]
+ },
+ "NGENKSD6": {
+  "shurui": "画面定義体",
+  "bytes": 12288,
+  "koumoku": 197,
+  "rw": 90,
+  "tsukau": [
+   "NPJYU5CS"
+  ]
+ },
+ "NGENKSD8": {
+  "shurui": "画面定義体",
+  "bytes": 12288,
+  "koumoku": 198,
+  "rw": 90,
+  "tsukau": [
+   "GENK19CS"
+  ]
+ },
+ "NIPSY2D1": {
+  "shurui": "画面定義体",
+  "bytes": 7168,
+  "koumoku": 110,
+  "rw": 57,
+  "tsukau": [
+   "NIPSY2CS"
+  ]
+ },
+ "NIPSY2D2": {
+  "shurui": "画面定義体",
+  "bytes": 10752,
+  "koumoku": 180,
+  "rw": 96,
+  "tsukau": [
+   "NIPSY2CS"
+  ]
+ },
+ "NIPSY2D3": {
+  "shurui": "画面定義体",
+  "bytes": 8192,
+  "koumoku": 119,
+  "rw": 69,
+  "tsukau": [
+   "NIPSY2CS"
+  ]
+ },
+ "NPJUMED1": {
+  "shurui": "画面定義体",
+  "bytes": 17664,
+  "koumoku": 268,
+  "rw": 200,
+  "tsukau": [
+   "NPJYU4CS"
+  ]
+ },
+ "NPJUMEDN": {
+  "shurui": "画面定義体",
+  "bytes": 17920,
+  "koumoku": 270,
+  "rw": 200,
+  "tsukau": [
+   "NPJYU5CS"
+  ]
+ },
+ "NPJYU1D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 21,
+  "rw": 8,
+  "tsukau": [
+   "NPJYU1CG"
+  ]
+ },
+ "NPJYU4D1": {
+  "shurui": "画面定義体",
+  "bytes": 12288,
+  "koumoku": 247,
+  "rw": 169,
+  "tsukau": [
+   "NPJYU4CS",
+   "NPJYU5CS"
+  ]
+ },
+ "NPKETEMD": {
+  "shurui": "画面定義体",
+  "bytes": 11008,
+  "koumoku": 188,
+  "rw": 102,
+  "tsukau": [
+   "NPJYU5CS"
+  ]
+ },
+ "NPURMED1": {
+  "shurui": "画面定義体",
+  "bytes": 13824,
+  "koumoku": 229,
+  "rw": 162,
+  "tsukau": [
+   "NPJYU4CS"
+  ]
+ },
+ "NPURMEDM": {
+  "shurui": "画面定義体",
+  "bytes": 17152,
+  "koumoku": 294,
+  "rw": 208,
+  "tsukau": [
+   "NPJYU5CS"
+  ]
+ },
+ "NPZUMED1": {
+  "shurui": "画面定義体",
+  "bytes": 13824,
+  "koumoku": 229,
+  "rw": 162,
+  "tsukau": [
+   "NPJYU4CS"
+  ]
+ },
+ "NPZUMEDM": {
+  "shurui": "画面定義体",
+  "bytes": 18176,
+  "koumoku": 294,
+  "rw": 208,
+  "tsukau": [
+   "NPJYU5CS"
+  ]
+ },
+ "NYAMA1D1": {
+  "shurui": "画面定義体",
+  "bytes": 3328,
+  "koumoku": 36,
+  "rw": 13,
+  "tsukau": [
+   "NYAMA1CG"
+  ]
+ },
+ "RENRKAD1": {
+  "shurui": "画面定義体",
+  "bytes": 3840,
+  "koumoku": 60,
+  "rw": 18,
+  "tsukau": [
+   "RENRKACP"
+  ]
+ },
+ "RIDOURD1": {
+  "shurui": "画面定義体",
+  "bytes": 3072,
+  "koumoku": 32,
+  "rw": 13,
+  "tsukau": [
+   "RIDOURCK"
+  ]
+ },
+ "SAKUZ1DA": {
+  "shurui": "画面定義体",
+  "bytes": 14080,
+  "koumoku": 226,
+  "rw": 142,
+  "tsukau": [
+   "SAKUZCCG"
+  ]
+ },
+ "SAKUZ2D1": {
+  "shurui": "画面定義体",
+  "bytes": 3328,
+  "koumoku": 40,
+  "rw": 14,
+  "tsukau": [
+   "SAKUZ2CG"
+  ]
+ },
+ "SAKUZ4DA": {
+  "shurui": "画面定義体",
+  "bytes": 14080,
+  "koumoku": 238,
+  "rw": 189,
+  "tsukau": [
+   "SAKUZ4CS"
+  ]
+ },
+ "SAKZU1D1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 30,
+  "rw": 11,
+  "tsukau": [
+   "SAKZUACF"
+  ]
+ },
+ "SAKZU2D1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 29,
+  "rw": 11,
+  "tsukau": [
+   "SAKZU2CF"
+  ]
+ },
+ "SEIMED01": {
+  "shurui": "画面定義体",
+  "bytes": 16640,
+  "koumoku": 377,
+  "rw": 224,
+  "tsukau": [
+   "SEIBAN1S"
+  ]
+ },
+ "SEISN1D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 27,
+  "rw": 10,
+  "tsukau": [
+   "SEISN1CG"
+  ]
+ },
+ "SEJYO1D1": {
+  "shurui": "画面定義体",
+  "bytes": 7168,
+  "koumoku": 99,
+  "rw": 36,
+  "tsukau": [
+   "SEJYO2CP"
+  ]
+ },
+ "SEKJT1D1": {
+  "shurui": "画面定義体",
+  "bytes": 3072,
+  "koumoku": 33,
+  "rw": 11,
+  "tsukau": [
+   "SEKJT1CF",
+   "SEKJTACF"
+  ]
+ },
+ "SETKE1D1": {
+  "shurui": "画面定義体",
+  "bytes": 3840,
+  "koumoku": 46,
+  "rw": 21,
+  "tsukau": [
+   "SETKE1CG"
+  ]
+ },
+ "SGENKMD2": {
+  "shurui": "画面定義体",
+  "bytes": 12288,
+  "koumoku": 223,
+  "rw": 74,
+  "tsukau": [
+   "GENMAS2S"
+  ]
+ },
+ "SGENKMDA": {
+  "shurui": "画面定義体",
+  "bytes": 7424,
+  "koumoku": 136,
+  "rw": 38,
+  "tsukau": [
+   "GENKMSAS"
+  ]
+ },
+ "SGENKSD1": {
+  "shurui": "画面定義体",
+  "bytes": 5120,
+  "koumoku": 85,
+  "rw": 26,
+  "tsukau": [
+   "SGENKP1S",
+   "SGENKP2S"
+  ]
+ },
+ "SGENKSD2": {
+  "shurui": "画面定義体",
+  "bytes": 12288,
+  "koumoku": 216,
+  "rw": 81,
+  "tsukau": [
+   "SGENKS1S"
+  ]
+ },
+ "SGENKSDA": {
+  "shurui": "画面定義体",
+  "bytes": 5120,
+  "koumoku": 85,
+  "rw": 26,
+  "tsukau": [
+   "SGENKPAS"
+  ]
+ },
+ "SGENKSDB": {
+  "shurui": "画面定義体",
+  "bytes": 15104,
+  "koumoku": 276,
+  "rw": 107,
+  "tsukau": [
+   "SGENKSAS",
+   "SGENKSBS"
+  ]
+ },
+ "SGENMDT2": {
+  "shurui": "画面定義体",
+  "bytes": 13568,
+  "koumoku": 227,
+  "rw": 114,
+  "tsukau": [
+   "GMTOIT8S"
+  ]
+ },
+ "SHANDND1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 28,
+  "rw": 5,
+  "tsukau": [
+   "SHANDN1S"
+  ]
+ },
+ "SHIMEDXN": {
+  "shurui": "画面定義体",
+  "bytes": 21248,
+  "koumoku": 313,
+  "rw": 249,
+  "tsukau": [
+   "NPJYU5CS"
+  ]
+ },
+ "SHIMEDXX": {
+  "shurui": "画面定義体",
+  "bytes": 21248,
+  "koumoku": 315,
+  "rw": 249,
+  "tsukau": [
+   "GENK11CS",
+   "GENK13CS",
+   "GENK14CS",
+   "GENK19CS",
+   "GENKA1CS",
+   "GENKA5CS",
+   "GMTOIT8S",
+   "SGENKS1S",
+   "SGENKSAS",
+   "SGENKSBS"
+  ]
+ },
+ "SHISY1D1": {
+  "shurui": "画面定義体",
+  "bytes": 19456,
+  "koumoku": 285,
+  "rw": 217,
+  "tsukau": [
+   "SHISY1CS"
+  ]
+ },
+ "SHIZI1D1": {
+  "shurui": "画面定義体",
+  "bytes": 4352,
+  "koumoku": 55,
+  "rw": 16,
+  "tsukau": [
+   "SHIZI1CM"
+  ]
+ },
+ "SHIZIMD4": {
+  "shurui": "画面定義体",
+  "bytes": 11776,
+  "koumoku": 225,
+  "rw": 124,
+  "tsukau": [
+   "MISUK1CS"
+  ]
+ },
+ "SHIZIMD9": {
+  "shurui": "画面定義体",
+  "bytes": 11008,
+  "koumoku": 212,
+  "rw": 0,
+  "tsukau": [
+   "F10660PO"
+  ]
+ },
+ "SIZAIPD1": {
+  "shurui": "画面定義体",
+  "bytes": 9472,
+  "koumoku": 147,
+  "rw": 63,
+  "tsukau": [
+   "SIZAI05S"
+  ]
+ },
+ "SJUMEDT2": {
+  "shurui": "画面定義体",
+  "bytes": 17920,
+  "koumoku": 271,
+  "rw": 200,
+  "tsukau": [
+   "GENK11CS",
+   "GENK13CS",
+   "GENK14CS",
+   "GENK19CS",
+   "GENKA1CS",
+   "GENKA5CS",
+   "GMTOIT8S"
+  ]
+ },
+ "SOKUSIND": {
+  "shurui": "画面定義体",
+  "bytes": 9984,
+  "koumoku": 169,
+  "rw": 95,
+  "tsukau": [
+   "SOKUSN1S",
+   "SOKUSN2S"
+  ]
+ },
+ "SYBKNXD1": {
+  "shurui": "画面定義体",
+  "bytes": 13824,
+  "koumoku": 224,
+  "rw": 110,
+  "tsukau": [
+   "GENKA1CS"
+  ]
+ },
+ "SYHMED01": {
+  "shurui": "画面定義体",
+  "bytes": 4352,
+  "koumoku": 70,
+  "rw": 17,
+  "tsukau": []
+ },
+ "SYMED001": {
+  "shurui": "画面定義体",
+  "bytes": 9216,
+  "koumoku": 178,
+  "rw": 109,
+  "tsukau": []
+ },
+ "SYMED002": {
+  "shurui": "画面定義体",
+  "bytes": 8192,
+  "koumoku": 159,
+  "rw": 92,
+  "tsukau": []
+ },
+ "SYMED003": {
+  "shurui": "画面定義体",
+  "bytes": 9728,
+  "koumoku": 175,
+  "rw": 143,
+  "tsukau": []
+ },
+ "SYMED004": {
+  "shurui": "画面定義体",
+  "bytes": 8704,
+  "koumoku": 153,
+  "rw": 123,
+  "tsukau": []
+ },
+ "SYMED005": {
+  "shurui": "画面定義体",
+  "bytes": 9472,
+  "koumoku": 170,
+  "rw": 137,
+  "tsukau": []
+ },
+ "SYMED006": {
+  "shurui": "画面定義体",
+  "bytes": 8448,
+  "koumoku": 149,
+  "rw": 118,
+  "tsukau": []
+ },
+ "SYUSK2D1": {
+  "shurui": "画面定義体",
+  "bytes": 11008,
+  "koumoku": 176,
+  "rw": 94,
+  "tsukau": [
+   "SYUSK2DF"
+  ]
+ },
+ "SYUSKAD1": {
+  "shurui": "画面定義体",
+  "bytes": 15872,
+  "koumoku": 311,
+  "rw": 83,
+  "tsukau": [
+   "SYUSKACM"
+  ]
+ },
+ "SYUTUZU1": {
+  "shurui": "画面定義体",
+  "bytes": 1792,
+  "koumoku": 13,
+  "rw": 6,
+  "tsukau": [
+   "SYUTZP2S"
+  ]
+ },
+ "TEGNPSY3": {
+  "shurui": "画面定義体",
+  "bytes": 8704,
+  "koumoku": 118,
+  "rw": 86,
+  "tsukau": [
+   "TEGNIP5S"
+  ]
+ },
+ "TEMOCHM2": {
+  "shurui": "画面定義体",
+  "bytes": 16384,
+  "koumoku": 241,
+  "rw": 184,
+  "tsukau": [
+   "TEMOCHBS"
+  ]
+ },
+ "TKAKUCD1": {
+  "shurui": "画面定義体",
+  "bytes": 7680,
+  "koumoku": 153,
+  "rw": 37,
+  "tsukau": [
+   "TKAKUCCG"
+  ]
+ },
+ "TKANRYD1": {
+  "shurui": "画面定義体",
+  "bytes": 2048,
+  "koumoku": 15,
+  "rw": 6,
+  "tsukau": [
+   "TKANRY1S"
+  ]
+ },
+ "TREN11D1": {
+  "shurui": "画面定義体",
+  "bytes": 25344,
+  "koumoku": 379,
+  "rw": 220,
+  "tsukau": [
+   "TREN11CP"
+  ]
+ },
+ "TRMASMD1": {
+  "shurui": "画面定義体",
+  "bytes": 7168,
+  "koumoku": 104,
+  "rw": 31,
+  "tsukau": [
+   "TRMAS01S"
+  ]
+ },
+ "UKAKU1D2": {
+  "shurui": "画面定義体",
+  "bytes": 3584,
+  "koumoku": 41,
+  "rw": 16,
+  "tsukau": [
+   "UKAKU2CG"
+  ]
+ },
+ "UKAKU1DA": {
+  "shurui": "画面定義体",
+  "bytes": 5632,
+  "koumoku": 83,
+  "rw": 24,
+  "tsukau": [
+   "UKAKU1CG"
+  ]
+ },
+ "UNCH02D1": {
+  "shurui": "画面定義体",
+  "bytes": 2560,
+  "koumoku": 19,
+  "rw": 8,
+  "tsukau": [
+   "UNCH02CM"
+  ]
+ },
+ "UNCHN1D1": {
+  "shurui": "画面定義体",
+  "bytes": 3584,
+  "koumoku": 54,
+  "rw": 13,
+  "tsukau": [
+   "UNCHN1CM"
+  ]
+ },
+ "UNCHN5D1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 28,
+  "rw": 11,
+  "tsukau": [
+   "UNCHN5CP"
+  ]
+ },
+ "UNCHN6D1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 28,
+  "rw": 11,
+  "tsukau": [
+   "UNCHN6CP",
+   "UNCHN7CP",
+   "UNCHN8CP"
+  ]
+ },
+ "UNCHN8D1": {
+  "shurui": "画面定義体",
+  "bytes": 8704,
+  "koumoku": 130,
+  "rw": 88,
+  "tsukau": [
+   "UNCHN8CG"
+  ]
+ },
+ "UNCHN9D1": {
+  "shurui": "画面定義体",
+  "bytes": 12800,
+  "koumoku": 185,
+  "rw": 145,
+  "tsukau": [
+   "UNCHN9CG"
+  ]
+ },
+ "UNCHNBD1": {
+  "shurui": "画面定義体",
+  "bytes": 15104,
+  "koumoku": 237,
+  "rw": 159,
+  "tsukau": [
+   "UNCHNBCS"
+  ]
+ },
+ "UNCHNBD2": {
+  "shurui": "画面定義体",
+  "bytes": 5632,
+  "koumoku": 88,
+  "rw": 25,
+  "tsukau": [
+   "UNCHNBCS"
+  ]
+ },
+ "UNCHNFD1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 28,
+  "rw": 11,
+  "tsukau": [
+   "UNCHNFCP"
+  ]
+ },
+ "UNCHNGD1": {
+  "shurui": "画面定義体",
+  "bytes": 2816,
+  "koumoku": 29,
+  "rw": 10,
+  "tsukau": [
+   "UNCHNGCG"
+  ]
+ },
+ "URIPR5D1": {
+  "shurui": "画面定義体",
+  "bytes": 8192,
+  "koumoku": 157,
+  "rw": 39,
+  "tsukau": [
+   "URIPR05S"
+  ]
+ },
+ "URISO2DX": {
+  "shurui": "画面定義体",
+  "bytes": 6912,
+  "koumoku": 109,
+  "rw": 43,
+  "tsukau": [
+   "URISO2CP"
+  ]
+ },
+ "URSYO1D1": {
+  "shurui": "画面定義体",
+  "bytes": 17408,
+  "koumoku": 272,
+  "rw": 172,
+  "tsukau": [
+   "URSYOYCS"
+  ]
+ },
+ "URSYOYD1": {
+  "shurui": "画面定義体",
+  "bytes": 13824,
+  "koumoku": 265,
+  "rw": 9,
+  "tsukau": [
+   "URSYOYCS"
+  ]
+ },
+ "URSYOYD2": {
+  "shurui": "画面定義体",
+  "bytes": 11264,
+  "koumoku": 279,
+  "rw": 0,
+  "tsukau": [
+   "URSYOYCS"
+  ]
+ },
+ "YAMAMD01": {
+  "shurui": "画面定義体",
+  "bytes": 17408,
+  "koumoku": 293,
+  "rw": 179,
+  "tsukau": [
+   "YAMASY1S"
+  ]
+ },
+ "YAMAMD03": {
+  "shurui": "画面定義体",
+  "bytes": 17664,
+  "koumoku": 291,
+  "rw": 181,
+  "tsukau": [
+   "YAMASY3S"
+  ]
+ },
+ "YAMAMED1": {
+  "shurui": "画面定義体",
+  "bytes": 5632,
+  "koumoku": 104,
+  "rw": 41,
+  "tsukau": []
+ },
+ "YSMNT1D1": {
+  "shurui": "画面定義体",
+  "bytes": 14592,
+  "koumoku": 206,
+  "rw": 122,
+  "tsukau": [
+   "YSMNT1CG"
+  ]
+ },
+ "ZOGENM03": {
+  "shurui": "画面定義体",
+  "bytes": 14080,
+  "koumoku": 274,
+  "rw": 141,
+  "tsukau": [
+   "ZOGEN03S"
+  ]
+ }
+}

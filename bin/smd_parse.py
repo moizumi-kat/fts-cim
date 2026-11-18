@@ -25,12 +25,21 @@ import sys, pathlib, struct
 def yomu(path):
     b = pathlib.Path(path).read_bytes()
     namae = b[:8].decode('cp500').strip()
-    # 名前表の直前には EBCDIC の 'C000'（C3 F0 F0 F0）が置かれている。
-    # 表の開始位置は画面ごとに違うので、この目印から求める。
-    anchor = b.find(b'\xC3\xF0\xF0\xF0', 0x100, 0x200)
-    if anchor < 0:
-        raise ValueError('名前表の目印 C000 が見つかりません: %s' % path)
-    i = anchor + 4
+    # ── 名前表の位置（2026-11-18 に直した）────────────────────
+    #   はじめは EBCDIC の 'C000'（C3 F0 F0 F0）を目印に探していたが、
+    #   **帳票定義体には この目印が無い**（画面定義体 220本は読めたが
+    #   帳票定義体 201本が全部読めなかった）。
+    #   よく見ると、画面も帳票も **ヘッダの 0x00A0 に名前表の先頭位置**が
+    #   4バイトで入っている。推測ではなく構造から取るほうが確かなので、
+    #   こちらを正とする。
+    #     画面 A10040D1 … 0x00A0 = 0x0000012A（C000 の目印から求めた値と一致）
+    #     帳票 A11110P1 … 0x00A0 = 0x00000100
+    #   帳票の先頭8バイトは名前ではなく EBCDIC の空白なので、名前は空になる。
+    if len(b) < 0xA4:
+        raise ValueError('小さすぎて定義体に見えません: %s' % path)
+    i = struct.unpack('>I', b[0xA0:0xA4])[0]
+    if not (0 < i < len(b)):
+        raise ValueError('名前表の位置（0x00A0）がおかしい: %s → %d' % (path, i))
     komoku = []
     while i + 8 <= len(b):
         nm = b[i:i+6]
