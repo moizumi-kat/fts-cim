@@ -64,6 +64,7 @@ class A10040PO:
     概算新規, 概算修正 = 8, 9
     計算済, 未計算 = 1, 0
     見積, 物件 = 1, 2                     # 発番区分（406-407行）
+    製番あり, 製番なし = 1, 0             # （408-409行）
 
     # 受渡鑑処理区分（1088行）処理区 → 鑑画面処理区分
     鑑処理区分 = {新規: '1', 修正: '2', 変更: '3', 取消: '4',
@@ -99,6 +100,9 @@ class A10040PO:
         self.VLD1, self.VLD2 = vld_msg.tsukuru()
         self.作業見積ＮＯ = ''
         self.作業複写元見積ＮＯ = ''
+        self.作業製番ステータス = 0        # 製番あり=1／なし=0（411行）
+        self.退避見積番号 = ''
+        self.項目フラグ = 0
 
     # ── 画面の項目を楽に読み書きする ───────────────
     def g(self, na):
@@ -136,7 +140,13 @@ class A10040PO:
         self.画面.seigyo_shokika()                       # 制御項目初期化Ｒ（572行）
 
         kyou = self._kyou or datetime.datetime.now()
-        # ACCEPT システム日付 FROM DATE（573行）＝ YYMMDD
+        # ACCEPT システム日付 FROM DATE（574行）＝ YYMMDD
+        #   **システム日付は画面の項目そのもの**（A10040D1 の 0行72桁）。
+        #   ACCEPT はそこへ直に入る＝画面の右上に出る日付になる。
+        #   ここを写し忘れていて、ハードコピーとの突き合わせで見つかった
+        #   （紙は 26.11.20、移植は空白だった。2026-11-20）。
+        self.gs('システム日付',
+                '%02d%02d%02d' % (kyou.year % 100, kyou.month, kyou.day))
         self.WK_NEN = kyou.year % 100
         wk_tsuki_hi = kyou.month * 100 + kyou.day
         self.WK_TIME = kyou.hour * 10000 + kyou.minute * 100 + kyou.second
@@ -264,15 +274,15 @@ class A10040PO:
             if ku == self.新規:
                 self.新規第２項目群()
             elif ku == self.修正:
-                raise 未実装('修正第２項目群', 1362)
+                self.修正第２項目群()
             elif ku == self.変更:
-                raise 未実装('変更第２項目群', 1381)
+                self.変更第２項目群()
             elif ku == self.取消:
-                raise 未実装('取消第２項目群', 1400)
+                self.取消第２項目群()
             elif ku == self.複写１:
-                raise 未実装('複写物新第２項目群', 1428)
+                self.複写物新第２項目群()
             elif ku == self.複写２:
-                raise 未実装('複写物修第２項目群', 1480)
+                self.複写物修第２項目群()
             if self.TR_CNL_FLG == 0:                       # （762行）
                 self.XMROTEND()
         elif self.DSP_FUNC == 'F005':
@@ -330,6 +340,278 @@ class A10040PO:
         self.gs('作成部所名', o['BSYNAM'])                 # （1333行）
         self.gs('担当者名', o['TANNAM'])
         self.チェックＦ出力処理Ｒ(self.g('見積なんば'))    # （1336行）
+
+    def 修正第２項目群(self):
+        """（1362行）"""
+        self.SAVE_GROUP = 'GRPA03'
+        if self.g('見積なんば').strip() == '':
+            self._あかい('見積なんば'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+        else:
+            self.AJBGFL1_CHECK_RTN()
+
+    def 変更第２項目群(self):
+        """（1381行）修正との違いは CHECK-RTN-2（外注区分も見る）"""
+        self.SAVE_GROUP = 'GRPA03'
+        if self.g('見積なんば').strip() == '':
+            self._あかい('見積なんば'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+        else:
+            self.AJBGFL1_CHECK_RTN_2()
+
+    def 取消第２項目群(self):
+        """（1400行）取消は第7項目群（確認）へ進む。製番が付いていたら消せない。"""
+        self.SAVE_GROUP = 'GRPA07'                      # （1401行）
+        self.ERR_FLG = 3                                # （1403行）
+        if self.g('見積なんば').strip() == '':
+            self._あかい('見積なんば'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+            return
+        self.受注項目存在判定()                          # （1413行）
+        if self.作業製番ステータス != self.製番なし:
+            self.ERR_FLG = 10                            # （1418行）製番あり＝消せない
+        self.AJBGFL1_CHECK_RTN()                         # （1420行）
+
+    def _複写第２項目群(self, gyo):
+        """複写物新（1428行）・複写物修（1480行）。違いは全項目群出力の有無だけ。"""
+        self.SAVE_GROUP = 'GRPA03'
+        self.担当者コード判定()
+        if self.ERR_FLG:
+            return
+        self.複写元見積判定()
+        if self.ERR_FLG:
+            return
+        self.施主大分類判定()
+        if self.ERR_FLG:
+            return
+        self.全項目群出力Ｒ()                            # （1436・1488行）
+        self.発番区分 = self.見積
+        self.見積発番処理Ｒ()
+        if self.g('見積なんば').strip() == '':           # （1439・1491行）
+            self.ERR_FLG = 7; self.SAVE_GROUP = 'GRPA02'
+            self.XMROTCNL(); self.TR_CNL_FLG = 1
+            return
+        if gyo == 1:
+            # 複写物新だけ 物件ナンバーも発番する（1447行）
+            self.発番区分 = self.物件
+            self.見積発番処理Ｒ()
+            if self.g('物件ナンバー').strip() == '':
+                self.ERR_FLG = 8; self.SAVE_GROUP = 'GRPA02'
+                self.XMROTCNL(); self.TR_CNL_FLG = 1
+                return
+        self.チェックＦ出力処理Ｒ(self.g('見積なんば'))
+        self.チェックＦ出力処理Ｒ(self.g('複写元見積ナンバ'))
+        self.作業見積ＮＯ = self.g('見積なんば')
+        self.作業複写元見積ＮＯ = self.g('複写元見積ナンバ')
+        self.バック開始処理２()
+
+    def 複写物新第２項目群(self):
+        self._複写第２項目群(1)
+
+    def 複写物修第２項目群(self):
+        self._複写第２項目群(2)
+
+    # ── 鑑ファイルの確認（1519／1570行）────────
+    def _AJBG_CHECK(self, gaikbn_mo_miru):
+        """見積なんばで鑑ファイルを引き、使えるかどうかを見る。
+           CHECK-RTN（1519行）と CHECK-RTN-2（1570行）の違いは
+           **外注区分も見るかどうか**だけ（1580行）。"""
+        f = self.ファイル['AJBGFL1']
+        st = f.yomu(self.g('見積なんば'))
+        if st == fairu.NASHI:                            # （1555行）その見積が無い
+            self._あかい('見積なんば'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+            return
+        if st != fairu.SEIJOU:
+            raise Abend('AJBGFL1', 'READ', st)
+        achk = self.ACHKFL1_READ_RTN(self.g('見積なんば'))
+        if achk != fairu.NASHI:                          # （1546行）ほかの人が使用中
+            self._あかい('見積なんば'); self.ERR_FLG = 5
+            self.SAVE_GROUP = 'GRPA02'
+            return
+        tsukaeru = (f['DELFLG'] != '1')                  # （1528行）消された見積は不可
+        if gaikbn_mo_miru:
+            tsukaeru = tsukaeru and ((f['GAIKBN'] or '').strip() == '')
+        if not tsukaeru:                                 # （1536・1588行）
+            self._あかい('見積なんば'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+            return
+        self.チェックＦ出力処理Ｒ(self.g('見積なんば'))
+        self.作業見積ＮＯ = self.g('見積なんば')
+        self.バック開始処理２()
+        self.全項目群出力Ｒ()
+
+    def AJBGFL1_CHECK_RTN(self):
+        self._AJBG_CHECK(False)
+
+    def AJBGFL1_CHECK_RTN_2(self):
+        self._AJBG_CHECK(True)
+
+    def 複写元見積判定(self):
+        """（1681行）複写元の見積が使えるかを見る。**外注区分が "1" なら不可。**"""
+        self.SAVE_GROUP = 'GRPA03'
+        f = self.ファイル['AJBGFL1']
+        st = f.yomu(self.g('複写元見積ナンバ'))
+        if st == fairu.NASHI:                            # （1710行）
+            self._あかい('複写元見積ナンバ'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+            return
+        if st != fairu.SEIJOU:
+            raise Abend('AJBGFL1', 'READ', st)
+        achk = self.ACHKFL1_READ_RTN(self.g('複写元見積ナンバ'))
+        if achk != fairu.NASHI:                          # （1702行）使用中
+            self._あかい('複写元見積ナンバ'); self.ERR_FLG = 5
+            self.SAVE_GROUP = 'GRPA02'
+            return
+        if (f['GAIKBN'] or '').strip() == '1':           # （1691行）
+            self._あかい('複写元見積ナンバ'); self.ERR_FLG = 2
+            self.SAVE_GROUP = 'GRPA02'
+
+    def 受注項目存在判定(self):
+        """（1623行）ワーク項目に製番の付いた行があるかを見る。"""
+        self.作業製番ステータス = self.製番なし
+        mituno = self.g('見積なんば')
+        self.退避見積番号 = mituno
+        f = self.ファイル['AWKKFL1']
+        if f.hajime(mituno, 0) != fairu.SEIJOU:          # START KEY >=（1627行）
+            return
+        self.項目フラグ = 0
+        while True:
+            if f.tsugi() != fairu.SEIJOU:                # AT END（3106行）
+                self.項目フラグ = 1
+                break
+            if (f['SEIBAN'] or '').strip() != '':
+                self.作業製番ステータス = self.製番あり  # （3115行）
+                break
+            self.作業製番ステータス = self.製番なし
+            if self.退避見積番号 != (f['MITUNO'] or '').strip():
+                self.項目フラグ = 1                      # （3133行）別の見積に移った
+                break
+            if int(f['MITKOB'] or 0) == 999999:          # （3126行）
+                self.項目フラグ = 1
+                break
+
+    # ── チェックＦ（4062／3814行）──────────────
+    def ACHKFL1_READ_RTN(self, mituno):
+        """（4062行）札があれば日付を書き直す。無ければ "23" のまま。"""
+        f = self.ファイル['ACHKFL1']
+        st = f.yomu(mituno)
+        if st == fairu.SEIJOU:
+            self.ACHKFL1_REWRITE_RTN()
+        elif st != fairu.NASHI:
+            raise Abend('ACHKFL1', 'READ', st)
+        return st
+
+    def ACHKFL1_REWRITE_RTN(self):
+        """（3814行）"""
+        f = self.ファイル['ACHKFL1']
+        f['UPDDAY'] = self.WK_YMD
+        f['UPDTIM'] = self.WK_TIME
+        f['WSID'] = self.端末ＩＤ
+        st = f.kakinaosu()
+        if st != fairu.SEIJOU:
+            raise Abend('ACHKFL1', 'REWRITE', st)
+        return st
+
+    # ── 鑑ファイルの中身を画面へ（3572行）──────
+    def 担当者処理Ｒ(self):
+        """（3528行）
+
+           ■ AJBG-CRTTAN は表に無い（2026-11-17 実測）
+             CRTBSY（部所コード 2桁）＋ CRTKKR（担当者係コード 2桁）をまとめた
+             **集団項目**。画面の担当者ＣＤ（4桁）と同じ作り。
+             現行 3528-3533行が
+               MOVE AJBG-CRTTAN TO 担当者ＣＤ
+               MOVE AJBG-CRTBSY TO ASOS-BSYOCD
+               MOVE AJBG-CRTKKR TO ASOS-TANCD
+             と続けて書いているのが根拠（ASUN-SUNPO と同じ形）。
+        """
+        a = self.ファイル['AJBGFL1']
+        self.gs('担当者ＣＤ', '%s%s' % ((a['CRTBSY'] or '').ljust(2),
+                                        (a['CRTKKR'] or '').ljust(2)))
+        o = self.ファイル['ASOSML1']
+        if o.yomu(a['CRTBSY'], a['CRTKKR']) != fairu.SEIJOU:
+            raise Abend('ASOSML1', 'READ', o.status)
+        self.gs('作成部所名', o['BSYNAM'])
+        self.gs('担当者名', o['TANNAM'])
+
+    def 施主大分類処理(self):
+        """（3554行）"""
+        a = self.ファイル['AJBGFL1']
+        self.gs('施主大分類ＣＤ', a['SEDICD'])
+        n = self.ファイル['ANAMML1']
+        if n.yomu('00', a['SEDICD']) != fairu.SEIJOU:
+            raise Abend('ANAMML1', 'READ', n.status)
+        self.gs('施主大分類名', n['RYAKU'])
+
+    def _namae(self, ronri, kagi, hashira, saki, nakereba=None):
+        """マスタを引いて名前を画面へ。無ければ nakereba（既定は触らない）。"""
+        f = self.ファイル[ronri]
+        st = f.yomu(*kagi)
+        if st == fairu.SEIJOU:
+            self.gs(saki, f[hashira])
+        elif st == fairu.NASHI:
+            if nakereba is not None:
+                self.gs(saki, nakereba)
+        else:
+            raise Abend(ronri, 'READ', st)
+
+    def 全項目群出力Ｒ(self):
+        """（3572行）鑑ファイルの中身を画面の全項目へ。"""
+        a = self.ファイル['AJBGFL1']
+        ku = self.数('処理区')
+        if ku not in (self.複写１, self.複写２):          # （3573行）
+            self.担当者処理Ｒ()
+            self.施主大分類処理()
+        # 変更回数（3582行）
+        if ku in (self.新規, self.複写１, self.複写２):
+            self.gs('変更回数', 0)
+        elif ku == self.変更:
+            a['UPDCNT'] = int(a['UPDCNT'] or 0) + 1       # （3588行）変更は1つ増やす
+            self.gs('変更回数', a['UPDCNT'])
+        elif ku in (self.修正, self.取消):
+            self.gs('変更回数', a['UPDCNT'])
+
+        self.gs('物件ナンバー', a['BKENNO'])
+        self.gs('件名カナ', a['KNMEIK'])
+        self.gs('件名１', a['KENME1'])
+        self.gs('件名２', a['KENME2'])
+        self.gs('件名３', a['KENME3'])
+        self.gs('価格区分', a['KAKKBN'])
+        self._namae('ANAMML1', ('02', a['KAKKBN']), 'RYAKU', '価格区分名')
+        self.gs('依頼先コード', a['IRAICD'])
+        self._namae('ATORML1', (a['IRAICD'],), 'TORNAR', '依頼先名')
+        self.gs('仕様コード', a['SIYOU1'])
+        self._namae('ASIYML1', (a['SIYOU1'],), 'SIYONA', '仕様名')
+        self.gs('仕様２コード', a['SIYOU2'])
+        self._namae('ASIYML1', (a['SIYOU2'],), 'SIYONA', '仕様名２', nakereba='')
+        self.gs('宛名１', a['ATENA1'])
+        self.gs('宛名２', a['ATENA2'])
+        self.gs('施主コード', a['SESYCD'])
+        self._namae('ATORML1', (a['SESYCD'],), 'TORNAR', '施主名', nakereba='')
+        self.gs('設計事務所コード', a['SEKECD'])
+        self._namae('ATORML1', (a['SEKECD'],), 'TORNAR', '設計事務所名', nakereba='')
+        self.gs('建設業者', a['KENGCD'])
+        self._namae('ATORML1', (a['KENGCD'],), 'TORNAR', '建設業者名', nakereba='')
+        self.gs('電気工事業者ＣＤ', a['KETDEN'])
+        self._namae('ATORML1', (a['KETDEN'],), 'TORNAR', '電気工事業者名', nakereba='')
+        self.gs('最早納期', a['FASTNK'])
+        self.gs('最終納期', a['LASTNK'])
+        self.gs('納入期日', a['NONUHI'])
+        self.gs('受渡場所', a['UKEWAB'])
+        self.gs('支払条件', a['SIHARI'])
+        self.gs('荷造及び運賃', a['NIDUUN'])
+        self.gs('見積有効期限', a['MITKGN'])
+        self.gs('御照会番号', a['SKAINO'])
+        self.gs('御照会日付', a['SKAIHI'])
+        for i, na in enumerate(('掛率配電盤', '掛率制御盤', '掛率分電盤', '掛率その他'), 1):
+            self.gs(na, a['KAKRIT_%d' % i])
+        self.gs('特記事項１', a['TOKKI1'])
+        self.gs('特記事項２', a['TOKKI2'])
+        self.gs('特記事項３', a['TOKKI3'])
+        self.gs('見積総額', a['MITGAK_1'])
+        self.gs('見積率', a['MITRIT'])
+        self.gs('差引合計金額', a['SASKIN_1'])
 
     # ── 判定（1641／1724行）────────────────────
     def 担当者コード判定(self):

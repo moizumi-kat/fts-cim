@@ -74,6 +74,12 @@ b = ['# -*- coding: utf-8 -*-',
      '   KOUMOKU の1件 = (画面名, 項目名, 行, 桁, 表示長, データ長, レコード内位置, 型, 群)',
      '     型 … "9"=数字（ZEROで消す） "X"=英数（SPACEで消す） ""=消去段落に出てこない',
      '     群 … 1-7。0＝どの消去段落にも出てこない',
+     '',
+     '   HENSYUU の1件 = 項目名: (編集, 編集2, 区切り文字, 小数桁)   ＝表示の形',
+     '     .SMD の「次の表」18バイトから取った（smd_parse.hensyuu）。',
+     '     0x04 日付／0x40 3桁カンマ／0x20 記号／0x10 符号／0x80 ゼロを空白に',
+     '     差し込まれる文字の数が 表示長－データ長 と合うことを',
+     '     画面220本・帳票201本の全45,013項目で確かめてある。',
      '"""', '',
      'GAMEN = %r' % pathlib.Path(SMD).stem,
      'KOUMOKU = [']
@@ -82,6 +88,15 @@ for k, n in zip(kom, namae):
              % (k['nm'], n, k['gyo'], k['keta'], k['naga'], k['naga2'], k['k6'],
                 kata.get(n, ''), gun.get(n, 0)))
 b.append(']')
+b.append('')
+b.append('# 表示の形（編集）。詳しくは上の説明。')
+b.append('HENSYUU = {')
+for k, n in zip(kom, namae):
+    if not k['hen'] and not (k['hen2'] & 0x04):
+        continue
+    b.append('    %-20r: (0x%02X, 0x%02X, %-4r, %d),'
+             % (n, k['hen'], k['hen2'], k['kugiri'], k['shousuu']))
+b.append('}')
 b.append('')
 b.append('# レコードの長さ（最後の項目の位置＋データ長）')
 b.append('NAGASA = %d' % (kom[-1]['k6'] + kom[-1]['naga2']))

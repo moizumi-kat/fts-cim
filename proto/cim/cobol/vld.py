@@ -49,18 +49,67 @@ class Koumoku:
     """
 
     __slots__ = ('gamen_na', 'na', 'gyo', 'keta', 'naga', 'naga2', 'ichi',
-                 'kata', 'gun', 'data', 'zokusei')
+                 'kata', 'gun', 'data', 'zokusei', 'hensyuu')
 
-    def __init__(self, t):
+    def __init__(self, t, hensyuu=None):
         (self.gamen_na, self.na, self.gyo, self.keta,
          self.naga, self.naga2, self.ichi, self.kata, self.gun) = t
         self.data = b' ' * self.naga2
         self.zokusei = dict(HATSU)
+        # 表示の形（編集）。(編集, 編集2, 区切り文字, 小数桁)。無ければ編集なし
+        self.hensyuu = hensyuu or (0, 0, '', 0)
 
     @property
     def atai(self):
         """値を文字で見る（桁は詰めたまま）。"""
         return self.data.decode('cp932', 'replace')
+
+    def hyouji(self):
+        """**画面に出る形**（編集をかけたもの）。長さは表示長。
+
+           ■ なぜ要るか（2026-11-20）
+             画面レコードが持つのは**データ長**のぶんだけで、
+             人が見る形はちがう。たとえば最終納期は 6桁 '241220' を
+             持っていて、画面には **8桁 '24.12.20'** と出る。
+             いただいた「実際の見積画面のハードコピー」がその正解。
+           ■ 形はどこから来るか
+             .SMD の編集（bin/smd_parse.hensyuu）。
+               0x04 日付（区切り文字で3つに割る）／0x40 3桁ごとのカンマ
+               0x20 記号ぶん1桁／0x10 符号ぶん1桁／0x80 ゼロなら空白
+               小数桁が1以上なら小数点が1文字入る
+             差し込む文字の数が **表示長－データ長** と合うことを、
+             画面220本・帳票201本の全45,013項目で確かめてある。
+        """
+        hen, hen2, kugiri, shou = self.hensyuu
+        moji = self.atai
+        if not hen and not (hen2 & 0x04):
+            return moji[:self.naga].ljust(self.naga)
+        suuji = ''.join(c for c in moji if c.isdigit())
+        suuji = suuji.rjust(self.naga2, '0')[-self.naga2:]
+        # 0x80 ＝ ゼロのときは空白（ハードコピーの変更回数・最早納期が空）
+        if (hen & 0x80) and suuji.strip('0') == '':
+            return ' ' * self.naga
+        if (hen & 0x04) or (hen2 & 0x04):
+            # 日付。8桁は 4-2-2（西暦）、それ以外は 2-2-2
+            k = kugiri or '.'
+            if self.naga2 >= 8:
+                d = [suuji[:-4], suuji[-4:-2], suuji[-2:]]
+            else:
+                d = [suuji[:-4], suuji[-4:-2], suuji[-2:]]
+            return k.join(d).rjust(self.naga)
+        sei = suuji[:self.naga2 - shou] if shou else suuji
+        sho = suuji[self.naga2 - shou:] if shou else ''
+        if hen & 0x80:                       # 上のゼロを空白にする
+            sei2 = sei.lstrip('0')
+            sei = sei2 if sei2 else '0'
+        if hen & 0x40:                       # 3桁ごとのカンマ
+            sei = '{:,}'.format(int(sei or 0)) if sei.isdigit() else sei
+        de = sei + (('.' + sho) if shou else '')
+        if hen & 0x20:
+            de = ' ' + de
+        if hen & 0x10:
+            de = ' ' + de
+        return de.rjust(self.naga)[-self.naga:]
 
     def kesu(self):
         """第ｎ項目群消去Ｒ の MOVE ZERO／SPACE。"""
@@ -107,7 +156,8 @@ class Gamen:
     def __init__(self, teigi, sousa=None):
         self.na = teigi.GAMEN
         self.nagasa = teigi.NAGASA
-        self.ko = [Koumoku(t) for t in teigi.KOUMOKU]
+        hen = getattr(teigi, 'HENSYUU', {})
+        self.ko = [Koumoku(t, hen.get(t[1])) for t in teigi.KOUMOKU]
         self.byna = {_na(k.na): k for k in self.ko}
         self.sousa = sousa
         self.status = SEIJOU
@@ -118,6 +168,10 @@ class Gamen:
 
     def atai(self, na):
         return self.byna[_na(na)].atai
+
+    def hyouji(self, na):
+        """画面に出る形（編集をかけたもの）。"""
+        return self.byna[_na(na)].hyouji()
 
     def ireru(self, na, v):
         self.byna[_na(na)].tsumeru(v)

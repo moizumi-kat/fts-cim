@@ -15,6 +15,19 @@
           +10: 2バイト 長さ（+8 と同じ値が入っている）
           +12: 2バイト ／ +14: 2バイト  繰返し項目のときだけ値が入る
 
+     ・**編集（表示の形）は「次の表」(+0) の指す18バイトのレコード**にある
+       （2026-11-20 実測。画面220本・帳票201本の全項目で裏を取った）
+          +8 : 編集の種類（ビット）
+                 0x04 日付（区切り文字で3つに割る）  0x40 3桁ごとのカンマ
+                 0x10 符号ぶん1桁                   0x80 ゼロを空白にする
+                 0x01 数字（編集なし）
+          +9 : 0x04 が立っていれば日付（+8 側に立っていないことがある）
+          +10: 差し込む文字（EBCDIC。日付の '.' など）
+          +11: 小数の桁数（1以上なら小数点が1文字入る）
+       検算：差し込まれる文字の数が **表示長 － データ長** と合うか。
+             画面 8,870/8,870 ・帳票 36,142/36,143 で一致した
+             （合わない1件 A11320P1 W010 は 0x20 ＝ 通貨記号ぶん1桁）。
+
    ■ 確かめかた
      桁＋長さが80桁に収まるか、プログラム側が使っている項目名と合うかで検算する。
 
@@ -64,10 +77,42 @@ def yomu(path):
             out.append({'nm': n, 'ichi': v, 'gyo': None, 'keta': None, 'naga': None})
             continue
         f = struct.unpack('>8H', b[a:a+16])
-        out.append({'nm': n, 'ichi': a, 'tsugi': f[0], 'moji': f[1],
-                    'gyo': f[2], 'keta': f[3], 'naga': f[4], 'naga2': f[5],
-                    'k6': f[6], 'k7': f[7]})
+        k = {'nm': n, 'ichi': a, 'tsugi': f[0], 'moji': f[1],
+             'gyo': f[2], 'keta': f[3], 'naga': f[4], 'naga2': f[5],
+             'k6': f[6], 'k7': f[7]}
+        k.update(hensyuu(b, f[0]))
+        out.append(k)
     return namae, out, len(b)
+
+
+def hensyuu(b, a):
+    """編集（表示の形）を「次の表」の18バイトから取り出す。"""
+    kara = {'hen': 0, 'hen2': 0, 'kugiri': '', 'shousuu': 0}
+    if not a or a + 18 > len(b):
+        return kara
+    r = b[a:a+18]
+    ku = ''
+    if r[10]:
+        try:
+            ku = bytes([r[10]]).decode('cp500')
+        except Exception:
+            ku = ''
+    return {'hen': r[8], 'hen2': r[9], 'kugiri': ku, 'shousuu': r[11]}
+
+
+def sashikomi(hen, hen2, shousuu, naga2):
+    """編集で差し込まれる文字の数。**表示長 － データ長 と一致する**（実測）。"""
+    if (hen & 0x04) or (hen2 & 0x04):
+        return 2                      # 日付は必ず3つに区切る
+    n = 1 if shousuu else 0           # 小数点
+    seisuu = naga2 - shousuu
+    if hen & 0x40:
+        n += max(0, (seisuu - 1) // 3)   # 3桁ごとのカンマ
+    if hen & 0x20:
+        n += 1                           # 通貨記号など
+    if hen & 0x10:
+        n += 1                           # 符号ぶん
+    return n
 
 
 if __name__ == '__main__':
