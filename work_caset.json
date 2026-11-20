@@ -1039,6 +1039,31 @@
    "sub": "M1_マスタ管理サブシステム",
    "path": "CASET仕様書/M1_マスタ管理サブシステム/M30610KO.pdf",
    "bytes": 571064
+  },
+  "A26100KB": {
+   "sub": "20261120_01_CASET仕様書",
+   "path": "nyuushu_20261120/ten/01_CASET仕様書/A26100KB.pdf",
+   "bytes": 242336
+  },
+  "A36100KB": {
+   "sub": "20261120_01_CASET仕様書",
+   "path": "nyuushu_20261120/ten/01_CASET仕様書/A36100KB.pdf",
+   "bytes": 346999
+  },
+  "A36110KB": {
+   "sub": "20261120_01_CASET仕様書",
+   "path": "nyuushu_20261120/ten/01_CASET仕様書/A36110KB.pdf",
+   "bytes": 398887
+  },
+  "D20710KP": {
+   "sub": "20261120_01_CASET仕様書",
+   "path": "nyuushu_20261120/ten/01_CASET仕様書/D20710KP.pdf",
+   "bytes": 444475
+  },
+  "M30611KP": {
+   "sub": "20261120_01_CASET仕様書",
+   "path": "nyuushu_20261120/ten/01_CASET仕様書/M30611KP.pdf",
+   "bytes": 653626
   }
  },
  "dps": {
@@ -1095,6 +1120,7 @@
  },
  "moto": {
   "caset": "/CIM更新/新プロジェクト/CASET仕様書.zip",
-  "dps": "/CIM更新/新プロジェクト/DPS仕様書.zip"
+  "dps": "/CIM更新/新プロジェクト/DPS仕様書.zip",
+  "caset_20261120": "/CIM更新/新プロジェクト/途中の追加資料/20261120_01_CASET仕様書.zip"
  }
 }

@@ -160,14 +160,14 @@ miru('第2群が消えている', p.g('担当者ＣＤ').strip() == '', repr(p.g
 miru('第3群も消えている', p.g('件名１').strip() == '', repr(p.g('件名１')[:6]))
 
 print()
-print('■ まだ写していない処理区は、黙って素通りしない')
+print('■ まだ写していない段落は、黙って素通りしない')
 con, p = tsukuru()
-p.gs('処理区', p.修正)
+p.SAVE_GROUP = 'GRPA03'
 try:
-    p.GRPA02_RTN(); ok = False
+    p.主処理Ｒ(); ok = False
 except a10040po.未実装 as e:
-    ok = '修正第２項目群' in str(e)
-miru('修正を呼ぶと 未実装 を投げる', ok)
+    ok = 'GRPA03' in str(e)
+miru('まだの GRPA03 を呼ぶと 未実装 を投げる', ok)
 
 print()
 print('=' * 60)

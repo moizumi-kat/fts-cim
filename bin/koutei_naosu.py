@@ -26,7 +26,8 @@ SIYO = set(cs['caset']) | set(cs['dps']) | {
     'A16100KB', 'A16110KB', 'A16120KP', 'D40130KP'}   # 別zip・綴り落ち分
 MANUAL = {'JCVEBCC', 'XSBSSI'}                        # マニュアルのサブルーチン
 TSUKURANAI = {'D40135KP', 'D40900KB', 'D40910KB',
-              'M11020KO', 'M11030KP', 'M10500KB'}     # 作らない（村上様ご回答）
+              'M11020KO', 'M11030KP', 'M10500KB',     # 作らない（村上様ご回答 11-13）
+              'B11330KO'}                             # 仕様書なし＝対象外（11-20）
 CL_GO = {'WAIT', 'END', 'START', 'STATUS', 'STS'}     # ＣＬの語。プログラムではない
 
 d = json.load(open(KOUTEI, encoding='utf-8'))
