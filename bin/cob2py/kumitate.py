@@ -30,6 +30,233 @@ def sagasu(go, *kotoba):
     return -1
 
 
+_COPY = None
+
+
+def _copybook():
+    """手元にあるコピー原文を名前で引けるようにする。
+
+       COPY 〜 で取り込まれる原文は、いただけたぶんだけ手元にある
+       （A10CPYPO・A1VLD001 など）。あるものは**そのまま読む**。
+       無いもの（XMDLIB の画面・XFDLIB のファイル）は、定義体と表定義から
+       組み立てる（gamen_ireru／fd_ireru）。
+    """
+    global _COPY
+    if _COPY is None:
+        import os
+        _COPY = {}
+        ne = pathlib.Path(__file__).resolve().parent.parent.parent
+        sagasu_saki = [ne / 'genbutsu', ne.parent / 'genbutsu_copy',
+                       ne.parent / 'murakami']
+        mo = os.environ.get('FTSCIM_COPYBOOK')
+        if mo:
+            sagasu_saki.insert(0, pathlib.Path(mo))
+        for d in sagasu_saki:
+            if not d.exists():
+                continue
+            for f in d.rglob('*.COB'):
+                _COPY.setdefault(f.stem.upper(), f)
+    return _COPY
+
+
+def fd_copy_rec(go, hajime, owari):
+    """FD の中の `COPY 〜.` を開いて、その 01 レコードを FD に結びつける。
+
+       例 `FD 更新ＶＬＤ２ EXTERNAL. COPY A1VLD002.` は
+          A1VLD002 の 01 REC2 が 更新ＶＬＤ２ のレコード、という意味。
+       これが分からないと WRITE REC2 の書き先が引けない（実測）。
+    """
+    if hajime < 0:
+        return {}
+    mochi = _copybook()
+    out = {}
+    ima = None
+    i = hajime
+    while i < owari:
+        g = go[i]
+        if g.na('FD', 'SD') and i + 1 < owari:
+            ima = go[i+1].v; i += 2; continue
+        if g.na('WORKING-STORAGE', 'LINKAGE'):
+            break
+        if g.na('COPY') and ima and i + 1 < owari:
+            na = go[i+1].v.upper()
+            f = mochi.get(na)
+            if f:
+                g2 = ji.waru(_yomu_moji(f))
+                for k in data.yomu(g2, 0, len(g2)):
+                    out[k.na] = ima
+            i += 2; continue
+        i += 1
+    return out
+
+
+def _yomu_moji(f):
+    """原文を読む。**文字コードはファイルごとに違う**（cp932／UTF-8）。
+       cim/utf8 は変換済みだが、genbutsu の原物は cp932 のことがある。
+       取り違えると項目名が化けて、どの項目も引けなくなる（実測）。"""
+    b = pathlib.Path(f).read_bytes()
+    for e in ('utf-8', 'cp932'):
+        try:
+            return b.decode(e)
+        except UnicodeDecodeError:
+            pass
+    return b.decode('cp932', 'replace')
+
+
+def copy_ireru(t, go):
+    """COPY 〜（ライブラリ指定なし）を、手元の原文から取り込む。"""
+    import re as _re
+    mochi = _copybook()
+    out = []
+    for m in _re.finditer(r'COPY\s+([A-Z0-9#@$-]+)\s*(?:OF\s+(\w+))?\s*\.',
+                          t, _re.I):
+        na, lib = m.group(1).upper(), (m.group(2) or '').upper()
+        if lib in ('XMDLIB', 'XFDLIB'):
+            continue                       # 画面・ファイルは別で組み立てる
+        f = mochi.get(na)
+        if not f:
+            continue
+        g2 = ji.waru(_yomu_moji(f))
+        out += data.yomu(g2, 0, len(g2))
+    return out
+
+
+_HYO = None
+
+
+def _hyo():
+    """表定義（cim/schema_gen）。無ければ空。"""
+    global _HYO
+    if _HYO is None:
+        ne = pathlib.Path(__file__).resolve().parent.parent.parent
+        for m in (ne / 'proto', ne.parent / 'proto'):
+            if (m / 'cim' / 'schema_gen.py').exists():
+                sys.path.insert(0, str(m))
+                break
+        try:
+            from cim.schema_gen import TABLES
+            _HYO = TABLES
+        except Exception:
+            _HYO = {}
+    return _HYO
+
+
+def fd_ireru(fc, sude):
+    """FILE-CONTROL の各ファイルのレコードを、表定義から組み立てて足す。"""
+    TABLES = _hyo()
+    out = []
+    for na, d in fc.items():
+        kagi = d.get('kagi') or []
+        if not kagi or '-' not in kagi[0]:
+            continue
+        settou = kagi[0].split('-', 1)[0] + '-'
+        if (settou + kagi[0].split('-', 1)[1]) in sude:
+            continue                      # 原文に定義があるなら触らない
+        ronri = d.get('ronri') or ''
+        hyomei = None
+        for k in (ronri, ronri[:-3] + 'FP', ronri[:-3] + 'MP'):
+            if k in TABLES:
+                hyomei = k; break
+        if not hyomei:
+            continue
+        out.append(data_fd(settou, TABLES[hyomei]['cols'], settou + 'REC'))
+    return out
+
+
+def data_fd(settou, cols, na):
+    k = data.fd_ko(settou, cols, na)
+    return k
+
+
+_TEIGI = None
+
+
+def _teigitai():
+    global _TEIGI
+    if _TEIGI is None:
+        import json, os
+        ne = pathlib.Path(__file__).resolve().parent.parent.parent
+        kouho = [os.environ.get('FTSCIM_TEIGITAI'),
+                 ne / 'proto' / 'cim' / 'teigitai.json',
+                 ne.parent / 'proto' / 'cim' / 'teigitai.json']
+        _TEIGI = {}
+        for m in kouho:
+            if m and pathlib.Path(m).exists():
+                _TEIGI = json.loads(pathlib.Path(m).read_text(encoding='utf-8'))
+                break
+    return _TEIGI
+
+
+def gamen_ireru(t, go, d_i, p_i):
+    """COPY 〜 OF XMDLIB を、定義体から組み立てて足す。"""
+    import re as _re
+    teigi = _teigitai()
+    out = []
+    for m in _re.finditer(r'COPY\s+([A-Z0-9]+)\s+OF\s+XMDLIB', t, _re.I):
+        na = m.group(1).upper()
+        if na not in teigi:
+            continue
+        namae = _seigyo_namae(t)
+        k = data.gamen_ko(teigi[na], namae, _gamen_kata(t, namae))
+        if k:
+            out.append(k)
+    return out
+
+
+def _gamen_kata(t, namae):
+    """画面項目が 数（9）か 英数（X）か。
+
+       定義体には入っていないので、原文の「第ｎ項目群消去Ｒ」から取る。
+         MOVE ZERO  TO 〜  → 数
+         MOVE SPACE TO 〜  → 英数
+       ここを取り違えると、桁あふれの切れかた（左か右か）と
+       0埋め／空白埋めが逆になる。最終納期が 250929 でなく 202509 になった。
+    """
+    import re as _re
+    kata = {}
+    hon = []
+    for ln in t.splitlines():
+        if not ln or ln[0] in '*/Dd':
+            continue
+        hon.append(ln[1:67])
+    ima = None
+    for ln in hon:
+        m = _re.search(r'MOVE\s+(ZERO|ZEROS|ZEROES|SPACE|SPACES)\s+TO\s+(.*)$',
+                       ln, _re.I)
+        if m:
+            ima = '9' if m.group(1).upper().startswith('ZERO') else 'X'
+            ln = m.group(2)
+        elif _re.match(r'^\s*(MOVE|IF|PERFORM|EVALUATE|GO|ADD|COMPUTE)\b', ln, _re.I):
+            ima = None
+        if not ima:
+            continue
+        for w in _re.findall(r'[^\s.]+', ln):
+            if w in namae:
+                kata[w] = ima
+    return kata
+
+
+def _seigyo_namae(t):
+    """制御項目初期化Ｒ の EDIT-STATUS OF 〜 の**いちばん長い連なり**。"""
+    import re as _re
+    R = _re.compile(r'EDIT-STATUS\s+OF\s+(\S+)')
+    ima, saidai = [], []
+    for ln in t.splitlines():
+        if not ln or ln[0] in '*/Dd':
+            continue
+        b = ln[1:67]
+        mm = R.search(b)
+        if mm:
+            ima.append(mm.group(1).rstrip('.'))
+        elif ima:
+            if len(ima) > len(saidai):
+                saidai = ima
+            ima = []
+    if len(ima) > len(saidai):
+        saidai = ima
+    return saidai
+
+
 def kioku_hyo(ne):
     """01 の並び → 記憶域の作り（出力に埋め込む表）。"""
     out = []
@@ -52,11 +279,18 @@ def kumu(michi):
     m = re.search(r'PROGRAM-ID\s*\.\s*([A-Z0-9#@$\-]+)', t, re.I)
     if m:
         pgm = m.group(1)
+    io_i = sagasu(go, 'INPUT-OUTPUT', 'SECTION')
     d_i = sagasu(go, 'DATA', 'DIVISION')
     p_i = sagasu(go, 'PROCEDURE', 'DIVISION')
     if p_i < 0:
         raise ValueError('PROCEDURE DIVISION がありません')
     ne = data.yomu(go, d_i + 2, p_i) if d_i >= 0 else []
+    ne += copy_ireru(t, go)
+    ne += gamen_ireru(t, go, d_i, p_i)
+    fc = data.file_control(go, io_i, d_i) if (io_i >= 0 and d_i > io_i) else {}
+    fdrec = data.fd_rec(go, d_i, p_i) if d_i >= 0 else {}
+    fdrec.update(fd_copy_rec(go, d_i, p_i))
+    ne += fd_ireru(fc, {c.na for k in ne for c in k.mina()})
     namae = {c.na for k in ne for c in k.mina()}
     hairetsu = {c.na for k in ne for c in k.mina() if c.occurs}
     # PROCEDURE DIVISION USING 〜 ＝ 呼ぶ側から受け取る項目
@@ -86,66 +320,67 @@ def kumu(michi):
          'class %s(Pgm):' % na_py(pgm),
          '    NA = %r' % pgm,
          '    UKETORI = %r' % (uketori,),
+         '    FAIRU = %r' % (fc,),
+         '    FD_REC = %r' % (fdrec,),
          '    KIOKU = %r' % (kioku_hyo(ne),),
          '']
+    hon = []
+    kumi = []                 # [(節名, [(段落名, メソッド名)…])]
     for s in setsu:
         if s.na == '__honbun__' and not any(x.go for x in s.dan):
             continue
-        b += setsu_dasu(d, s)
+        gyo, namae = setsu_dasu(d, s)
+        hon += gyo
+        kumi.append((s.na, namae))
+    b.append('    DANRAKU = %r' % (kumi,))
+    b.append('')
+    b += hon
     # PERFORM A THRU B のぶん
     for kara, made in sorted(d.thru):
-        b.append('    def %s(self):' % na_py('%s＿から＿%s' % (kara, made)))
+        b.append('    def %s(self):' % na_py('_thru_%s_%s' % (kara, made)))
         b.append('        """PERFORM %s THRU %s"""' % (kara, made))
-        b.append('        for na in self._thru(%r, %r):' % (kara, made))
-        b.append('            getattr(self, na)()')
+        b.append('        self._thru(%r, %r)' % (kara, made))
         b.append('')
     return '\n'.join(b) + '\n', d
 
 
 def setsu_dasu(d, s):
-    """節ひとつ → メソッド。"""
-    tobu = {t for x in s.dan for t in x.goto}
-    b = ['    def %s(self):' % na_py(s.na),
-         '        """%s"""' % s.na]
-    if not tobu:
-        # 飛び越しが無い節は、段落を順に並べるだけ
-        for dan in s.dan:
-            if not dan.go:
-                continue
-            b.append('        # ── %s' % dan.na)
-            naka = []
-            i = 0
-            while i < len(dan.go):
-                i = d.bun(dan.go, i, len(dan.go), 2, naka)
-            b += naka or ['        pass']
-        if len(b) == 2:
-            b.append('        pass')
-        b.append('')
-        return b
-    # 飛び越しのある節は、段落を回す形にする
-    b.append('        _d = %r' % s.dan[0].na)
-    b.append('        while _d is not None:')
-    b.append('            try:')
-    hajime = True
-    for k, dan in enumerate(s.dan):
-        tsugi = s.dan[k+1].na if k + 1 < len(s.dan) else None
-        b.append('                %s _d == %r:' % ('if' if hajime else 'elif', dan.na))
-        hajime = False
+    """節ひとつ → 段落ごとのメソッド ＋ 節のメソッド。
+
+       ■ なぜ段落ごとに出すか
+         PERFORM A THRU B（1,521か所）は「段落Aから段落Bまでを順に実行」
+         という意味なので、段落が呼べる形でないと写せない。
+       ■ 落ち込みと GO TO
+         節のメソッドが段落を順に呼ぶ。GO TO は _Tobu を投げ、
+         節のメソッドが受けて飛び先の段落から続ける。
+         入れ子の IF の中からでも飛べるよう、例外にしている。
+    """
+    b = []
+    namae = []
+    for dan in s.dan:
+        if not dan.go:
+            namae.append((dan.na, None))
+            continue
+        me = na_py('_dan_' + dan.na)
+        namae.append((dan.na, me))
+        b.append('    def %s(self):' % me)
+        b.append('        """%s"""' % dan.na)
         naka = []
         i = 0
         while i < len(dan.go):
-            i = d.bun(dan.go, i, len(dan.go), 5, naka)
-        b += naka or ['                    pass']
-        b.append('                    _d = %r' % tsugi)
-    b.append('                else:')
-    b.append('                    _d = None')
-    b.append('            except _Tobu as e:')
-    b.append('                _d = e.saki')
+            i = d.bun(dan.go, i, len(dan.go), 2, naka)
+        b += naka or ['        pass']
+        b.append('')
+    me = na_py(s.na)
+    b.append('    def %s(self):' % me)
+    b.append('        """%s"""' % s.na)
+    b.append('        self._setsu(%r)' % s.na)
     b.append('')
-    return b
+    return b, [(na, m) for na, m in namae]
 
 
 if __name__ == '__main__':
+
     src, out = sys.argv[1], sys.argv[2]
     honbun, d = kumu(src)
     pathlib.Path(out).write_text(honbun, encoding='utf-8')

@@ -3,7 +3,7 @@
 
      python3 点検/chk_a10040po.py
 """
-import sys, pathlib, datetime
+import sys, pathlib, datetime, unicodedata
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from cim.cobol import vld, a10040po
 from cim.cobol.a10010po import Linkage
@@ -177,12 +177,25 @@ miru('第3群・最終納期が入っていれば入力不可',
 print()
 print('■ まだ写していない段落は、黙って素通りしない')
 p = a10040po.A10040PO(sousa=Sousa('E000'))
-p.初期処理Ｒ(); p.link = Linkage(); p.SAVE_GROUP = 'GRPA03'
+p.初期処理Ｒ(); p.link = Linkage(); p.SAVE_GROUP = 'GRPA05'
 try:
     p.主処理Ｒ(); ok = False
 except a10040po.未実装 as e:
-    ok = 'GRPA03' in str(e)
-miru('まだの GRPA03 を呼ぶと 未実装 を投げる', ok)
+    ok = 'GRPA05' in str(e)
+miru('まだの GRPA05 を呼ぶと 未実装 を投げる', ok)
+# GRPA03 は写した（2026-11-20）。まだなのは第5-7項目群と再計算まわり。
+for na, yobu in (('再計算チェック', '再計算チェック'),
+                 ('見積総額計算', '見積総額計算'),
+                 ('受渡第４項目１', '受渡第４項目１')):
+    q = a10040po.A10040PO(sousa=Sousa('E000'))
+    q.初期処理Ｒ(); q.link = Linkage()
+    try:
+        # Python は定義のときに識別子を NFKC で詰める（受渡第４項目１→受渡第4項目1）。
+        # getattr は詰めてくれないので、こちらで詰めてから呼ぶ。
+        getattr(q, unicodedata.normalize('NFKC', yobu))(); ok = False
+    except a10040po.未実装 as e:
+        ok = na in str(e)
+    miru('まだの %s を呼ぶと 未実装 を投げる' % na, ok)
 
 print()
 print('=' * 60)

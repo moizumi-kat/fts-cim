@@ -57,7 +57,8 @@ miru('受渡場所', p.g('受渡場所').startswith('車上渡し'))
 miru('支払条件', p.g('支払条件').startswith('従来通り'))
 miru('荷造及び運賃', p.g('荷造及び運賃').startswith('含入'))
 miru('見積有効期限', p.g('見積有効期限').startswith('６０日'))
-miru('掛率4つが1', all(p.数(n) == 1 for n in
+# 画面は小数2桁ぶん桁を上げて持つ（1 → 100、表示は 1.00）。
+miru('掛率4つが1.00', all(p.画面.hyouji(n).strip() == '1.00' for n in
                       ('掛率配電盤', '掛率制御盤', '掛率分電盤', '掛率その他')),
      p.g('掛率配電盤'))
 
@@ -162,12 +163,12 @@ miru('第3群も消えている', p.g('件名１').strip() == '', repr(p.g('件�
 print()
 print('■ まだ写していない段落は、黙って素通りしない')
 con, p = tsukuru()
-p.SAVE_GROUP = 'GRPA03'
+p.SAVE_GROUP = 'GRPA05'
 try:
     p.主処理Ｒ(); ok = False
 except a10040po.未実装 as e:
-    ok = 'GRPA03' in str(e)
-miru('まだの GRPA03 を呼ぶと 未実装 を投げる', ok)
+    ok = 'GRPA05' in str(e)
+miru('まだの GRPA05 を呼ぶと 未実装 を投げる', ok)
 
 print()
 print('=' * 60)

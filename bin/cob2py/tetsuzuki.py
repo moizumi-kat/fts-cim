@@ -15,7 +15,7 @@
      DELETE 229／CALL 526／INITIALIZE 3,534／DISPLAY 6,855
     MULTIPLY・STRING・UNSTRING・SET・SEARCH・SORT・ALTER は **0回**。
 """
-import re
+import re, unicodedata
 
 HIKAKU = {'=': '==', '>': '>', '<': '<', '>=': '>=', '<=': '<=', '<>': '!='}
 TEISU = {'ZERO': '0', 'ZEROS': '0', 'ZEROES': '0',
@@ -33,8 +33,20 @@ BUN = ('MOVE', 'IF', 'EVALUATE', 'PERFORM', 'GO', 'ADD', 'SUBTRACT', 'DIVIDE',
 
 
 def na_py(s):
-    """COBOL の名前 → Python で使える名前。"""
-    s = re.sub(r'[^0-9A-Za-z_぀-ヿ一-鿿０-ｚ]', '_', s)
+    """COBOL の名前 → Python で使える名前。
+
+       全角の英数・かな・漢字はそのまま使える（Python は識別子を NFKC で
+       詰めるため）。ただし全角アンダースコア U+FF3F は識別子に使えないので
+       半角に直す（ここで一度つまずいた。2026-11-21）。
+    """
+    s = s.replace(chr(0xFF3F), '_')
+    s = re.sub(r'[^0-9A-Za-z_\u3040-\u30ff\u4e00-\u9fff\uff10-\uff5a]',
+               '_', s)
+    s = s.replace(chr(0xFF3F), '_')
+    # Python は識別子を定義のときに NFKC で詰める（第２→第2）。
+    # getattr は詰めてくれないので、**こちらで先に詰めて**おく。
+    # （詰めずに出して 'object has no attribute' になった。2026-11-21）
+    s = unicodedata.normalize('NFKC', s)
     if s and s[0].isdigit():
         s = '_' + s
     return s or '_'

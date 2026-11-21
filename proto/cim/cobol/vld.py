@@ -126,6 +126,18 @@ class Koumoku:
         else:
             s = '' if v is None else str(v)
             if self.kata == '9':
+                # 小数の桁ぶん桁を上げてから詰める。
+                #   掛率は3桁で小数2桁。3.6 は **360**（画面 3.60）。
+                #   上げずに数字だけ拾うと '036' になり 0.36 と出る。
+                #   自動変換した版と突き合わせて見つけた（2026-11-21）。
+                shou = self.hensyuu[3] if self.hensyuu else 0
+                if shou:
+                    from decimal import Decimal as _D
+                    try:
+                        d = _D(s.strip() or '0')
+                        s = str(int(d.scaleb(shou)))
+                    except Exception:
+                        pass
                 s = ''.join(c for c in s if c.isdigit()) or '0'
             b = s.encode('cp932', 'replace')
         if self.kata == '9':

@@ -436,7 +436,7 @@ class Dasu:
             if i < owari and go[i].na('THRU', 'THROUGH'):
                 saki = go[i+1].v; i += 2
             yobi = ('self.%s()' % na_py(na) if not saki
-                    else 'self.%s()' % na_py('%s＿から＿%s' % (na, saki)))
+                    else 'self.%s()' % na_py('_thru_%s_%s' % (na, saki)))
             if saki:
                 self.thru.add((na, saki))
             if i < owari and go[i].na('UNTIL'):

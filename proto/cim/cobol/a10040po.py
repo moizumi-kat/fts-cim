@@ -88,6 +88,7 @@ class A10040PO:
         self.WK_NEN = 0
         self.WK_SEIREKI = 0
         self.WK_YMD = 0
+        self.WK_NOUKI = 0                  # ＷＫ納期（388行）西暦つき8桁
         self.WK_TIME = 0
         self.TR_CNL_FLG = 0
         self.発番区分 = 0
@@ -195,10 +196,13 @@ class A10040PO:
             self.GRPA01_RTN()
         elif gun == 'GRPA02':
             self.GRPA02_RTN()
-        elif gun in ('GRPA03', 'GRPA04', 'GRPA05', 'GRPA06', 'GRPA07'):
-            raise 未実装('%s-RTN' % gun, {'GRPA03': 788, 'GRPA04': 866,
-                                          'GRPA05': 0, 'GRPA06': 0,
-                                          'GRPA07': 0}[gun])
+        elif gun == 'GRPA03':
+            self.GRPA03_RTN()
+        elif gun == 'GRPA04':
+            self.GRPA04_RTN()
+        elif gun in ('GRPA05', 'GRPA06', 'GRPA07'):
+            raise 未実装('%s-RTN' % gun,
+                         {'GRPA05': 900, 'GRPA06': 929, 'GRPA07': 972}[gun])
 
     # ================================================================
     #  第１項目群処理（657行）
@@ -412,6 +416,231 @@ class A10040PO:
         self._複写第２項目群(2)
 
     # ── 鑑ファイルの確認（1519／1570行）────────
+    # ================================================================
+    #  第３項目群処理（788行）
+    # ================================================================
+    def GRPA03_RTN(self):
+        self.画面入力Ｒ()                                  # （790行）
+        self.画面.seigyo_shokika()                         # （791行）
+        if self.DSP_FUNC == 'E000':
+            ku = self.数('処理区')
+            if ku == self.新規:
+                self.SAVE_GROUP = 'GRPA05'                 # （796行）
+                self.新規第３項目群()
+            elif ku in (self.修正, self.変更, self.複写１, self.複写２):
+                self.SAVE_GROUP = 'GRPA06'                 # （803行）
+                self.新規第３項目群()
+                if self.ERR_FLG == 0:                      # （805行）
+                    self.再計算チェック()
+            self.XMROTEND()                                # （817行）
+        elif self.DSP_FUNC == 'F005':
+            ku = self.数('処理区')
+            if ku in (self.新規, self.修正, self.変更,
+                      self.複写１, self.複写２):
+                self.第３項目群取消()                      # （826行）
+            self.XMROTCNL()                                # （829行）
+        else:
+            self.ERR_FLG = 1                               # （831行）
+            self.XMROTEND()
+
+    def 第３項目群取消(self):
+        """（838行）新規は何もしない（93.06.22 に5行削除された）。
+           修正・変更・複写は、後ろの更新に「やめた」を伝えてから第2項目群へ戻る。"""
+        ku = self.数('処理区')
+        if ku in (self.修正, self.変更, self.複写１, self.複写２):
+            self.作業見積ＮＯ = self.g('見積なんば')       # （849行）
+            self.バック開始処理３()
+        self.SAVE_GROUP = 'GRPA02'                         # （857行）
+
+    # ================================================================
+    #  第４項目群処理（866行）
+    # ================================================================
+    def GRPA04_RTN(self):
+        if self.総額計算フラグ != self.計算済:              # （868行）
+            self.XMROTSTR()
+            self.見積総額計算()
+            self.XMROTEND()
+        self.画面入力Ｒ()                                  # （873行）
+        self.画面.seigyo_shokika()                         # （874行）
+        if self.DSP_FUNC == 'E000':
+            # データを確認して下さい。（878行）
+            self.ERR_FLG = 3
+            self.SAVE_GROUP = 'GRPA07'
+            if self.数('差引合計金額') == 0:               # （881行）
+                self.ERR_FLG = 2
+                self.SAVE_GROUP = 'GRPA04'
+            self.XMROTEND()
+        elif self.DSP_FUNC == 'F005':
+            self.総額計算フラグ = self.未計算               # （887行）
+            self.受渡第４項目１()
+        else:
+            self.ERR_FLG = 1                               # （891行）
+            self.XMROTEND()
+
+    # ================================================================
+    #  新規第３項目群（1760行）と、その中の入力チェック13本
+    # ================================================================
+    def 新規第３項目群(self):
+        """（1761行）上から順に見て、**ひとつでも誤りがあればそこで止める**。
+           現行は IF ERR-FLG = ZERO の入れ子で書いてある（13段）。"""
+        for chk in (self.件名カナチェック, self.件名チェック,
+                    self.価格区分チェック, self.依頼先チェック,
+                    self.仕様１チェック, self.仕様２チェック,
+                    self.施主チェック, self.設計所チェック,
+                    self.建設業者チェック, self.電気工事チェック,
+                    self.最終納期チェック, self.御照会日付チェック,
+                    self.掛率チェック):
+            chk()
+            if self.ERR_FLG != 0:
+                return
+
+    def _ayamari(self, na):
+        """誤りにする（赤くしてカーソルを置き、第3項目群へ戻す）。"""
+        self._あかい(na)
+        self.ERR_FLG = 2
+        self.SAVE_GROUP = 'GRPA03'
+
+    def _hiite_namae(self, ronri, kagi, hashira, saki, moto, ayamari=True):
+        """コードでマスタを引いて名前を入れる。無ければ名前を空にする。
+
+           ■ 現行の形（価格区分・依頼先・仕様1/2・施主・設計所・建設業者・電気工事
+             の8本が、まったく同じ形で書いてある）
+               "00" → 名前を入れる
+               "23" → 名前を空にして、コードを赤くして ERR-FLG=2
+               その他 → ABEND
+        """
+        f = self.ファイル[ronri]
+        st = f.yomu(*kagi)
+        if st == fairu.SEIJOU:
+            self.gs(saki, f[hashira])
+        elif st == fairu.NASHI:
+            self.gs(saki, '')
+            if ayamari:
+                self._ayamari(moto)
+        else:
+            raise Abend(ronri, 'READ', st)
+
+    def 件名カナチェック(self):
+        """（1804行）件名カナは**必須**。"""
+        if self.g('件名カナ').strip() == '':
+            self._ayamari('件名カナ')
+
+    def 件名チェック(self):
+        """（1819行）**中身は全部コメント**＝何もしない。
+           件名１が空でも通る（現行がそうなっている）。"""
+        return
+
+    def 価格区分チェック(self):
+        """（1833行）名称マスタ（区分"02"）で引く。"""
+        if self.g('価格区分').strip() == '':
+            self.gs('価格区分名', '')
+            self._ayamari('価格区分')
+            return
+        self._hiite_namae('ANAMML1', ('02', self.g('価格区分')),
+                          'RYAKU', '価格区分名', '価格区分')
+
+    def 依頼先チェック(self):
+        """（1870行）依頼先は**必須**。"""
+        if self.g('依頼先コード').strip() == '':
+            self.gs('依頼先名', '')
+            self._ayamari('依頼先コード')
+            return
+        self._hiite_namae('ATORML1', (self.g('依頼先コード'),),
+                          'TORNAR', '依頼先名', '依頼先コード')
+
+    def 仕様１チェック(self):
+        """（1905行）仕様1は**必須**。"""
+        if self.g('仕様コード').strip() == '':
+            self.gs('仕様名', '')
+            self._ayamari('仕様コード')
+            return
+        self._hiite_namae('ASIYML1', (self.g('仕様コード'),),
+                          'SIYONA', '仕様名', '仕様コード')
+
+    def 仕様２チェック(self):
+        """（1940行）仕様2は**空でもよい**（必須にする行はコメント）。
+           入っていれば実在を見る。"""
+        if self.g('仕様２コード').strip() == '':
+            self.gs('仕様名２', '')
+            return
+        self._hiite_namae('ASIYML1', (self.g('仕様２コード'),),
+                          'SIYONA', '仕様名２', '仕様２コード')
+
+    def 施主チェック(self):
+        """（1974行）施主は**空でもよい**。"""
+        if self.g('施主コード').strip() == '':
+            self.gs('施主名', '')
+            return
+        self._hiite_namae('ATORML1', (self.g('施主コード'),),
+                          'TORNAR', '施主名', '施主コード')
+
+    def 設計所チェック(self):
+        """（2008行）設計事務所は**空でもよい**。"""
+        if self.g('設計事務所コード').strip() == '':
+            self.gs('設計事務所名', '')
+            return
+        self._hiite_namae('ATORML1', (self.g('設計事務所コード'),),
+                          'TORNAR', '設計事務所名', '設計事務所コード')
+
+    def 建設業者チェック(self):
+        """（2042行）建設業者は**空でもよい**。"""
+        if self.g('建設業者').strip() == '':
+            self.gs('建設業者名', '')
+            return
+        self._hiite_namae('ATORML1', (self.g('建設業者'),),
+                          'TORNAR', '建設業者名', '建設業者')
+
+    def 電気工事チェック(self):
+        """（2076行）電気工事業者は**空でもよい**。"""
+        if self.g('電気工事業者ＣＤ').strip() == '':
+            self.gs('電気工事業者名', '')
+            return
+        self._hiite_namae('ATORML1', (self.g('電気工事業者ＣＤ'),),
+                          'TORNAR', '電気工事業者名', '電気工事業者ＣＤ')
+
+    def 最終納期チェック(self):
+        """（2110行）最終納期（YYMMDD）が**カレンダマスタに在る日**か。
+
+           ■ 西暦のつけかた（98.12.08 FTH の直し・2120行）
+             もとは「WK-NEN（今日の年）が90以上なら19」だったが、
+             **納期の年**で見るように直されている（ＷＫ納期(3:2) >= 90）。
+             今日の年ではないので、ここを取り違えないこと。
+           ■ 0 のときは何も見ない（2113行）＝納期未定でも通る。
+        """
+        nouki = self.数('最終納期') or 0
+        if nouki == 0:
+            self.WK_NOUKI = 0                              # （2114行）
+            return
+        yymmdd = '%06d' % nouki
+        seireki = 19 if int(yymmdd[0:2]) >= 90 else 20     # （2120-2125行）
+        self.WK_NOUKI = int('%02d%s' % (seireki, yymmdd))
+        f = self.ファイル['CCALML1']
+        st = f.yomu(int('%02d%s' % (seireki, yymmdd[0:2])),   # CCAL-NEN（4桁）
+                    int(yymmdd[2:4]),                         # CCAL-TSUKI
+                    int(yymmdd[4:6]))                         # CCAL-HIZUKE
+        if st == fairu.NASHI:
+            self._ayamari('最終納期')
+        elif st != fairu.SEIJOU:
+            raise Abend('CCALML1', 'READ', st)
+
+    def 掛率チェック(self):
+        """（2154行）掛率4つは**どれも0であってはいけない**。
+           上から順に見て、最初に0だったものだけを赤くする。"""
+        for na in ('掛率配電盤', '掛率制御盤', '掛率分電盤', '掛率その他'):
+            if (self.数(na) or 0) == 0:
+                self._ayamari(na)
+                return
+
+    def 御照会日付チェック(self):
+        """（2196行）御照会日付（YYMMDD）の月・日が暦の形か。
+           **カレンダマスタは引かない**（年<=99・月<=12・日<=31 を見るだけ）。
+           0（未入力）は 00/00/00 ＝ 通る。"""
+        yymmdd = '%06d' % (self.数('御照会日付') or 0)
+        if (int(yymmdd[0:2]) <= 99 and int(yymmdd[2:4]) <= 12
+                and int(yymmdd[4:6]) <= 31):
+            return
+        self._ayamari('御照会日付')
+
     def _AJBG_CHECK(self, gaikbn_mo_miru):
         """見積なんばで鑑ファイルを引き、使えるかどうかを見る。
            CHECK-RTN（1519行）と CHECK-RTN-2（1570行）の違いは
@@ -891,6 +1120,18 @@ class A10040PO:
         self.DSP_FUNC = getattr(self.画面.sousa, 'func', '') or self.DSP_FUNC
 
     # ── 富士通の実行時ルーチン ──────────────────
+    def 再計算チェック(self):
+        """（2483行）まだ写していない。"""
+        raise 未実装('再計算チェック', 2483)
+
+    def 見積総額計算(self):
+        """（2867行）まだ写していない。"""
+        raise 未実装('見積総額計算', 2867)
+
+    def 受渡第４項目１(self):
+        """（1073行）まだ写していない。"""
+        raise 未実装('受渡第４項目１', 1073)
+
     def XMROTSTR(self):
         """取引の開始（3355行）。試作では何もしない。"""
 

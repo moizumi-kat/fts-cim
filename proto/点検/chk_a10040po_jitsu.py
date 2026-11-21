@@ -68,7 +68,8 @@ for t, n in (('AJBGFP', 1151), ('AHATMP', 1848), ('ASOSMP', 545), ('ANAMMP', 357
              ('ASUNMP', 923), ('CCALMP', 12418)):
     j = hiku('SELECT COUNT(*) FROM %s' % t)[0][0]
     miru('%s %d件' % (t, n), j == n, '実際 %d' % j)
-for t in ('AWKGFP', 'AWKKFP', 'AWKMFP', 'ACHKFP', 'ARMIJP'):
+# ワークと札は空でよい（村上様）。履歴（ARMIJP）は .SFL から入ったので中身がある。
+for t in ('AWKGFP', 'AWKKFP', 'AWKMFP', 'ACHKFP'):
     j = hiku('SELECT COUNT(*) FROM %s' % t)[0][0]
     miru('%s は空（村上様の指示どおり）' % t, j == 0, '%d件' % j)
 
@@ -160,7 +161,7 @@ UTSUSHI = [
     ('UPDCNT', '変更回数'),
 ]
 
-def matomo(kata, naga, db_atai):
+def matomo(kata, naga, db_atai, shou=0):
     """鑑ファイルの値を COBOL の MOVE にかけたら画面はこうなる、という値。
 
        ■ ここを作り直した理由（2026-11-20 実測）
@@ -176,6 +177,14 @@ def matomo(kata, naga, db_atai):
     """
     d = s(db_atai)
     if kata == '9':
+        # 画面が小数の桁を持つ項目（掛率は小数2桁）は、桁を上げてから入る。
+        #   表の 3.6 は画面で '360'（表示 3.60）。上げずに比べると合わない。
+        if shou:
+            from decimal import Decimal as _D
+            try:
+                d = str(int(_D(d or '0').scaleb(shou)))
+            except Exception:
+                pass
         d = ''.join(c for c in d if c.isdigit()) or '0'
         return (d[-naga:] if len(d) > naga else d).lstrip('0') or '0'
     b = d.encode('cp932', 'replace')[:naga]
@@ -186,17 +195,20 @@ def matomo(kata, naga, db_atai):
     return b.decode('cp932').rstrip()
 
 
-def onaji(kata, naga, hako, db_atai):
+def onaji(kata, naga, hako, db_atai, shou=0):
     g = hako
     if kata == '9':
         g = g.strip().lstrip('0') or '0'
     else:
         g = g.rstrip()
-    return g == matomo(kata, naga, db_atai)
+    return g == matomo(kata, naga, db_atai, shou)
 
-_K = __import__('cim.cobol.gamen_a10040d1', fromlist=['KOUMOKU']).KOUMOKU
+_G = __import__('cim.cobol.gamen_a10040d1', fromlist=['KOUMOKU', 'HENSYUU'])
+_K = _G.KOUMOKU
 kata = {k[1]: k[7] for k in _K}
 naga = {k[1]: k[5] for k in _K}          # データ長（画面がもつバイト数）
+shou = {k[1]: (getattr(_G, 'HENSYUU', {}).get(k[1]) or (0, 0, '', 0))[3]
+        for k in _K}                      # 小数の桁（定義体の編集から）
 
 rec = hiku('SELECT * FROM AJBGFP ORDER BY MITUNO')
 print('   鑑ファイル %d件を1件ずつ流す' % len(rec))
@@ -214,14 +226,14 @@ for r in rec:
         continue
     tsuujita += 1
     for col, na in UTSUSHI:
-        if not onaji(kata[na], naga[na], p.g(na), d[col]):
+        if not onaji(kata[na], naga[na], p.g(na), d[col], shou[na]):
             machigai.setdefault('%s→%s' % (col, na), []).append(
                 (s(d['MITUNO']), repr(p.g(na)), repr(d[col])))
     # 担当者・施主大分類・各マスタの名前
     def kuraberu(moto, na, atai):
         if atai is None:
             return
-        if not onaji(kata[na], naga[na], p.g(na), atai):
+        if not onaji(kata[na], naga[na], p.g(na), atai, shou[na]):
             machigai.setdefault('%s→%s' % (moto, na), []).append(
                 (s(d['MITUNO']), repr(p.g(na)), repr(atai)))
 
