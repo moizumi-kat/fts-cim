@@ -101,9 +101,19 @@ def waru(text):
             if not m:
                 i += 1; continue
             w = m.group(0)
-            if re.fullmatch(r'[+-]?\d+(\.\d+)?', w):
+            owari_i = m.end()
+            # 小数の直定数。名前は . を含まないので、**数のときだけ**つなぐ。
+            #   `MOVE 1.00 TO …` の 1.00 が 1 と 00 に割れていた（2026-11-21）。
+            #   逆に `１０－変更回数` のような**全角数字で始まる名前**を
+            #   数と取り違えないよう、ASCII の数字だけを数とみなす。
+            if re.fullmatch(r'[+-]?[0-9]+', w):
+                m2 = re.match(r'\.[0-9]+', b[owari_i:])
+                if m2:
+                    w += m2.group(0)
+                    owari_i += m2.end()
+            if re.fullmatch(r'[+-]?[0-9]+(\.[0-9]+)?', w):
                 go.append(Go('su', w, gyo, i))
             else:
                 go.append(Go('na', w, gyo, i))
-            i = m.end()
+            i = owari_i
     return go
