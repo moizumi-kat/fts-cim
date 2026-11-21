@@ -24,7 +24,7 @@ TOME = frozenset((
     'END-WRITE END-DELETE END-REWRITE END-CALL END-ADD END-SUBTRACT '
     'END-COMPUTE END-DIVIDE END-STRING END-UNSTRING END-SEARCH '
     'AT INVALID THRU THROUGH GIVING UNTIL VARYING TIMES USING UPON '
-    'REMAINDER ON SIZE ERROR').split())
+    'REMAINDER ON SIZE ERROR NEXT').split())
 
 
 def _tome(g):
@@ -48,6 +48,10 @@ class Dasu:
             return repr(g.v), i + 1
         if g.shu == 'su':
             return "D('%s')" % g.v, i + 1
+        # 負の直定数（-1）。字句では記号と数に割れる
+        if (g.shu == 'ki' and g.v in ('-', '+')
+                and i + 1 < len(go) and go[i+1].shu == 'su'):
+            return "D('%s%s')" % ('-' if g.v == '-' else '', go[i+1].v), i + 2
         u = g.v.upper()
         if u in JOGAI:
             return JOGAI[u], i + 1
@@ -59,38 +63,80 @@ class Dasu:
         i += 1
         soeji = None
         kiri = None
-        while i < len(go) and go[i].shu == 'ki' and go[i].v == '(':
-            j = i + 1; fukasa = 1; naka = []
-            while j < len(go) and fukasa:
-                if go[j].v == '(': fukasa += 1
-                elif go[j].v == ')':
-                    fukasa -= 1
-                    if not fukasa: break
-                naka.append(go[j]); j += 1
-            # 部分参照 X(開始:長さ) と 添字 X(n) を見分ける
-            #   COBOL は同じ括弧で両方を書く。: があれば部分参照。
-            #   （A10040PO の 担当者ＣＤ(1:2) で気づいた。2026-11-21）
-            koron = [k for k, t in enumerate(naka) if t.shu == 'ki' and t.v == ':']
-            if koron:
-                c = koron[0]
-                a1, _ = self.shiki(naka, 0, c)
-                a2 = (self.shiki(naka, c + 1, len(naka))[0]
-                      if c + 1 < len(naka) else 'None')
-                kiri = '(%s, %s)' % (a1, a2)
-            else:
-                soeji, _ = self.shiki(naka, 0, len(naka))
-            i = j + 1
         oya = None
-        while i + 1 < len(go) and go[i].na('OF', 'IN'):
-            oya = go[i+1].v; i += 2
+        # 括弧（添字 または 部分参照）と OF（限定子）は**順不同で何度でも**
+        # 付く。EDIT-COLOR OF Ｄ科目名称１ (IX1) のように OF のあとに
+        # 添字が来る形があり、前だけ見ていると取りこぼす（2026-11-21 実測）。
+        while i < len(go):
+            if go[i].shu == 'ki' and go[i].v == '(':
+                j = i + 1; fukasa = 1; naka = []
+                while j < len(go) and fukasa:
+                    if go[j].v == '(':
+                        fukasa += 1
+                    elif go[j].v == ')':
+                        fukasa -= 1
+                        if not fukasa:
+                            break
+                    naka.append(go[j]); j += 1
+                koron = [k for k, t in enumerate(naka)
+                         if t.shu == 'ki' and t.v == ':']
+                if koron:
+                    c = koron[0]
+                    a1, _ = self.shiki(naka, 0, c)
+                    a2 = (self.shiki(naka, c + 1, len(naka))[0]
+                          if c + 1 < len(naka) else 'None')
+                    kiri = '(%s, %s)' % (a1, a2)
+                else:
+                    atarashii = self._soeji(naka)
+                    if atarashii is not None:
+                        soeji = (atarashii if soeji is None
+                                 else '(%s, %s)' % (soeji.strip('()'),
+                                                    atarashii.strip('()')))
+                i = j + 1
+                continue
+            if i + 1 < len(go) and go[i].na('OF', 'IN'):
+                oya = go[i+1].v; i += 2
+                continue
+            break
         hiki = [repr(na)]
         if soeji is not None:
-            hiki.append('kai=int(%s)-1' % soeji)
+            hiki.append('kai=%s' % soeji)
         if kiri is not None:
             hiki.append('kiri=%s' % kiri)
         if oya:
             hiki.append('oya=%r' % oya)
         return 'self.V(%s)' % ', '.join(hiki), i
+
+    def _soeji(self, naka):
+        """添字の中身 → (i, j, …) の形。カンマでも空白でも区切られる。
+
+           COBOL の表は入れ子になる（TBL-SL-JSK1 (IX-1, IX-2)）。
+           1次元なら整数、多次元なら組にして渡す。"""
+        bu = []
+        ima = []
+        kakko = 0
+        for t in naka:
+            if t.shu == 'ki' and t.v == '(':
+                kakko += 1
+            elif t.shu == 'ki' and t.v == ')':
+                kakko -= 1
+            if kakko == 0 and t.shu == 'ki' and t.v == ',':
+                bu.append(ima); ima = []
+                continue
+            # 空白区切り：いまの塊が式として完結していて、次が値なら切る
+            if (kakko == 0 and ima and t.shu in ('na', 'su')
+                    and not (ima[-1].shu == 'ki'
+                             and ima[-1].v in ('+', '-', '*', '/', '**', '('))):
+                bu.append(ima); ima = [t]; continue
+            ima.append(t)
+        if ima:
+            bu.append(ima)
+        shiki = ['int(%s)-1' % self.shiki(b, 0, len(b))[0] for b in bu if b]
+        if not shiki:
+            return None
+        if len(shiki) == 1:
+            return shiki[0]
+        return '(%s)' % ', '.join(shiki)
 
     def shiki(self, go, i, owari):
         """算術式（+ - * / ** と括弧）。"""
@@ -138,6 +184,12 @@ class Dasu:
                 v, i = self.atai(go, j)
                 de.append('%s %s %s' % (hidari, hikaku, v)); continue
             v, i = self.atai(go, i)
+            # 値のあとに算術が続くことがある（WK-DSPNO + 17 >= TBL-CNT）
+            while (i < owari and go[i].shu == 'ki'
+                   and go[i].v in ('+', '-', '*', '/', '**')):
+                kigou = go[i].v
+                migi, i = self.atai(go, i + 1)
+                v = '(%s %s %s)' % (v, kigou, migi)
             # 「X IS [NOT] NUMERIC／ALPHABETIC」（種類の判定）
             j = i
             gyaku = False
@@ -154,6 +206,11 @@ class Dasu:
             if h2:                                  # ふつうの「左 比べ方 右」
                 hikaku = h2
                 migi, i = self.atai(go, j2)
+                while (i < owari and go[i].shu == 'ki'
+                       and go[i].v in ('+', '-', '*', '/', '**')):
+                    kigou = go[i].v
+                    m2, i = self.atai(go, i + 1)
+                    migi = '(%s %s %s)' % (migi, kigou, m2)
                 hidari = v
                 de.append('%s %s %s' % (v, hikaku, migi)); continue
             if hidari is not None and de and de[-1] in ('and', 'or'):
@@ -227,6 +284,9 @@ class Dasu:
             return i
         if u == 'CONTINUE':
             de.append('%spass' % T); return i + 1
+        if u == 'NEXT' and i + 1 < owari and go[i+1].na('SENTENCE'):
+            # NEXT SENTENCE ＝ 何もしないで次の文へ（古い書き方）
+            de.append('%spass' % T); return i + 2
         if u == 'EXIT':
             j = i + 1
             if j < owari and go[j].na('PROGRAM'):
@@ -513,7 +573,9 @@ class Dasu:
                     i += 1
                     (na2, soe2), i = self._saki(go, i)
                     maru, i = self._marume(go, i, owari)
-                    shiki = ('self.V(%s)%s %s (%s)'
+                    # 添字は self.V の**中**に入れる（外に出すと引数が壊れる）。
+                    #   SUBTRACT 1 FROM WK-NENDO (3) GIVING WK-NENDO (2)
+                    shiki = ('self.V(%s%s) %s (%s)'
                              % (na, soe, '-' if shu == 'SUBTRACT' else '+', tashi))
                     de.append('%sself.S(%s, %s%s%s)'
                               % (T, na2, shiki, ', marume=True' if maru else '', soe2))
@@ -595,7 +657,7 @@ class Dasu:
     # ── そのほか ────────────────────────────
     def _display(self, go, i, owari, T, de):
         i += 1; mono = []
-        while i < owari and not go[i].na('UPON') and not (
+        while i < owari and not go[i].na('UPON') and not _tome(go[i]) and not (
                 go[i].shu == 'ki' and go[i].v == '.'):
             v, i = self.atai(go, i)
             mono.append(v)

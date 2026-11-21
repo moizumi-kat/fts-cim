@@ -64,6 +64,11 @@ def waru(text):
             c = b[i]
             if c in ' \t':
                 i += 1; continue
+            # *> から行末までは行内コメント（COBOL2002）。
+            #   F10412PO に `= "1"  *>支払処理中` の形があり、
+            #   * と > を演算子と取り違えていた（2026-11-21 実測）。
+            if b.startswith('*>', i):
+                break
             # 文字の直定数
             if c in '\'"':
                 j = i + 1

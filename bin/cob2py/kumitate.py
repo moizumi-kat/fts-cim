@@ -266,7 +266,7 @@ def kioku_hyo(ne):
             if c is k or c.level == 88:
                 continue
             ko.append((c.na, c.ichi - k.ichi, c.naga, c.kata, c.keta,
-                       c.shou, c.fugo, c.comp, c.occurs))
+                       c.shou, c.fugo, c.comp, c.occurs, tuple(c.dan)))
         out.append((k.na, k.naga, ko,
                     [(c.na, c.value) for c in k.mina() if c.value is not None]))
     return out

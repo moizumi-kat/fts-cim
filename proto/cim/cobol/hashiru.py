@@ -40,6 +40,96 @@ def EIJIKA(v):
     return s.isalpha()
 
 
+class Moji(str):
+    """英数の項目の値。数と比べられたら**数として**比べる。
+
+       ■ なぜ要るか（2026-11-21 実測）
+         COBOL は `IF 集団項目 < 3` のように、文字の項目と数を比べる。
+         Python では str と Decimal は比べられず落ちる。
+         現行と同じ答えにするため、相手が数なら数にそろえて比べる。
+         （出てくるコードを読みやすく保ちたいので、比較関数を挟まず
+           値の側で引き受ける。）
+    """
+    __slots__ = ()
+
+    def _kazu(self):
+        t = self.strip()
+        try:
+            return Decimal(t or '0')
+        except Exception:
+            return None
+
+    def _soroeru(self, hoka):
+        if isinstance(hoka, (Decimal, int, float)):
+            a = self._kazu()
+            if a is not None:
+                return a, Decimal(str(hoka))
+        return None, None
+
+    def __lt__(self, h):
+        a, b = self._soroeru(h)
+        return a < b if a is not None else str.__lt__(self, h)
+
+    def __le__(self, h):
+        a, b = self._soroeru(h)
+        return a <= b if a is not None else str.__le__(self, h)
+
+    def __gt__(self, h):
+        a, b = self._soroeru(h)
+        return a > b if a is not None else str.__gt__(self, h)
+
+    def __ge__(self, h):
+        a, b = self._soroeru(h)
+        return a >= b if a is not None else str.__ge__(self, h)
+
+    def __eq__(self, h):
+        a, b = self._soroeru(h)
+        return a == b if a is not None else str.__eq__(self, h)
+
+    def __ne__(self, h):
+        return not self.__eq__(h)
+
+    def __hash__(self):
+        return str.__hash__(self)
+
+    # 計算に使われたら数として扱う（COBOL は集団項目を数として足せる）
+    def _n(self):
+        a = self._kazu()
+        if a is None:
+            raise TypeError('数として読めません: %r' % str(self)[:20])
+        return a
+
+    def __add__(self, h):
+        return self._n() + Decimal(str(h)) if not isinstance(h, str) \
+            else str.__add__(self, h)
+
+    def __radd__(self, h):
+        return Decimal(str(h)) + self._n()
+
+    def __sub__(self, h):
+        return self._n() - Decimal(str(h))
+
+    def __rsub__(self, h):
+        return Decimal(str(h)) - self._n()
+
+    def __mul__(self, h):
+        return self._n() * Decimal(str(h)) if not isinstance(h, int) \
+            else str.__mul__(self, h)
+
+    def __rmul__(self, h):
+        return Decimal(str(h)) * self._n() if not isinstance(h, int) \
+            else str.__mul__(self, h)
+
+    def __truediv__(self, h):
+        return WARU(self._n(), h)
+
+    def __rtruediv__(self, h):
+        return WARU(h, self._n())
+
+    def __int__(self):
+        return int(self._n())
+
+
 class _Tobu(Exception):
     """GO TO。飛び先の段落名を持つ。"""
     def __init__(self, saki):
@@ -75,8 +165,11 @@ class Pgm:
         self.hyo = {}                    # 名前 → (領域, 項目)
         for na, naga, ko, shoki in self.KIOKU:
             h = {}
-            for (kna, ichi, knaga, kata, keta, shou, fugo, comp, occ) in ko:
-                h[kna] = Komoku(kna, ichi, knaga, kata, keta, shou, fugo, comp, occ)
+            for t in ko:
+                (kna, ichi, knaga, kata, keta, shou, fugo, comp, occ) = t[:9]
+                dan = t[9] if len(t) > 9 else ()
+                h[kna] = Komoku(kna, ichi, knaga, kata, keta, shou, fugo,
+                                comp, occ, dan)
             r = Ryoiki(naga, h)
             r.hyo.setdefault(na, Komoku(na, 0, naga, None, naga))
             self.ryoiki[na] = r
@@ -151,16 +244,18 @@ class Pgm:
     def V(self, na, kai=0, oya=None, kiri=None):
         r, k = self._hiku(na, oya)
         if k.kata is None:                     # 集団項目は生のまま
-            v = r.nama(k, kai).decode('cp932', 'replace')
+            v = Moji(r.nama(k, kai).decode('cp932', 'replace'))
         else:
             v = r.toru(na, kai) if na in r.hyo else r.nama(k, kai)
+            if isinstance(v, str):
+                v = Moji(v)
         if kiri is not None:
             s = v if isinstance(v, str) else str(v)
             a = int(kiri[0]) - 1
             n = None if kiri[1] is None else int(kiri[1])
             b = s.encode('cp932', 'replace')
             b = b[a:a + n] if n is not None else b[a:]
-            return b.decode('cp932', 'replace')
+            return Moji(b.decode('cp932', 'replace'))
         return v
 
     def S(self, na, v, kai=0, oya=None, kiri=None, marume=False):
@@ -444,5 +539,23 @@ class Pgm:
             return '%02d%03d' % (k.year % 100, k.timetuple().tm_yday)
         return ''
 
+    # ASP が用意している呼び出し。中身は運用側の仕組みなので、
+    # ここでは「呼ばれたことを覚える」だけにする（結果に影響しない）。
+    ASP = {
+        'XMROTSTR': 'トランザクション開始',
+        'XMROTEND': 'トランザクション終了',
+        'XMROTCNL': 'トランザクション取消',
+        'XMSNDMSG': 'メッセージ送信',
+        'XMRCVMSG': 'メッセージ受信',
+    }
+
     def yobu(self, na, hiki):
+        na = str(na).strip().upper()
+        if na in self.ASP:
+            self.yonda = getattr(self, 'yonda', [])
+            self.yonda.append(na)
+            return
+        hoka = getattr(self, 'HOKA', None)
+        if hoka and na in hoka:
+            return hoka[na](self, hiki)
         raise Mikansei('CALL %s' % na, 0)

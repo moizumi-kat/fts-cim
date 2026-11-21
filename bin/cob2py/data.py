@@ -30,6 +30,7 @@ class Ko:
     def __init__(self, level, na):
         self.level = level
         self.na = na
+        self.dan = []             # 繰返しの刻み（外側から順。多次元の表のため）
         self.pic = None
         self.kata = None          # 'X' 英数 / 'N' 全角 / '9' 数 / None 集団
         self.keta = 0             # 数の整数部＋小数部の桁数、文字なら文字数
@@ -169,6 +170,7 @@ def yomu(go, hajime, owari):
     for k in ne:
         _ookisa(k)
         _ichi(k, 0)
+        _dan(k)
     return ne
 
 
@@ -176,6 +178,20 @@ def _ookisa(k):
     for c in k.ko:
         _ookisa(c)
     k.naga = k.hitotsu_naga()
+
+
+def _dan(k, oya_dan=()):
+    """その項目にかかる繰返しの刻みを、外側から順に並べる。
+
+       COBOL の表は入れ子になる（01 の下の 03 OCCURS 10 の下の 05 OCCURS 7）。
+       X (i, j) の位置は 先頭 ＋ 外の刻み×i ＋ 内の刻み×j。
+    """
+    ima = list(oya_dan)
+    if k.occurs:
+        ima.append(k.naga)
+    k.dan = ima
+    for c in k.ko:
+        _dan(c, ima)
 
 
 def _ichi(k, ichi):
@@ -288,6 +304,27 @@ def file_control(go, hajime, owari):
 SEIGYO = ('EDIT-STATUS', 'EDIT-OPTION', 'EDIT-COLOR', 'EDIT-MODE', 'EDIT-CURSOR')
 
 
+def _wakeru(ko_kazu, na_kazu):
+    """項目 ko_kazu 個を「見出し atama 個 ＋ 行(na_kazu-atama 個)×n」に割る。
+
+       いちばん行数の多い割り方を採る。割り切れなければ None。
+    """
+    ichiban = None
+    for atama in range(0, na_kazu):
+        gyo = na_kazu - atama
+        if gyo <= 0:
+            continue
+        nokori = ko_kazu - atama
+        if nokori <= 0 or nokori % gyo:
+            continue
+        n = nokori // gyo
+        if n < 2:
+            continue
+        if ichiban is None or n > ichiban[1]:
+            ichiban = (atama, n)
+    return ichiban
+
+
 def gamen_ko(teigi, namae, kata=None):
     """定義体1本 ＋ 項目名の並び → Ko（01レコード）。合わなければ None。"""
     # R＝入力項目／W＝出力項目。S（区切りの印）は場所を取らないので外す。
@@ -295,7 +332,24 @@ def gamen_ko(teigi, namae, kata=None):
           if k['midashi'] is None and k['nm'][:1] in ('R', 'W')]
     ko.sort(key=lambda k: k['ichi'])
     if len(ko) != len(namae):
-        return None
+        # 一覧画面（概算・項目・明細・科目）は「見出し部＋繰返しの行」で、
+        # COBOL 側は OCCURS で書くため数が合わない。
+        #
+        # ここは **推測で割り当てない**（2026-11-21 判断）。
+        #   割り切れる組み合わせは何通りもあり、どれが正しいかを決める
+        #   根拠が手元に無い（XMDLIB のコピー原文が未入手）。
+        #   当てずっぽうで割り当てると、画面に別の項目の値が出たまま
+        #   気づけない。そこで **長さだけ正しい入れ物** を作り、名前は
+        #   定義体のもの（R001 など）にしておく。COBOL の名前で引いた
+        #   ところで止まるので、黙って間違った値を出すことはない。
+        #   → XMDLIB のコピー原文をいただければ解決する。
+        namae = [k[chr(39)+"nm"+chr(39)] for k in ko] if False else [k["nm"] for k in ko]
+    if len(ko) != len(namae):
+        # 繰返し行のある一覧画面（概算・項目・明細・科目）は、COBOL 側が
+        # OCCURS で書くので数が合わない。ここでは**長さだけ正しい入れ物**を
+        # 作り、名前は定義体のもの（R001 など）にしておく。
+        # COBOL の名前で引こうとしたところで止まるので、黙って通りはしない。
+        namae = [k['nm'] for k in ko]
     oya = Ko(1, teigi['na'])
     ichi = 0
     for k, na in zip(ko, namae):
@@ -407,6 +461,7 @@ def fd_ko(settou, cols, na=None):
         k = Ko(3, settou + cna)
         k.kata, k.keta, k.shou, k.comp = kata, keta, shou, comp
         k.naga = naga; k.ichi = ichi; k.occurs = occ; k.oya = oya
+        k.dan = [naga] if occ else []
         oya.ko.append(k)
         ichi_hyo[cna] = (ichi, naga)
         ichi += naga * max(1, occ)

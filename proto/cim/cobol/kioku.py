@@ -28,13 +28,15 @@ class Komoku:
     """記憶域の中の1項目。位置と長さと型だけを持ち、値は領域（Ryoiki）側にある。"""
 
     __slots__ = ('na', 'ichi', 'naga', 'kata', 'keta', 'shou', 'fugo',
-                 'comp', 'occurs', 'ko')
+                 'comp', 'occurs', 'ko', 'dan')
 
     def __init__(self, na, ichi, naga, kata=None, keta=0, shou=0,
-                 fugo=False, comp=None, occurs=0):
+                 fugo=False, comp=None, occurs=0, dan=()):
         self.na, self.ichi, self.naga = na, ichi, naga
         self.kata, self.keta, self.shou = kata, keta, shou
         self.fugo, self.comp, self.occurs = fugo, comp, occurs
+        # 繰返しの刻み（外側から順）。多次元の表 X (i, j) のため。
+        self.dan = list(dan) or ([naga] if occurs else [])
         self.ko = []
 
 
@@ -46,12 +48,23 @@ class Ryoiki:
         self.hyo = hyo                      # {名前: Komoku}
 
     # ── 生のバイト ──────────────────────────────
+    def _ichi(self, k, kai):
+        """繰返しの回（整数 または 多次元の組）から、バイトの位置を出す。"""
+        if not kai:
+            return k.ichi
+        if isinstance(kai, (tuple, list)):
+            i = k.ichi
+            for n, d in zip(kai, k.dan or [k.naga]):
+                i += int(n) * d
+            return i
+        return k.ichi + (k.dan[-1] if k.dan else k.naga) * int(kai)
+
     def nama(self, k, kai=0):
-        i = k.ichi + k.naga * kai
+        i = self._ichi(k, kai)
         return bytes(self.b[i:i + k.naga])
 
     def nama_ireru(self, k, v, kai=0):
-        i = k.ichi + k.naga * kai
+        i = self._ichi(k, kai)
         v = (v + b' ' * k.naga)[:k.naga]
         self.b[i:i + k.naga] = v
 
