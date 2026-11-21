@@ -1,0 +1,1288 @@
+{
+ "A10010PO": [
+  "A10040D1",
+  "A10050D1",
+  "A10060D1",
+  "A10070D1",
+  "A10080D1",
+  "A10090D1"
+ ],
+ "A10040PO": [
+  "A10040D1"
+ ],
+ "A10050PO": [
+  "A10050D1"
+ ],
+ "A10060PO": [
+  "A10060D1"
+ ],
+ "A10070PO": [
+  "A10070D1"
+ ],
+ "A10080PO": [
+  "A10080D1"
+ ],
+ "A10090PO": [
+  "A10090D1"
+ ],
+ "A11010PO": [
+  "A11010D1"
+ ],
+ "A11110PP": [
+  "A11110P1"
+ ],
+ "A11120PP": [
+  "A11120P1"
+ ],
+ "A11130PP": [
+  "A11130P1"
+ ],
+ "A11210PP": [
+  "A11210P1",
+  "A11210P2"
+ ],
+ "A11230PP": [
+  "A11230P1"
+ ],
+ "A11310PP": [
+  "A11310P1"
+ ],
+ "A11320PP": [
+  "A11320P1",
+  "A11320P2"
+ ],
+ "A11330PP": [
+  "A11320P3",
+  "A11330P1"
+ ],
+ "A11430PP": [
+  "A11430P1"
+ ],
+ "A12110PP": [
+  "A12110P1"
+ ],
+ "A12120PP": [
+  "A12120P1"
+ ],
+ "A12130PP": [
+  "A12130P1"
+ ],
+ "A12210PP": [
+  "A12210P1",
+  "A12210P2"
+ ],
+ "A12230PP": [
+  "A12230P1"
+ ],
+ "A12420PP": [
+  "A12120P1"
+ ],
+ "A12430PP": [
+  "A12430P1"
+ ],
+ "A13120PP": [
+  "A13120P1"
+ ],
+ "A13210PP": [
+  "A13210P1",
+  "A13210P2"
+ ],
+ "A13420PP": [
+  "A13120P1"
+ ],
+ "A13430PP": [
+  "A13430P1"
+ ],
+ "A17000PO": [
+  "A17000D1"
+ ],
+ "A18030PO": [
+  "A18030D1"
+ ],
+ "A18040PO": [
+  "A18040D1"
+ ],
+ "A30020PO": [
+  "A30010D1",
+  "A30010D2"
+ ],
+ "A30120PP": [
+  "A30120P1"
+ ],
+ "A30130PP": [
+  "A30130P1"
+ ],
+ "A30140PP": [
+  "A30140P1"
+ ],
+ "B10010PO": [
+  "B10010D1"
+ ],
+ "B10010PP": [
+  "B10010P1"
+ ],
+ "B10020PP": [
+  "B10020P1"
+ ],
+ "B10030PP": [
+  "B10030P1"
+ ],
+ "B10040PP": [
+  "B10040P1"
+ ],
+ "B10050PP": [
+  "B10050P1"
+ ],
+ "B10060PP": [
+  "B10060P1"
+ ],
+ "B10100PP": [
+  "B10100P1"
+ ],
+ "B10120PA": [
+  "B10120P1"
+ ],
+ "B10142PP": [
+  "B10140P1"
+ ],
+ "B10160PP": [
+  "B10160P1",
+  "B10160P2"
+ ],
+ "B10200PP": [
+  "B10200P1"
+ ],
+ "B10212PP": [
+  "B10210P1"
+ ],
+ "B10320CP": [
+  "B10320PA"
+ ],
+ "B10320PP": [
+  "B10320P1"
+ ],
+ "B10511PO": [
+  "B10510D1"
+ ],
+ "B10520PO": [
+  "B10520D1"
+ ],
+ "B20030PO": [
+  "B20030D1"
+ ],
+ "B20120PP": [
+  "B20120P1",
+  "B20120P2"
+ ],
+ "B30010PP": [
+  "B30010P1"
+ ],
+ "B30020PP": [
+  "B30020P1"
+ ],
+ "B30030PP": [
+  "B30030P1"
+ ],
+ "B30040PP": [
+  "B30040P1"
+ ],
+ "B30050PP": [
+  "B30050P1"
+ ],
+ "B30060PP": [
+  "B30060P1"
+ ],
+ "B30100PO": [
+  "B30100D1"
+ ],
+ "BANCH2CP": [
+  "BANCH1D1",
+  "BANCH1P1"
+ ],
+ "BANJO1CF": [
+  "BANJO1D1"
+ ],
+ "BANJO1CP": [
+  "BANJO1P1"
+ ],
+ "BANKIN1S": [
+  "BANKIN01",
+  "KANGEN03"
+ ],
+ "BUHNSY1S": [
+  "BUHNMED1",
+  "BUHNMED2"
+ ],
+ "BUKAI1CP": [
+  "BUKAI1PA"
+ ],
+ "BUTAN4CG": [
+  "BUTAN4D1"
+ ],
+ "BUTAN6CP": [
+  "BUTAN6P1"
+ ],
+ "BUTKN1CG": [
+  "BUTKN1D1"
+ ],
+ "BUTSYOR1": [
+  "NGENKSD6"
+ ],
+ "CHKJB4CP": [
+  "CHKJBK03"
+ ],
+ "CHKJB5CP": [
+  "CHKJBK03"
+ ],
+ "D20010PO": [
+  "D20010D1"
+ ],
+ "D20020PO": [
+  "D20020D1"
+ ],
+ "D20040PP": [
+  "D20040P1"
+ ],
+ "D20080PO": [
+  "D20080D1"
+ ],
+ "D20090PO": [
+  "D20090D1"
+ ],
+ "D20100PO": [
+  "D20100D1"
+ ],
+ "D2011XPO": [
+  "D20110D1",
+  "D20110D2"
+ ],
+ "D20170PP": [
+  "D20170P1"
+ ],
+ "E1002NCP": [
+  "E1002NP1"
+ ],
+ "EGKAN1CP": [
+  "EGKAN1D1",
+  "EGKAN1P1"
+ ],
+ "EGKANACP": [
+  "EGKAN1D1",
+  "EGKAN1PA"
+ ],
+ "EGKANBCP": [
+  "EGKAN1D1",
+  "EGKAN2PA"
+ ],
+ "EGNIP01S": [
+  "EGNIPSY1"
+ ],
+ "EGNIP11S": [
+  "EGNIPSY2"
+ ],
+ "EM1105CM": [
+  "EM1100D1"
+ ],
+ "ETANP02S": [
+  "EITANPR2"
+ ],
+ "ETANP03S": [
+  "EITANPR3"
+ ],
+ "EXECCHKG": [
+  "EXECC1D1"
+ ],
+ "EXECENDG": [
+  "EXECE1D1"
+ ],
+ "F10110RC": [
+  "F10110D1",
+  "F10110D2"
+ ],
+ "F10120PO": [
+  "F10120D1"
+ ],
+ "F10220PP": [
+  "F10220P1"
+ ],
+ "F10230PB": [
+  "F10220P1"
+ ],
+ "F10260PO": [
+  "F10260D1"
+ ],
+ "F10270PP": [
+  "F10270P1"
+ ],
+ "F10280PO": [
+  "F10280D1"
+ ],
+ "F10305PB": [
+  "F10315P1"
+ ],
+ "F10315PP": [
+  "F10315P1"
+ ],
+ "F10320PO": [
+  "F10320D1"
+ ],
+ "F10325PO": [
+  "F10325D1"
+ ],
+ "F10350PO": [
+  "F10350D1"
+ ],
+ "F10360PO": [
+  "F10360D1"
+ ],
+ "F10365PP": [
+  "F10365P1"
+ ],
+ "F10366PB": [
+  "F10365P1"
+ ],
+ "F10370PO": [
+  "F10370D1"
+ ],
+ "F10412PO": [
+  "F10410D1"
+ ],
+ "F10430PP": [
+  "F10430P1"
+ ],
+ "F10510PO": [
+  "F10510D1"
+ ],
+ "F10530PP": [
+  "F10530P1"
+ ],
+ "F10540PO": [
+  "F10540D1"
+ ],
+ "F10542PO": [
+  "F10540D1"
+ ],
+ "F10560PP": [
+  "F10560P1"
+ ],
+ "F10570PO": [
+  "F10570D1"
+ ],
+ "F10590PP": [
+  "F10590P1"
+ ],
+ "F10595PP": [
+  "F10595P1"
+ ],
+ "F10610PO": [
+  "F10610D1",
+  "F10610D2"
+ ],
+ "F10660PO": [
+  "SHIZIMD9"
+ ],
+ "F10670PO": [
+  "F10670D1"
+ ],
+ "F10720PP": [
+  "F10720P1"
+ ],
+ "F10730PO": [
+  "F10730D1"
+ ],
+ "F10750PP": [
+  "F10750P1"
+ ],
+ "F10810PO": [
+  "F10810D1"
+ ],
+ "F10875PP": [
+  "F10875P1"
+ ],
+ "F10890PO": [
+  "F10890D1"
+ ],
+ "F11090PP": [
+  "F11090P1"
+ ],
+ "F20150PP": [
+  "F20150P1"
+ ],
+ "F20190PO": [
+  "F20190D1"
+ ],
+ "FSIK22CP": [
+  "FSIK22P1"
+ ],
+ "FSIZIBCS": [
+  "FSIZIAD1",
+  "FSIZIAD2"
+ ],
+ "FSIZIDCS": [
+  "FSIZIBD1",
+  "FSIZIBD2"
+ ],
+ "FUCHU2CG": [
+  "FUCHU2D1"
+ ],
+ "FUCHU3CF": [
+  "FUCHU3D1"
+ ],
+ "FUCHU4CF": [
+  "FUCHU4D1"
+ ],
+ "FUJISX1S": [
+  "FUJIMD01"
+ ],
+ "FUJISX2S": [
+  "FUJISPX2"
+ ],
+ "FUNA04CP": [
+  "FUNA04P1"
+ ],
+ "FUNA05CP": [
+  "FUNA05P1"
+ ],
+ "GAIHI1CG": [
+  "GAIHIND1"
+ ],
+ "GAIHI1CS": [
+  "GAIHI1D1"
+ ],
+ "GAIHI2CP": [
+  "GAIHI2D1",
+  "GAIHI2P1"
+ ],
+ "GAIHI3CF": [
+  "GAIHI3D1"
+ ],
+ "GAIHIACS": [
+  "GAIHI1D1"
+ ],
+ "GAISEP1S": [
+  "GAISEIP1"
+ ],
+ "GENK11CS": [
+  "GENK11D1",
+  "JYUSYMDX",
+  "NGENKSD1",
+  "SHIMEDXX",
+  "SJUMEDT2"
+ ],
+ "GENK13CS": [
+  "GENK11D1",
+  "JYUSYMDX",
+  "NGENKSD1",
+  "SHIMEDXX",
+  "SJUMEDT2"
+ ],
+ "GENK14CS": [
+  "GENK11D1",
+  "JYUSYMDX",
+  "NGENKSD1",
+  "SHIMEDXX",
+  "SJUMEDT2"
+ ],
+ "GENK19CS": [
+  "GENK11D1",
+  "GMTOIMD8",
+  "JYUSYMDX",
+  "KENMITM2",
+  "NGENKSD8",
+  "SHIMEDXX",
+  "SJUMEDT2"
+ ],
+ "GENK21CS": [
+  "GENK11D1"
+ ],
+ "GENKA1CS": [
+  "JYUSYMDX",
+  "NGENKSD1",
+  "SHIMEDXX",
+  "SJUMEDT2",
+  "SYBKNXD1"
+ ],
+ "GENKA4CP": [
+  "KANGENM1",
+  "KANGENP1"
+ ],
+ "GENKA5CS": [
+  "GENK1ND1",
+  "JYUSYMDX",
+  "NGENKSD1",
+  "SHIMEDXX",
+  "SJUMEDT2"
+ ],
+ "GENKE1CG": [
+  "GENKE1D1"
+ ],
+ "GENKE7CP": [
+  "GENCHFP1"
+ ],
+ "GENKEACP": [
+  "GENKEAP1",
+  "GENKEAP2"
+ ],
+ "GENKMSAS": [
+  "SGENKMDA"
+ ],
+ "GENKMSBS": [
+  "HANKEIMA"
+ ],
+ "GENMAS1S": [
+  "HANKEIM1"
+ ],
+ "GENMAS2S": [
+  "SGENKMD2"
+ ],
+ "GENSYOR1": [
+  "NGENKSD5"
+ ],
+ "GMTOIT8S": [
+  "JYUSYMDX",
+  "KENTOU22",
+  "SGENMDT2",
+  "SHIMEDXX",
+  "SJUMEDT2"
+ ],
+ "HKANF01S": [
+  "HKANMD01"
+ ],
+ "HKANP01S": [
+  "HKANPD01"
+ ],
+ "HKGENNCF": [
+  "HKGENND1"
+ ],
+ "HKGENNCP": [
+  "HKGENMP1"
+ ],
+ "HOJYO1CF": [
+  "HOJYO1D1"
+ ],
+ "HOJYO2CP": [
+  "HOJYO2P1"
+ ],
+ "HOZIM01S": [
+  "HIZIMD01"
+ ],
+ "HYOKABCG": [
+  "HYOKABD1"
+ ],
+ "JHYSYORI": [
+  "JYUSYMDN"
+ ],
+ "JISEK3CP": [
+  "JISEK3P1"
+ ],
+ "JISEK4CP": [
+  "JISEK4P1"
+ ],
+ "JISEKACP": [
+  "JISEKAD1"
+ ],
+ "JITUP1CP": [
+  "JITUPRP1"
+ ],
+ "JITUP2CP": [
+  "JITUPRP1"
+ ],
+ "JKAKU1CG": [
+  "JKAKU1D1"
+ ],
+ "JKAKU2CG": [
+  "JKAKU1D1"
+ ],
+ "JRUI03CK": [
+  "JRUI03D1"
+ ],
+ "JUSUI2CP": [
+  "JUSUI2P1"
+ ],
+ "JUSUI3CP": [
+  "JUSUI3P1"
+ ],
+ "JUSUIACP": [
+  "B10010P1"
+ ],
+ "JUSUIBCP": [
+  "JUSUI1P1"
+ ],
+ "JYUNKN2P": [
+  "JYUNK2P1",
+  "URIPRD02"
+ ],
+ "JYUNKN6P": [
+  "JYUNK6P1",
+  "URIPRD02"
+ ],
+ "JYUNKN8P": [
+  "JYUNK8P1",
+  "URIPRD02"
+ ],
+ "JYURUI2S": [
+  "JYURIMD1"
+ ],
+ "JYURUI3S": [
+  "JYURIMD2"
+ ],
+ "JYUSY01S": [
+  "JYUSYMD1"
+ ],
+ "JYUSY10S": [
+  "JYUSYMDA"
+ ],
+ "JYUSY11S": [
+  "HINJUSY1"
+ ],
+ "JYUSYORI": [
+  "NPJUMEDN"
+ ],
+ "KANPR01S": [
+  "KANPRD01"
+ ],
+ "KANRPR1S": [
+  "KANRIPR1"
+ ],
+ "KARIU03S": [
+  "KARIUMD1"
+ ],
+ "KARIU13S": [
+  "KARIUMD2"
+ ],
+ "KARJYU1S": [
+  "KAJYUPR1"
+ ],
+ "KETGAMEN": [
+  "NPKETEMD"
+ ],
+ "KOGYO1CF": [
+  "KOGYO1D1"
+ ],
+ "KRCH02CP": [
+  "KARIJUD1",
+  "KRCH02P1",
+  "KRCH02P2"
+ ],
+ "KUMKAN5S": [
+  "SKUMJTP1"
+ ],
+ "KYAHN2CG": [
+  "KYAHN2D1",
+  "KYAHN2P1"
+ ],
+ "KYAHN3CG": [
+  "KYAKUHD1"
+ ],
+ "KYAHN5CG": [
+  "KYAKU4D1"
+ ],
+ "KYAHN6CG": [
+  "KYAHN6D1"
+ ],
+ "KYAHN6CP": [
+  "KYAHN2P1"
+ ],
+ "KYAHN7CP": [
+  "KYAHN7D1",
+  "KYAHN7P1"
+ ],
+ "KYAHN8CP": [
+  "KYAHN8D1",
+  "KYAHN8P1"
+ ],
+ "KYAHNACP": [
+  "KYAHNAP1",
+  "KYAKUAD1"
+ ],
+ "KYAHNBCS": [
+  "KYAHNBD1",
+  "KYAHNBD2"
+ ],
+ "KYAHNCCS": [
+  "KYAHNBD2",
+  "KYAHNCD1",
+  "KYAHNCD3"
+ ],
+ "KYAHNNCP": [
+  "KYAHNND1",
+  "KYAHNNP1"
+ ],
+ "M15010PO": [
+  "M15010D1"
+ ],
+ "M15020PO": [
+  "M15020D1"
+ ],
+ "M15030PO": [
+  "M15030D1"
+ ],
+ "M30110PO": [
+  "M30110D1"
+ ],
+ "M30210PO": [
+  "M30210D1"
+ ],
+ "M30220PO": [
+  "M30220D1"
+ ],
+ "M30221PP": [
+  "M30221P1"
+ ],
+ "M30310PO": [
+  "M30310D1"
+ ],
+ "M30311PP": [
+  "M30311P1"
+ ],
+ "M30410PO": [
+  "M30410D1"
+ ],
+ "M30420PO": [
+  "M30420D1"
+ ],
+ "M30510PN": [
+  "M3051ND1",
+  "M3051ND2"
+ ],
+ "M30510PO": [
+  "M30510D1",
+  "M30510D2"
+ ],
+ "M38200PO": [
+  "M38200D1"
+ ],
+ "M38210PP": [
+  "M38210P1"
+ ],
+ "MATUBICG": [
+  "MATUBID1"
+ ],
+ "MIJU09CP": [
+  "MIJUK9P1",
+  "MIJUK9P2"
+ ],
+ "MISUK1CG": [
+  "MISUK1D1"
+ ],
+ "MISUK1CS": [
+  "SHIZIMD4"
+ ],
+ "MISUK2CP": [
+  "MISUK2D1",
+  "MISUK2P1"
+ ],
+ "MITME1CP": [
+  "MITMEIP1"
+ ],
+ "MITME2CP": [
+  "MITMEIP1"
+ ],
+ "MITU010S": [
+  "MITUMED3"
+ ],
+ "MJS030CF": [
+  "FUJIMD01"
+ ],
+ "MJS040CF": [
+  "MJS040P1"
+ ],
+ "MJS050CG": [
+  "MJS050D1"
+ ],
+ "MJS070CP": [
+  "MJS070P1"
+ ],
+ "MJS080CS": [
+  "MJS080D1",
+  "MJS080D2"
+ ],
+ "MJS090CG": [
+  "MJS090D1"
+ ],
+ "MJS100CG": [
+  "MJS100D1"
+ ],
+ "MJYO210S": [
+  "MITUMED6"
+ ],
+ "MTGEP02S": [
+  "MTGEPPD1"
+ ],
+ "MTSYO2CS": [
+  "MTSYO1D2"
+ ],
+ "MTSYO3CS": [
+  "MTSYO3D1"
+ ],
+ "MTSYO4CS": [
+  "MTSYO4D1"
+ ],
+ "NIPPR01S": [
+  "NIPPRD01"
+ ],
+ "NIPPR02S": [
+  "NIPPRD02"
+ ],
+ "NIPSY2CS": [
+  "NIPSY2D1",
+  "NIPSY2D2",
+  "NIPSY2D3"
+ ],
+ "NNOKI77S": [
+  "NOKIKPR6"
+ ],
+ "NOKIID2S": [
+  "NOKIIDPA"
+ ],
+ "NOKIID3S": [
+  "NOKIIDP1"
+ ],
+ "NOKIID4S": [
+  "NOKIIDP1"
+ ],
+ "NOKIK57S": [
+  "NOKIKPR6"
+ ],
+ "NOUJU02S": [
+  "NOUKIJUP"
+ ],
+ "NPJYU1CG": [
+  "NPJYU1D1"
+ ],
+ "NPJYU4CS": [
+  "JYUSYMDX",
+  "NPJUMED1",
+  "NPJYU4D1",
+  "NPURMED1",
+  "NPZUMED1"
+ ],
+ "NPJYU5CS": [
+  "JYUSYMDN",
+  "NGENKSD5",
+  "NGENKSD6",
+  "NPJUMEDN",
+  "NPJYU4D1",
+  "NPKETEMD",
+  "NPURMEDM",
+  "NPZUMEDM",
+  "SHIMEDXN"
+ ],
+ "NTAN11DP": [
+  "NOKIKPR5",
+  "NTAN11P1"
+ ],
+ "NTAN23CP": [
+  "KAKUNINP",
+  "NOKIKPR5",
+  "NTAN11P1"
+ ],
+ "NTANAADP": [
+  "NOKIKPR5",
+  "NTAN11P1"
+ ],
+ "NTANJJCP": [
+  "KAKUNINP",
+  "NOKIKPR5",
+  "NTAN11P1"
+ ],
+ "NYAMA1CG": [
+  "NYAMA1D1"
+ ],
+ "R10180PP": [
+  "R10180P1"
+ ],
+ "R10181PP": [
+  "R10180P1"
+ ],
+ "RENHY1CP": [
+  "RENHYOP1"
+ ],
+ "RENRK2CG": [
+  "HENREND3",
+  "HENRENDB",
+  "HENRENDN"
+ ],
+ "RENRK6CP": [
+  "RENRK6P1"
+ ],
+ "RENRK7CP": [
+  "RENRK7P1"
+ ],
+ "RENRKACP": [
+  "RENRKAD1",
+  "RENRKAP1"
+ ],
+ "RENRKBCP": [
+  "RENRKBP1"
+ ],
+ "RENRKDCP": [
+  "RENRK8P1"
+ ],
+ "RENRKECP": [
+  "RENRK8P1"
+ ],
+ "RIDOURCK": [
+  "RIDOURD1"
+ ],
+ "SAKJY4CP": [
+  "SAKJY4P1"
+ ],
+ "SAKJY5CP": [
+  "SAKJY5P1"
+ ],
+ "SAKUZ2CG": [
+  "SAKUZ2D1"
+ ],
+ "SAKUZ4CS": [
+  "SAKUZ4DA"
+ ],
+ "SAKUZCCG": [
+  "SAKUZ1DA"
+ ],
+ "SAKUZU2S": [
+  "SAKUZUP1"
+ ],
+ "SAKUZU3S": [
+  "SAKUZUP2"
+ ],
+ "SAKZU2CF": [
+  "SAKZU2D1"
+ ],
+ "SAKZUACF": [
+  "SAKZU1D1"
+ ],
+ "SEIBAN1S": [
+  "SEIMED01"
+ ],
+ "SEISN1CG": [
+  "SEISN1D1"
+ ],
+ "SEISN7CP": [
+  "SEISN5P1"
+ ],
+ "SEJYO2CP": [
+  "SEJYO1D1",
+  "SEJYO1P1"
+ ],
+ "SEKJT1CF": [
+  "SEKJT1D1"
+ ],
+ "SEKJT3CP": [
+  "SEKJT3P1"
+ ],
+ "SEKJT4CP": [
+  "SEKJT4P1"
+ ],
+ "SEKJTACF": [
+  "SEKJT1D1"
+ ],
+ "SEMICH04": [
+  "SEMICHP1"
+ ],
+ "SETKE1CG": [
+  "SETKE1D1"
+ ],
+ "SETKE2CP": [
+  "SETKE2P1"
+ ],
+ "SETKE3CP": [
+  "SETKE3P1"
+ ],
+ "SETKE4CP": [
+  "SETKE4P1"
+ ],
+ "SETUK2NP": [
+  "SETUK2P1",
+  "SETUK2P2"
+ ],
+ "SETUKCCP": [
+  "SETUKCP1",
+  "SETUKCP2"
+ ],
+ "SETUKYCP": [
+  "SETUK1PY"
+ ],
+ "SETVE9CP": [
+  "SETVE9P1",
+  "SETVE9P2"
+ ],
+ "SGENKP1S": [
+  "SGENKPP1",
+  "SGENKSD1"
+ ],
+ "SGENKP2S": [
+  "SGENKPP2",
+  "SGENKSD1"
+ ],
+ "SGENKPAS": [
+  "SGENKPPB",
+  "SGENKSDA"
+ ],
+ "SGENKS1S": [
+  "SGENKSD2",
+  "SHIMEDXX"
+ ],
+ "SGENKSAS": [
+  "SGENKSDB",
+  "SHIMEDXX"
+ ],
+ "SGENKSBS": [
+  "SGENKSDB",
+  "SHIMEDXX"
+ ],
+ "SHANDN1S": [
+  "SHANDND1",
+  "TEST30P1"
+ ],
+ "SHISY1CS": [
+  "SHISY1D1"
+ ],
+ "SHIZAI1S": [
+  "ZAIPRD01"
+ ],
+ "SHIZAI2S": [
+  "ZAIPRD02"
+ ],
+ "SHIZI1CM": [
+  "SHIZI1D1"
+ ],
+ "SHIZI76P": [
+  "SHIZIMD3"
+ ],
+ "SHIZI77P": [
+  "SIZAIPD2"
+ ],
+ "SHIZI78P": [
+  "F10270P1"
+ ],
+ "SHIZI79P": [
+  "F10270P1"
+ ],
+ "SINSYORI": [
+  "SHIMEDXN"
+ ],
+ "SIZAI02S": [
+  "F10410D1"
+ ],
+ "SIZAI05S": [
+  "SIZAIPD1"
+ ],
+ "SIZSY1CS": [
+  "FSIZIAD1",
+  "FSIZIAD2"
+ ],
+ "SOKUSN1S": [
+  "SOKUSIND"
+ ],
+ "SOKUSN2S": [
+  "SOKUSIND"
+ ],
+ "SUIHY1CP": [
+  "SUIHY1P1"
+ ],
+ "SUIHY2CP": [
+  "SUIHY2P1"
+ ],
+ "SYHEN01S": [
+  "SYHMED01"
+ ],
+ "SYKAI01S": [
+  "SYMED001",
+  "SYMED002"
+ ],
+ "SYKAI02S": [
+  "SYMED003",
+  "SYMED004"
+ ],
+ "SYKAI03S": [
+  "SYMED003",
+  "SYMED004",
+  "SYMED005",
+  "SYMED006"
+ ],
+ "SYUSG04P": [
+  "SYUSKMPA",
+  "SYUSKMPB",
+  "SYUSKMPC"
+ ],
+ "SYUSI2CP": [
+  "SYUSI2P1"
+ ],
+ "SYUSK2DF": [
+  "SYUSK2D1"
+ ],
+ "SYUSK4DF": [
+  "FUJIMD01"
+ ],
+ "SYUSKACM": [
+  "SYUSKAD1"
+ ],
+ "SYUSKMFP": [
+  "SYUSKMPA",
+  "SYUSKMPB",
+  "SYUSKMPC"
+ ],
+ "SYUTZP2S": [
+  "SYUTUZU1",
+  "SYUTZPR2"
+ ],
+ "SYUTZP3P": [
+  "SYUTUZU1",
+  "SYUTZPR1"
+ ],
+ "SYUTZP4P": [
+  "SYUTUZU1",
+  "SYUTZPR1"
+ ],
+ "SZUGAMEN": [
+  "NPZUMEDM"
+ ],
+ "TEGNIP5S": [
+  "TEGNPSY3"
+ ],
+ "TEMOCH2S": [
+  "TEMPRD01"
+ ],
+ "TEMOCH4S": [
+  "TEMOPR02",
+  "URIPRD02"
+ ],
+ "TEMOCH5S": [
+  "TEMPRD02"
+ ],
+ "TEMOCHBS": [
+  "TEMOCHM2"
+ ],
+ "TEMOPRAS": [
+  "TEMOCHP1"
+ ],
+ "TEMOPRBS": [
+  "TEMOCHP2"
+ ],
+ "TKA020PP": [
+  "TKA020P1"
+ ],
+ "TKAKUCCG": [
+  "TKAKUCD1"
+ ],
+ "TKANRY1S": [
+  "TKANRYD1"
+ ],
+ "TKANRY2S": [
+  "TKANRYP1"
+ ],
+ "TKANRY3S": [
+  "TKANRYP2"
+ ],
+ "TREN11CP": [
+  "TREN11D1",
+  "TREN11P1"
+ ],
+ "TRMAS01S": [
+  "TRMASMD1"
+ ],
+ "UKAKU1CG": [
+  "UKAKU1DA"
+ ],
+ "UKAKU2CG": [
+  "UKAKU1D2"
+ ],
+ "UKAKU3CP": [
+  "NOKIKPRA",
+  "UKAKUPRA"
+ ],
+ "UKAKUACP": [
+  "NOKIKPRA",
+  "UKAKUPRB"
+ ],
+ "UNCH02CM": [
+  "UNCH02D1"
+ ],
+ "UNCHN1CM": [
+  "UNCHN1D1"
+ ],
+ "UNCHN5CP": [
+  "UNCHN5D1",
+  "UNCHN5P1"
+ ],
+ "UNCHN6CP": [
+  "UNCHN6D1",
+  "UNCHN7P1"
+ ],
+ "UNCHN7CP": [
+  "UNCHN6D1",
+  "UNCHN7P3"
+ ],
+ "UNCHN8CG": [
+  "UNCHN8D1"
+ ],
+ "UNCHN8CP": [
+  "UNCHN6D1",
+  "UNCHN7P2"
+ ],
+ "UNCHN9CG": [
+  "UNCHN9D1"
+ ],
+ "UNCHNBCS": [
+  "UNCHNBD1",
+  "UNCHNBD2",
+  "UNCHNBP1"
+ ],
+ "UNCHNFCP": [
+  "UNCHNFD1",
+  "UNCHNFP1"
+ ],
+ "UNCHNGCG": [
+  "UNCHNGD1"
+ ],
+ "URIGAMEN": [
+  "NPURMEDM"
+ ],
+ "URIPR01S": [
+  "URIPRD01"
+ ],
+ "URIPR02S": [
+  "URIPRD02"
+ ],
+ "URIPR05S": [
+  "URIPR5D1",
+  "URIPRD01"
+ ],
+ "URISO1CP": [
+  "URISOXP1"
+ ],
+ "URISO2CP": [
+  "URISO2DX",
+  "URISO2PX"
+ ],
+ "URSYOYCS": [
+  "URSYO1D1",
+  "URSYOYD1",
+  "URSYOYD2"
+ ],
+ "YAMA010S": [
+  "YAMAMED1"
+ ],
+ "YAMAPR2S": [
+  "YAMAPR01"
+ ],
+ "YAMAPR4S": [
+  "YAMAPR04"
+ ],
+ "YAMASY1S": [
+  "YAMAMD01"
+ ],
+ "YAMASY3S": [
+  "YAMAMD03"
+ ],
+ "YSMNT1CG": [
+  "YSMNT1D1"
+ ],
+ "ZAREN3CP": [
+  "ZAREN3P1"
+ ],
+ "ZOGEN03S": [
+  "ZOGENM03"
+ ]
+}
