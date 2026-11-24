@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}テーブル一覧（現行ファイル）{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>テーブル一覧</h2>
+  <div class="path">テーブル名＝現行の物理ファイル名／列名＝現行の COBOL 英名　|　{{ tabs|length }}表・{{ ncol }}列</div>
+  <div class="meta"><span class="tag g">村上様ご指示（2026-10-16）により、現行のファイル定義に合わせました</span></div>
+</div>
+<div class="banner ok"><b>レプリ</b>＝データベースサーバへレプリケーションしているファイル。
+  村上様よりお送りいただいた<b>定義体（DDL）を一字一句そのまま</b>使っています。
+  CAD・営業支援システムなどの周辺ソフトが同じ定義を見ているため、ここは変えません。<br>
+  <b>仕様書</b>＝レプリケーションしていないファイル。
+  「COBOLファイル定義からSQL Serverテーブル定義へのフィールド名変換仕様書」に従い、
+  現行のレコードリスト（FADLIB／FCDLIB／FFDLIB／KANDLIB rev4）の PIC から機械的に作っています。
+  繰返し（OCCURS）は英名を _ で6文字に詰めて _1, _2 … と展開します。
+  どちらも、こちらで考えた名前・桁はありません。</div>
+{% for t in tabs %}
+<div class="card">
+  <div class="sec"><a href="/tables/{{ t.name }}">{{ t.name }}</a>　{{ t.nm }}
+    <span class="tag {{ 'g' if t.src == 'rep' else '' }}">{{ 'レプリ（定義体そのまま）' if t.src == 'rep' else '仕様書で生成' }}</span>
+    <span style="font-weight:400;color:var(--sub)">（{{ t.cols|length }}列／{{ t.n }}件）</span></div>
+  <div class="note" style="margin:-2px 0 6px">ライブラリ {{ t.lib }}　／　論理ファイル {{ t.ronri }}</div>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:20%">列名（現行の英名）</th><th style="width:28%">現行の項目名</th>
+      <th style="width:14%">現行のPIC</th><th style="width:20%">SQLの型</th><th>主キー</th></tr></thead>
+    <tbody>{% for c in t.cols %}
+      <tr><td>{{ c.nm }}</td><td>{{ c.ja }}</td><td>{{ c.pic }}</td><td>{{ c.ty }}</td>
+          <td>{{ '●' if c.pk else '' }}</td></tr>
+    {% endfor %}</tbody></table></div>
+</div>
+{% endfor %}
+{% endblock %}

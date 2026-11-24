@@ -65,6 +65,40 @@ def koutei_page(no):
 
 
 # ------------------------------- 工程を実データで動かす（2026-11-24）
+@app.route('/tables/<name>')
+def table_rows(name):
+    """表の中身を見る（実データの確かめ用・2026-11-24）。
+
+       列名は現行の項目名（英名）＋日本語の項目名を見出しに添える。
+       読むだけ。並び順は表のとおり（rowid 順）。
+    """
+    from .schema_gen import TABLES
+    from .db import q
+    t = TABLES.get(name)
+    if not t:
+        abort(404)
+    kazu = max(1, min(200, int(request.args.get('n', 50))))
+    saki = max(0, int(request.args.get('p', 0)))
+    con = connect()
+    try:
+        try:
+            zen = q(con, 'SELECT COUNT(*) AS n FROM "%s"' % name)[0]['n']
+        except Exception:
+            zen = 0
+        try:
+            gyo = q(con, 'SELECT * FROM "%s" LIMIT %d OFFSET %d'
+                    % (name, kazu, saki))
+        except Exception as e:
+            gyo = []
+            zen = 0
+    finally:
+        con.close()
+    cols = [{'nm': c[0], 'ja': c[2], 'pic': c[3]} for c in t['cols']]
+    return render_template('table_rows.html', t=t, name=name, cols=cols,
+                           gyo=[dict(r) for r in gyo], zen=zen,
+                           kazu=kazu, saki=saki, **_nav())
+
+
 @app.route('/ugokasu/<int:no>')
 @app.route('/ugokasu/<int:no>/<pgm>')
 def ugokasu_page(no, pgm=None):

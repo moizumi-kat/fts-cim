@@ -135,12 +135,28 @@ def gamen_hyo(teigi, rec=None):
        データ項目は、レコードがあればその値、無ければ空。
     """
     gyo = {}
+    # 一覧画面の繰返し行は、定義体に名前が入っていない（2行目以降は通し番号）。
+    # 同じ桁の**すぐ上の行**の名前を「推定」として添える。印を付けて出すので、
+    # 当てずっぽうを正しい名前のように見せることはしない。
+    ue = {}
+    for k in sorted((x for x in teigi['ko'] if x.get('gyo') is not None
+                     and x['ichi']), key=lambda x: (x['gyo'], x['keta'])):
+        if k.get('cob'):
+            ue[k['keta']] = (k['cob'], k['gyo'])
     for k in teigi['ko']:
         if k.get('gyo') is None:
             continue
+        suitei = False
         if k['ichi']:
             moji = _kiri(rec, k) if rec else ''
-            ko = k.get('cob') or k['nm']
+            ko = k.get('cob')
+            if not ko:
+                mo = ue.get(k['keta'])
+                if mo and mo[1] < k['gyo']:
+                    ko = '%s(%d)' % (mo[0], k['gyo'] - mo[1] + 1)
+                    suitei = True
+                else:
+                    ko = k['nm']
             iri = str(k['nm'])[:1] in ('R', 'A', ']')
         else:
             moji = k.get('midashi') or ''
@@ -149,7 +165,7 @@ def gamen_hyo(teigi, rec=None):
             continue
         gyo.setdefault(k['gyo'], []).append(
             {'gyo': k['gyo'], 'keta': k['keta'], 'naga': k.get('naga') or 0,
-             'moji': moji, 'ko': ko, 'iri': iri})
+             'moji': moji, 'ko': ko, 'iri': iri, 'suitei': suitei})
     return [{'gyo': g, 'waku': sorted(gyo[g], key=lambda x: x['keta'])}
             for g in sorted(gyo)]
 

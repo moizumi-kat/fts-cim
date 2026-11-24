@@ -36,8 +36,9 @@
     <div class="gline"><span class="gno">{{ '%02d'|format(ln.gyo) }}</span>
     {% for w in ln.waku %}
       {% if w.ko %}
-        <span class="gko" title="{{ w.ko }}（{{ w.naga }}桁）"
-          >{{ w.ko }}<i>{{ w.moji }}</i></span>
+        <span class="gko{% if w.suitei %} sui{% endif %}"
+          title="{{ w.ko }}（{{ w.naga }}桁）{% if w.suitei %}／名前は上の行からの推定です{% endif %}"
+          >{{ w.ko }}{% if w.suitei %}<b>?</b>{% endif %}<i>{{ w.moji }}</i></span>
       {% else %}
         <span class="gmi">{{ w.moji }}</span>
       {% endif %}

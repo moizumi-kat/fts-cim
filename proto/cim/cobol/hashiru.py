@@ -214,6 +214,9 @@ class Pgm:
         # 索引でないファイル（VLD のメッセージ列・画面・帳票）へ書いたもの。
         # 表が無いので、ここに貯めて後ろの処理へ渡す。
         self.kaita = {}
+        # 非蓄積型論理宛先（VLD）・作業ファイルの待ち行列。
+        # 書いたものを同じ走りの中で読み返せるようにする。
+        self.machi = {}
         if con is not None and db is not None:
             for na, d in self.FAIRU.items():
                 sakuin = d.get('kumi') == 'INDEXED' and d.get('kagi')
@@ -596,6 +599,9 @@ class Pgm:
         f = self._fname(f)
         fa = self.f.get(f)
         if fa is None:
+            st = self._machi_yomu(f)
+            if st is not None:
+                return st
             raise Mikansei('READ %s（表が無い）' % f, 0)
         if 'NEXT' in soe or fa.jun:
             # 順ファイルは `READ ファイル` だけでも順読み（NEXT と同じ）
@@ -608,10 +614,45 @@ class Pgm:
         self._jotai_kaku(f, st)
         return st
 
+    def _machi_yomu(self, f):
+        """表を持たないファイル（VLD・作業ファイル）の READ。
+
+           ■ なぜ要るか（2026-11-24 実測）
+             `FD 更新ＶＬＤ１. COPY A1VLD001.`（ASP の「非蓄積型論理宛先」）
+             のように、**表ではなくプログラム間の受け渡し**に使うファイルが
+             ある。READ を「表が無い」で止めていたため59本が止まっていた。
+           ■ どうするか
+             同じ走りの中で WRITE されたものを順に返す。
+             空なら COBOL の決まりどおり AT END（"10"）。
+             **索引ファイルなのに表が無い場合は、ここへ来ない**（本当の
+             取りこぼしなので、従来どおり止めて人に見せる）。
+        """
+        d = self.FAIRU.get(f)
+        if d is None or d.get('kumi') == 'INDEXED':
+            return None
+        nami = self.machi.get(f) or []
+        if not nami:
+            self.f_jotai[f] = OWARI
+            self._jotai_kaku(f, OWARI)
+            return OWARI
+        moto, nama = nami.pop(0)
+        r = self.ryoiki.get(moto)
+        if r is not None and nama:
+            n = min(len(r.b), len(nama))
+            r.b[:n] = nama[:n]
+        self.f_jotai[f] = SEIJOU
+        self._jotai_kaku(f, SEIJOU)
+        return SEIJOU
+
     def f_hajime(self, f, *soe):
         f = self._fname(f)
         fa = self.f.get(f)
         if fa is None:
+            d = self.FAIRU.get(f)
+            if d is not None and d.get('kumi') != 'INDEXED':
+                self.f_jotai[f] = SEIJOU
+                self._jotai_kaku(f, SEIJOU)
+                return SEIJOU
             raise Mikansei('START %s（表が無い）' % f, 0)
         ijou = any(s in ('>=', '>') for s in soe) or not soe
         st = fa.hajime(*self._kagi(f), ijou=ijou)
@@ -628,8 +669,10 @@ class Pgm:
             if d is not None and d.get('kumi') != 'INDEXED':
                 # メッセージ列・帳票など。中身を取っておく
                 r = self.ryoiki.get(moto)
-                self.kaita.setdefault(f, []).append(
-                    bytes(r.b) if r is not None else b'')
+                nama = bytes(r.b) if r is not None else b''
+                self.kaita.setdefault(f, []).append(nama)
+                # 読み返せるように、待ち行列にも積む（下の f_yomu 参照）
+                self.machi.setdefault(f, []).append((moto, nama))
                 self.f_jotai[f] = SEIJOU
                 self._jotai_kaku(f, SEIJOU)
                 tome = getattr(self, 'gamen_tome', 0)

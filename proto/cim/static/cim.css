@@ -103,3 +103,5 @@ textarea,select,input[type=text],input[type=date]{font:inherit;border:1px solid 
 .gko{display:inline-block;margin-right:12px;color:#7fb2d6}
 .gko i{display:inline-block;background:#143553;color:#fff;font-style:normal;
   padding:0 6px;margin-left:5px;border-radius:3px;min-width:2em}
+.gko.sui{color:#6b8aa3}
+.gko.sui b{color:#c8a24a;font-weight:700;margin-left:2px}

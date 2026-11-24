@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} の中身{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>{{ name }}　{{ t.nm or '' }}</h2>
+  <div class="path"><a href="/tables">テーブル一覧へ戻る</a>
+    　／　{{ '{:,}'.format(zen) }} 件　／　{{ cols|length }} 列
+    {% if t.ronri %}　／　論理ファイル名 {{ '／'.join(t.ronri) }}{% endif %}</div>
+  <div style="margin-top:8px">
+    {% if saki > 0 %}<a class="hb" href="/tables/{{ name }}?p={{ saki - kazu }}&n={{ kazu }}">前の{{ kazu }}件</a>{% endif %}
+    {% if saki + kazu < zen %}<a class="hb" href="/tables/{{ name }}?p={{ saki + kazu }}&n={{ kazu }}">次の{{ kazu }}件</a>{% endif %}
+    <span class="path" style="margin-left:8px">{{ saki + 1 }}〜{{ [saki + kazu, zen]|min }} 件目</span>
+  </div>
+</div>
+<div class="card">
+  <div class="scroll"><table><thead><tr>
+    {% for c in cols %}<th title="{{ c.pic }}">{{ c.ja or c.nm }}<br>
+      <small style="font-weight:400;color:#789">{{ c.nm }}</small></th>{% endfor %}
+  </tr></thead><tbody>
+    {% for r in gyo %}<tr>
+      {% for c in cols %}<td style="white-space:pre">{{ r.get(c.nm) }}</td>{% endfor %}
+    </tr>{% endfor %}
+  </tbody></table></div>
+  {% if not gyo %}<p class="path">この表にはまだ中身がありません。</p>{% endif %}
+</div>
+{% endblock %}
