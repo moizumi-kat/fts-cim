@@ -265,6 +265,13 @@ def file_control(go, hajime, owari):
                 while i < owari and go[i].shu == 'na' and not go[i].na(
                         'ALTERNATE', 'ACCESS', 'FILE', 'STATUS',
                         'ORGANIZATION', 'WITH', 'DUPLICATES', 'SELECT'):
+                    # `RECORD KEY IS SEIBAN OF AJUGFL1` のように**修飾**で
+                    # 書くことがある（2026-11-24 実測）。`OF ファイル名` を
+                    # 鍵に取り込んでいたため、キーの値を取るときに
+                    # `self.V('OF')` を引いて45本が止まっていた。
+                    if go[i].na('OF', 'IN'):
+                        i += 2                 # OF と、そのうしろの名前を飛ばす
+                        continue
                     d['kagi'].append(go[i].v); i += 1
                 continue
             if g.na('ALTERNATE'):
@@ -549,6 +556,19 @@ _GUN = {
     'ASUN-SUNPO': ('WIDTH', 'HIGH', 'DEPTH'),
 }
 
+# 日本語の名前で書かれる集団項目。接頭辞は案件ごとに違う（`１０－` `１１－`）
+# ので、**接頭辞を問わず**当てる。列は連なっている必要がある。
+_GUN_JA = {
+    # 組織コード＝部所コード(2)＋係コード(2)。表には無い。
+    # 根拠（B10010PP 実測・2026-11-24）
+    #   532-534行  MOVE ZERO TO １２－組織コード / MOVE WK-KEY-ASOSM TO
+    #              １２－部所コード      … 組織コードが部所コードを含む
+    #   45-46行    RECORD KEY １０－年度区分 １０－組織コード
+    #              …表の鍵は NENKBN＋BSYOCD＋TANCD なので 組織コード＝後ろ2つ
+    #   395行      MOVE SPACE TO １０－組織コード  … まとめて空白にする
+    '組織コード': ('BSYOCD', 'TANCD'),
+}
+
 
 def _kurikaeshi(cols):
     """表の列 → 繰返しを戻した並び。
@@ -578,6 +598,71 @@ def _kurikaeshi(cols):
                 out.append((moto, ty, n)); i = j; continue
         out.append((na, ty, 0)); i += 1
     return out
+
+
+def _nihongo_betsumei(oya, settou, cols):
+    """日本語の項目名の**別名**を足す（2026-11-24）。
+
+       `COPY DKANRIL1 OF XFDLIB JOINING 連携 AS PREFIX.` に対して、
+       原文は `連携－起動画面番号` と**日本語の項目名**で書く。
+       表定義は日本語名も持っている（cols の3つめ）ので別名にする。
+       区切りは全角ハイフン U+FF0D と ASCII の `-` の両方を入れる。
+
+       ■ 以前は繰返しのある表（kuri あり）のときだけ足していたので、
+         繰返しの無い表では別名が1つも付かず、35本がここで止まっていた。
+    """
+    betsu = []
+    for c in cols:
+        ja = (c[2] or '').strip() if len(c) > 2 else ''
+        if not ja:
+            continue
+        m = _re2.match(r'^(.*?)_+(\d+)$', c[0])
+        moto = m.group(1).rstrip('_') if m else c[0]
+        mot = next((k for k in oya.ko if k.na == settou + moto), None)
+        if mot is None:
+            continue
+        for sep in ('-', '\uff0d'):
+            nm = settou[:-1] + sep + ja
+            if any(k.na == nm for k in oya.ko) or any(k.na == nm for k in betsu):
+                continue
+            k2 = Ko(3, nm)
+            k2.kata, k2.keta, k2.shou, k2.comp = (mot.kata, mot.keta,
+                                                  mot.shou, mot.comp)
+            k2.naga = mot.naga; k2.ichi = mot.ichi
+            k2.occurs = mot.occurs; k2.dan = list(mot.dan); k2.oya = oya
+            betsu.append(k2)
+    oya.ko += betsu
+    _gun_ja(oya, settou, cols)
+
+
+def _gun_ja(oya, settou, cols):
+    """日本語の名前で書く集団項目（`１０－組織コード`）を足す。
+
+       _GUN_JA の組（列名の並び）がぜんぶ揃い、**位置が連なっている**ときだけ
+       作る。連なっていなければ作らない（黙って別の場所を指さないため）。
+    """
+    ichi_hyo = {}
+    for c in cols:
+        k = next((x for x in oya.ko if x.na == settou + c[0]), None)
+        if k is not None:
+            ichi_hyo[c[0]] = (k.ichi, k.naga, k)
+    for ja, bu in _GUN_JA.items():
+        if not all(b in ichi_hyo for b in bu):
+            continue
+        tsuzuki = all(ichi_hyo[bu[i]][0] + ichi_hyo[bu[i]][1]
+                      == ichi_hyo[bu[i+1]][0] for i in range(len(bu) - 1))
+        if not tsuzuki:
+            continue
+        a = ichi_hyo[bu[0]][0]
+        owari = ichi_hyo[bu[-1]][0] + ichi_hyo[bu[-1]][1]
+        for sep in ('-', '\uff0d'):
+            nm = settou[:-1] + sep + ja if settou else ja
+            if any(x.na == nm for x in oya.ko):
+                continue
+            g = Ko(3, nm)
+            g.kata = 'X'; g.keta = owari - a; g.naga = owari - a
+            g.ichi = a; g.occurs = 0; g.dan = []; g.oya = oya
+            oya.ko.append(g)
 
 
 def fd_ko(settou, cols, na=None, kuri=None):
@@ -636,27 +721,7 @@ def fd_ko(settou, cols, na=None, kuri=None):
         #   `ワ鑑－見積ナンバー`（MITUNO）・`ワ鑑－科目名称(IX1)`（KAMNAM_n）。
         # 表定義は日本語の項目名も持っている（cols の3つめ）ので、別名として足す。
         # 区切りは全角ハイフン U+FF0D。
-        _betsu = []
-        for c in cols:
-            ja = (c[2] or '').strip() if len(c) > 2 else ''
-            if not ja:
-                continue
-            m = _re2.match(r'^(.*?)_+(\d+)$', c[0])
-            moto = m.group(1).rstrip('_') if m else c[0]
-            mot = next((k for k in oya.ko if k.na == settou + moto), None)
-            if mot is None:
-                continue
-            for sep in ('-', '\uff0d'):
-                nm = settou[:-1] + sep + ja
-                if any(k.na == nm for k in oya.ko):
-                    continue
-                k2 = Ko(3, nm)
-                k2.kata, k2.keta, k2.shou, k2.comp = (mot.kata, mot.keta,
-                                                      mot.shou, mot.comp)
-                k2.naga = mot.naga; k2.ichi = mot.ichi
-                k2.occurs = mot.occurs; k2.dan = list(mot.dan); k2.oya = oya
-                _betsu.append(k2)
-        oya.ko += _betsu
+        _nihongo_betsumei(oya, settou, cols)
         for gna, bu in _GUN.items():
             if not gna.startswith(settou):
                 continue
@@ -677,6 +742,7 @@ def fd_ko(settou, cols, na=None, kuri=None):
         oya.ko.append(k)
         ichi_hyo[cna] = (ichi, naga)
         ichi += naga * max(1, occ)
+    _nihongo_betsumei(oya, settou, cols)
     # 列に戻っていない集団項目（根拠つき）
     for gna, bu in _GUN.items():
         if not gna.startswith(settou):

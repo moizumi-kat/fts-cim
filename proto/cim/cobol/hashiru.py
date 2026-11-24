@@ -6,6 +6,7 @@
 """
 from decimal import Decimal, ROUND_HALF_UP, ROUND_DOWN
 import datetime
+import re
 
 from .kioku import Ryoiki, Komoku
 from . import fairu as F
@@ -15,6 +16,13 @@ TAKAI = '\x00HIGH'
 HIKUI = '\x00LOW'
 SEIJOU, OWARI, NASHI, JYUUFUKU = '00', '10', '23', '22'
 NAIFAIRU = '35'          # OPEN したがファイルが無い
+
+# 日本語の名前で書く集団項目（表には列として無い）。cob2py/data.py の
+# _GUN_JA と同じ中身。RECORD KEY に集団項目を書くことがあるので
+# （`RECORD KEY １０－年度区分 １０－組織コード`）、鍵は列へ開く。
+_GUN_JA_KAGI = {
+    '組織コード': ('BSYOCD', 'TANCD'),      # 部所コード(2)＋係コード(2)
+}
 
 
 def D(v):
@@ -137,6 +145,14 @@ class _Tobu(Exception):
         super().__init__(saki); self.saki = saki
 
 
+class GamenDeta(Exception):
+    """画面がきまった回数だけ書かれたので、わざと止めた（異常ではない）。
+
+       試作画面で「最初の1枚を見る」ために使う。`gamen_tome` を立てた
+       ときだけ飛ぶ。既定は立てないので、本来の動きは変わらない。
+    """
+
+
 class ExitProgram(Exception):
     pass
 
@@ -191,6 +207,8 @@ class Pgm:
             self.hyo.setdefault(na, (toku, toku.hyo[na]))
         self.f = {}
         self.f_jotai = {}
+        # ファイル → [(原文の鍵の名前, [(列名, 長さ), …])]
+        self.f_kagi_bu = {}
         # OPEN したのに表をつなげられなかったファイル（後で人に見せる）
         self.hyo_nai = set()
         # 索引でないファイル（VLD のメッセージ列・画面・帳票）へ書いたもの。
@@ -214,8 +232,13 @@ class Pgm:
                             continue
                     except Exception:
                         continue
-                kagi = [self._kagi_retsu(k, hyo, db)
-                        for k in (d.get('kagi') or [])]
+                kagi, bu = [], []
+                for k in (d.get('kagi') or []):
+                    hira = self._kagi_hiraku(
+                        self._kagi_retsu(k, hyo, db), hyo, db)
+                    kagi += [c for c, _n in hira]
+                    bu.append((k, hira))
+                self.f_kagi_bu[na] = bu
                 try:
                     self.f[na] = F.Fairu(con, hyo, kagi, d['ronri'], db=db)
                 except Exception:
@@ -363,13 +386,14 @@ class Pgm:
         except Exception:
             return True
 
-    def hatsu(self, na, kai=None):
+    def hatsu(self, na, kai=None, oya=None):
         """INITIALIZE。英数は空白・数はゼロに戻す。
 
            kai を付けると**その回だけ**戻す（`INITIALIZE W020-NOTBL(2)` の形。
            表ぜんぶを戻してしまうと他の回を壊すので、回を指定する）。
+           oya は修飾（`INITIALIZE AJKN-REC OF AJKNML1`）の OF のうしろ。
         """
-        r, k = self._hiku(na)
+        r, k = self._hiku(na, oya)
         if kai is None:
             hajime, naga = k.ichi, k.naga
         else:
@@ -491,6 +515,32 @@ class Pgm:
         return na
 
     @staticmethod
+    def _kagi_hiraku(c, hyo, db):
+        """鍵が集団項目なら、中の列へ開く（2026-11-24）。
+
+           `RECORD KEY １０－年度区分 １０－組織コード` のように**集団項目**を
+           鍵に書くことがある。組織コードは表に列が無い（部所コード＋係コード）
+           ので、そのまま使うと `no such column: 組織コード` になった（15本）。
+        """
+        try:
+            kata = {x[0]: x[1] for x in db.TABLES[hyo]['cols']}
+        except Exception:
+            return [(c, None)]
+        if c in kata:
+            return [(c, None)]
+        bu = _GUN_JA_KAGI.get(c)
+        if not bu or not all(b in kata for b in bu):
+            return [(c, None)]
+        # 値を切り分けるので、**長さが一意に決まる文字の列だけ**開く。
+        naga = []
+        for b in bu:
+            mm = re.match(r'n?char\((\d+)\)', str(kata[b]))
+            if not mm:
+                return [(c, None)]         # 開かない（ここで止まって人が見る）
+            naga.append((b, int(mm.group(1))))
+        return naga
+
+    @staticmethod
     def _kagi_retsu(na, hyo, db):
         """RECORD KEY の項目名 → 表の列名（2026-11-24）。
 
@@ -518,8 +568,29 @@ class Pgm:
         return mo
 
     def _kagi(self, f):
-        d = self.FAIRU.get(f, {})
-        return [self.V(k) for k in d.get('kagi', [])]
+        """READ／START に渡す鍵の値。
+
+           集団項目を鍵に書いた形（`RECORD KEY １０－組織コード`）では
+           列が2つに開かれているので、**値も長さで切り分ける**。
+           切り分けないと zip で片方が落ち、WHERE が1列ぶん緩くなって
+           別のレコードを読む（黙って間違うので必ず切る）。
+        """
+        bu = self.f_kagi_bu.get(f)
+        if not bu:
+            d = self.FAIRU.get(f, {})
+            return [self.V(k) for k in d.get('kagi', [])]
+        atai = []
+        for na, hira in bu:
+            v = self.V(na)
+            if len(hira) == 1:
+                atai.append(v)
+                continue
+            mo = v if isinstance(v, str) else str(v)
+            i = 0
+            for _c, n in hira:
+                atai.append(mo[i:i+n])
+                i += n
+        return atai
 
     def f_yomu(self, f, *soe):
         f = self._fname(f)
@@ -561,6 +632,9 @@ class Pgm:
                     bytes(r.b) if r is not None else b'')
                 self.f_jotai[f] = SEIJOU
                 self._jotai_kaku(f, SEIJOU)
+                tome = getattr(self, 'gamen_tome', 0)
+                if tome and sum(len(v) for v in self.kaita.values()) >= tome:
+                    raise GamenDeta()
                 return SEIJOU
             raise Mikansei('WRITE %s（表が無い）' % f, 0)
         st = fa.kaku(self._rec_toru(f))

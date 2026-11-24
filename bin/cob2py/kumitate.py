@@ -146,6 +146,23 @@ def fd_copy_rec(go, hajime, owari):
                 g2 = ji.waru(_yomu_moji(f))
                 for k in data.yomu(g2, 0, len(g2)):
                     out[k.na] = ima
+                i += 2; continue
+            # ■ 画面・帳票の定義体（XMDLIB／XRDLIB）も結びつける（2026-11-24）
+            #   `FD 画面ファイル. COPY A18030D1 OF XMDLIB JOINING 画面
+            #    AS PREFIX.` のとき、原文は `WRITE 画面－処理終了画面` と
+            #   **レコード名**で書く。この対応が無いので書き先が引けず
+            #   「WRITE 〜（表が無い）」で108本が止まっていた。
+            t = _teigitai().get(na)
+            if t and t.get('rec'):
+                j, settou = i + 2, ''
+                while j < owari and not (go[j].shu == 'ki' and go[j].v == '.'):
+                    if go[j].na('JOINING') and j + 1 < owari:
+                        pre = go[j+1].v.rstrip('.')
+                        settou = pre + ('-' if pre.isascii() else '\uff0d')
+                        break
+                    j += 1
+                out[settou + t['rec']] = ima
+                out[na] = ima
             i += 2; continue
         i += 1
     return out
@@ -264,7 +281,14 @@ def fd_ireru(fc, sude, joining=None):
             settou = kagi[0].split('-', 1)[0] + '-'
             rec_na = settou + 'REC'
         else:
-            continue
+            # ■ 接頭辞の無いファイル（2026-11-24）
+            #   `FD AJKNML1. COPY AJKNML1 OF XFDLIB.`（JOINING なし）だと
+            #   項目は表の列名そのままで、原文は `JKNKBN OF AJKNML1` と
+            #   **ファイル名で修飾**して書く。これを組んでいなかったので
+            #   24本が「知らない項目 JKNKBN」で止まっていた。
+            #   01 の名前をファイル名にすれば、OF 修飾（_hiku の oya）で引ける。
+            settou = ''
+            rec_na = na
         if kagi and (settou + kagi[0].split('-', 1)[-1]) in sude:
             continue                      # 原文に定義があるなら触らない
         ronri = (j[0] if j else (d.get('ronri') or ''))

@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}{{ p.nm }}{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>{{ p.nm }}</h2>
+  <div class="path">{{ p.dai }} ＞ {{ p.chu }}　|　起動 {{ p.cl or '—' }}　|　工程No.{{ p.no }}</div>
+  <div class="meta"><span class="tag">{{ p.kind }}</span>
+    {% for x in p.progs %}<span class="tag">{{ x }}</span>{% endfor %}</div>
+  {% if p.calls %}
+  <div style="margin-top:9px">
+    <a class="hb main" href="/ugokasu/{{ p.no }}">変換したプログラムを実データで動かす</a>
+    <span class="path" style="margin-left:8px">書き込みは取り消すので現データは変わりません</span>
+  </div>
+  {% endif %}
+</div>
+{% if p.noproto %}
+<div class="banner ng">この工程は、CASET仕様書が存在しないため（村上様 2026-10-09 ご確認）、今回はプロトタイプを作成しません。
+  対象プログラム：{{ p.noproto }}</div>
+{% else %}
+<div class="banner">この工程はまだ画面を作っていません。下は、いまCIMから読み取れている中身です。</div>
+{% endif %}
+<div class="card">
+  {% if p.gaiyo %}<div class="sec">処理の概要（CASET仕様書より）</div><div>{{ p.gaiyo }}</div>{% endif %}
+  {% if p['items'] %}
+    <div class="sec">画面・帳票の項目（{{ p['items']|length }}件）</div>
+    <div class="scroll"><table><thead><tr><th>項目</th><th>型</th><th>内容</th><th>備考</th></tr></thead>
+      <tbody>{% for it in p['items'] %}<tr><td>{{ it.nm }}</td><td>{{ it.t }}</td><td>{{ it.c }}</td><td>{{ it.r }}</td></tr>{% endfor %}</tbody></table></div>
+  {% endif %}
+  {% if p.files %}
+    <div class="sec">使うファイル（{{ p.files|length }}件）</div>
+    <div class="scroll"><table><thead><tr><th>ファイル</th><th>物理名</th><th>入出力</th></tr></thead>
+      <tbody>{% for it in p.files %}<tr><td>{{ it.nm }}</td><td>{{ it.f }}</td><td>{{ it.io }}</td></tr>{% endfor %}</tbody></table></div>
+  {% endif %}
+  {% if p.calls %}
+    <div class="sec">起動CLが呼んでいるプログラム（{{ p.calls|length }}件）</div>
+    <div style="font-size:12px;line-height:1.9">
+      {% for x in p.callinfo %}<span class="tag {{ 'g' if x.have else 'w' }}" style="margin-right:5px">{{ x.n }}{% if x.src and x.src != x.n %}（ソース {{ x.src }}）{% elif not x.have %}（ソース未受領）{% endif %}</span>{% endfor %}
+    </div>
+    <div class="note">画面の中身は、この実体プログラムから起こします。</div>
+  {% endif %}
+  {% if not p.gaiyo and not p['items'] and not p.files and not p.calls %}
+    <div class="empty">起動CL（{{ p.cl or '—' }}）は他のプログラムを呼んでいません。
+      CL自身が処理しているか、メニュー専用のCLです。中身はソースから起こします。</div>
+  {% endif %}
+</div>
+{% endblock %}

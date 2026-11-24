@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ p.nm }}／{{ pgm }} を動かす{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>{{ p.no }}　{{ p.nm }}</h2>
+  <div class="path">{{ p.dai }} ＞ {{ p.chu }}　／　起動CL {{ p.cl or '―' }}　／　{{ p.kind }}</div>
+  <div class="sec" style="margin-top:8px">この工程が呼ぶプログラム</div>
+  <div style="font-size:12.5px;line-height:2">
+  {% for c in p.calls %}
+    <a class="hb{% if c==pgm %} main{% endif %}" style="margin-right:6px"
+       href="/ugokasu/{{ p.no }}/{{ c }}">{{ c }}</a>
+  {% endfor %}
+  </div>
+</div>
+
+{% if pgm %}
+<div class="card">
+  <div class="sec">{{ pgm }} を実データで動かした結果</div>
+  {% if r.tomatta %}
+    <p style="color:#a00;font-size:13px;margin:6px 0">
+      <b>止まりました：</b>{{ r.tomatta }}</p>
+    <p class="path">止まった場所をそのまま出しています。黙って空の画面を出すと、
+      動いていないことに気づけないためです。</p>
+    {% if r.ato %}<pre style="font-size:11px;overflow:auto;max-height:240px">{{ r.ato }}</pre>{% endif %}
+  {% else %}
+    <p class="path">最後まで動きました。書き込みは取り消して（ROLLBACK）いるので
+      現データは変わりません。画面へ書かれた回数：{{ r.kaita }}</p>
+  {% endif %}
+</div>
+
+{% for g in r.gamen %}
+<div class="card">
+  <div class="sec">画面 {{ g.na }}（定義体どおりの位置）</div>
+  <div class="gamen">
+  {% for ln in g.gyo %}
+    <div class="gline"><span class="gno">{{ '%02d'|format(ln.gyo) }}</span>
+    {% for w in ln.waku %}
+      {% if w.ko %}
+        <span class="gko" title="{{ w.ko }}（{{ w.naga }}桁）"
+          >{{ w.ko }}<i>{{ w.moji }}</i></span>
+      {% else %}
+        <span class="gmi">{{ w.moji }}</span>
+      {% endif %}
+    {% endfor %}
+    </div>
+  {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

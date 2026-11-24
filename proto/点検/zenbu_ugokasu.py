@@ -91,12 +91,17 @@ def main():
         # **節を持たず段落だけのプログラム**もある（19本。EGNIP01S ほか）。
         # そのときは `__honbun__` の先頭の段落が入口。
         setsu = me = None
+        honbun = None
         for sna, dan in cls.DANRAKU:
             if sna.startswith('__'):
+                # ■ 節を持たず段落だけのプログラム（2026-11-24 直し）
+                #   段落のメソッドを直に呼ぶと `GO TO MAIN-RTN` を受ける人が
+                #   いないので _Tobu が外へ抜けていた（20本）。
+                #   節として回せば、元のプログラムどおり飛び先から続く。
                 for dna, dme in dan:
                     if dna.startswith('__') or not dme:
                         continue
-                    setsu, me = dna, dme
+                    setsu, me, honbun = dna, dme, sna
                     break
                 if setsu:
                     break
@@ -118,7 +123,10 @@ def main():
             if not hasattr(p, me):
                 raise AttributeError('節 %s が見つからない' % setsu)
             signal.setitimer(signal.ITIMER_REAL, BYOU)
-            getattr(p, me)()
+            if honbun:
+                p._setsu(honbun)
+            else:
+                getattr(p, me)()
             kekka['通った'] += 1
             tsuuka.append(na)
         except Jikan:

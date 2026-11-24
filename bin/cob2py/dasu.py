@@ -141,7 +141,17 @@ class Dasu:
         bu = []
         ima = []
         kakko = 0
+        tobasu = 0
         for t in naka:
+            # 添字の中も修飾で書く（`T-JSK-FLG (SEQNO OF D20010D1)`）。
+            # `OF` と そのうしろの名前は**添字ではない**ので飛ばす。
+            # これを数えてしまい、3次元の添字に見えていた（2026-11-24）。
+            if tobasu:
+                tobasu -= 1
+                continue
+            if t.shu == 'na' and t.v.upper() in ('OF', 'IN'):
+                tobasu = 1
+                continue
             if t.shu == 'ki' and t.v == '(':
                 kakko += 1
             elif t.shu == 'ki' and t.v == ')':
@@ -317,6 +327,16 @@ class Dasu:
                 if i < owari and go[i].shu == 'ki' and go[i].v == '(':
                     (_na2, soe2), i = self._saki(go, i - 1)
                     soe = soe2
+                # `INITIALIZE AJKN-REC OF AJKNML1` のように修飾で書くことが
+                # ある。`OF` を**次の初期化先**と読んでしまい
+                # `self.hatsu('OF')` を出していた（2026-11-24）。
+                oya = None
+                while (i + 1 < owari and go[i].shu == 'na'
+                       and go[i].v.upper() in ('OF', 'IN')):
+                    oya = go[i+1].v
+                    i += 2
+                if oya:
+                    soe += ', oya=%r' % oya
                 de.append('%sself.hatsu(%r%s)' % (T, na, soe))
             return i
         if u == 'INSPECT':
