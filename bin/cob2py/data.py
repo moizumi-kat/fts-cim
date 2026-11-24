@@ -325,6 +325,27 @@ def _wakeru(ko_kazu, na_kazu):
     return ichiban
 
 
+_TOSHI = re.compile(r'^[A-Z\]][0-9]+$')
+
+
+def komoku_na_aru(k):
+    """この項目の COBOL での名前が分かっているか（2026-11-24 実測）。
+
+       名前の出どころは2つある。
+         ① 定義体の項目名表（`cob`）… R001 のような通し番号の項目に名前が付く
+         ② **項目コードそのもの** … 定義体によってはコードが
+            `SYURYO` `ERRKMK` のように COBOL の名前になっている
+            （D20010D1 ほか。R001／W001／]00001 のような「印＋数字」でなければ名前）
+       これを見ると、画面181本のうち119本が全項目に名前がそろう（従来80本）。
+    """
+    return bool(k.get('cob')) or not _TOSHI.match(k['nm'])
+
+
+def komoku_na(k):
+    """この項目の COBOL での名前（分からなければ定義体のコード）。"""
+    return k.get('cob') or k['nm']
+
+
 def _gyo_kurikaeshi(ko):
     """一覧画面の**繰返し行**を見つける（2026-11-24 実測）。
 
@@ -362,7 +383,7 @@ def _gyo_kurikaeshi(ko):
                    == hina[j % m]['ichi'] + kizami * (j // m + 1)
                    for j in range(len(kl))):
             continue
-        if not all(x.get('cob') for x in hina):
+        if not all(komoku_na_aru(x) for x in hina):
             return None                   # 雛形に名前が無ければ組まない
         return i0 - m, m, len(kl) // m + 1, kizami
     return None
@@ -381,7 +402,7 @@ def _gamen_ko_kuri(teigi, ko, kuri, kata=None):
         if k['nm'][:1] == ']':
             naga = max(naga, k['ichi'] - 1 + k['naga2'])
             continue                       # 2行目以降は雛形の繰返しで表す
-        na = k.get('cob') or k['nm']
+        na = komoku_na(k)
         kai = gyo_su if hajime <= i < hajime + m else 0
         dan = (kizami,) if kai else ()
         g = Ko(3, na)
@@ -480,7 +501,8 @@ def gamen_ko(teigi, namae, kata=None):
      ・項目名の接頭辞   … FILE-CONTROL の RECORD KEY（AJBG-MITUNO → AJBG-）
    COBOL の項目名は「接頭辞＋列名」。これで AJBG-MITUNO が引ける。
 """
-import re as _re2
+import re as _re
+_re2 = _re
 
 
 def _kata_kara(ty):

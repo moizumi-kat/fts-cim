@@ -316,7 +316,10 @@ def gamen_ireru(t, go, d_i, p_i):
         # 記憶域を占める項目は位置（ichi）が 0 でないもの（data.gamen_ko と同じ）。
         ko = [x for x in teigi[na]['ko'] if x['ichi']]
         ko.sort(key=lambda x: x['ichi'])
-        teigi_na = [x.get('cob') for x in ko]
+        # 名前は「項目名表（cob）」と「項目コードそのもの」の両方から採る
+        # （data.komoku_na_aru を参照）。
+        teigi_na = [data.komoku_na(x) if data.komoku_na_aru(x) else None
+                    for x in ko]
         cob = _seigyo_namae(t)
         if all(teigi_na):
             namae = teigi_na
