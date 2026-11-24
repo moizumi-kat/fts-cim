@@ -75,6 +75,12 @@ class Dasu:
             return JOGAI[u], i + 1
         if g.v in self.teisu:              # SYMBOLIC CONSTANT
             return self.teisu[g.v], i + 1
+        if u == 'FUNCTION' and i + 1 < len(go):
+            # 組込関数。原文で使われているのは CURRENT-DATE だけ（233か所・実測）。
+            # 21文字 `YYYYMMDDhhmmss00+0900` を返す（COBOL の決まり）。
+            if go[i+1].na('CURRENT-DATE'):
+                return 'self.ima_moji()', i + 2
+            raise ValueError('知らない組込関数 %s' % go[i+1].v)
         if u == 'ALL' and i + 1 < len(go):
             v, j = self.atai(go, i + 1)
             return 'ZENBU(%s)' % v, j

@@ -259,9 +259,12 @@ def file_control(go, hajime, owari):
                 i += 2
                 while i < owari and go[i].na('IS'):
                     i += 1
+                # `STATUS` でも切れる。`RECORD KEY F2-RECKBN STATUS F2-STATUS`
+                # のように **FILE を省く書き方**があり、STATUS まで
+                # キーに取り込んでいた（16本がここで止まっていた・2026-11-24）。
                 while i < owari and go[i].shu == 'na' and not go[i].na(
-                        'ALTERNATE', 'ACCESS', 'FILE', 'ORGANIZATION',
-                        'WITH', 'DUPLICATES', 'SELECT'):
+                        'ALTERNATE', 'ACCESS', 'FILE', 'STATUS',
+                        'ORGANIZATION', 'WITH', 'DUPLICATES', 'SELECT'):
                     d['kagi'].append(go[i].v); i += 1
                 continue
             if g.na('ALTERNATE'):
@@ -270,11 +273,19 @@ def file_control(go, hajime, owari):
                     i += 1
                 hoka = []
                 while i < owari and go[i].shu == 'na' and not go[i].na(
-                        'ALTERNATE', 'ACCESS', 'FILE', 'ORGANIZATION',
-                        'WITH', 'DUPLICATES', 'SELECT'):
+                        'ALTERNATE', 'ACCESS', 'FILE', 'STATUS',
+                        'ORGANIZATION', 'WITH', 'DUPLICATES', 'SELECT'):
                     hoka.append(go[i].v); i += 1
                 if hoka:
                     d['sub'].append(hoka)
+                continue
+            if g.na('STATUS') and not (i and go[i-1].na('FILE')):
+                # `STATUS F2-STATUS`（FILE を省く書き方）
+                i += 1
+                while i < owari and go[i].na('IS'):
+                    i += 1
+                if i < owari:
+                    d['jotai'] = go[i].v; i += 1
                 continue
             if g.na('FILE') and i + 1 < owari and go[i+1].na('STATUS'):
                 i += 2

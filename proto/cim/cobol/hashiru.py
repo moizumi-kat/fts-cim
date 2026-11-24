@@ -210,14 +210,48 @@ class Pgm:
     # ── 名前から表を引く ─────────────────────────
     @staticmethod
     def _hyomei(ronri):
-        """論理ファイル名 → 物理表名。AJBGFL1→AJBGFP／ASOSML1→ASOSMP。"""
+        """論理ファイル名 → 物理表名。AJBGFL1→AJBGFP／ASOSML1→ASOSMP。
+
+           **まず表定義の `ronri`（論理名の一覧）で引く**（2026-11-24）。
+           名前の形から作る当てものでは YAMAHL1→YAMAHSF が当たらない。
+        """
         if not ronri:
             return ''
+        h = Pgm._ronri_hyo()
+        if ronri in h:
+            return h[ronri]
         if len(ronri) >= 3 and ronri[-3] in 'FML' and ronri[-2:].isdigit():
             return ronri[:-3] + ('FP' if ronri[-3] == 'F' else 'MP')
         if ronri.endswith(('FL1', 'ML1', 'ML3')):
             return ronri[:-3] + ('FP' if ronri[-3] == 'F' else 'MP')
         return ronri
+
+    _RONRI_HYO = None
+
+    @classmethod
+    def _ronri_hyo(cls):
+        """論理ファイル名 → 物理表名（表定義の `ronri` から逆引き）。"""
+        if cls._RONRI_HYO is None:
+            cls._RONRI_HYO = {}
+            try:
+                from ..schema_gen import TABLES
+            except Exception:
+                return cls._RONRI_HYO
+            for t, v in TABLES.items():
+                for r in (v.get('ronri') or []):
+                    cls._RONRI_HYO.setdefault(r, t)
+        return cls._RONRI_HYO
+
+    def ima_moji(self):
+        """FUNCTION CURRENT-DATE。21文字 `YYYYMMDDhhmmssss+hhmm`。
+
+           COBOL の決まりでは 8桁の日付＋6桁の時刻＋100分の1秒2桁＋
+           時差（符号＋4桁）。再現性のため、kyou（試験用の日時）があればそれを使う。
+        """
+        t = self._kyou or __import__('datetime').datetime.now()
+        return Moji('%04d%02d%02d%02d%02d%02d%02d+0900'
+                    % (t.year, t.month, t.day, t.hour, t.minute, t.second,
+                       t.microsecond // 10000))
 
     def _teisu(self, v):
         if v in ('ZERO', 'ZEROS', 'ZEROES'):

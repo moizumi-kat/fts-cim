@@ -269,14 +269,33 @@ def fd_ireru(fc, sude, joining=None):
             continue                      # 原文に定義があるなら触らない
         ronri = (j[0] if j else (d.get('ronri') or ''))
         hyomei = None
-        for k in (ronri, ronri[:-3] + 'FP', ronri[:-3] + 'MP'):
-            if k in TABLES:
-                hyomei = k; break
+        # **表定義が論理ファイル名を持っている**ので、まずそれで引く（2026-11-24）。
+        #   YAMAHL1 → YAMAHSF（山積金額ファイル）。名前の形から
+        #   YAMAHFP／YAMAHMP と作っても当たらない（13本がここで止まっていた）。
+        hyomei = _ronri_hiki().get(ronri)
+        if not hyomei:
+            for k in (ronri, ronri[:-3] + 'FP', ronri[:-3] + 'MP'):
+                if k in TABLES:
+                    hyomei = k; break
         if not hyomei:
             continue
         out.append(data_fd(settou, TABLES[hyomei]['cols'], rec_na,
                            TABLES[hyomei].get('kuri')))
     return out
+
+
+_RONRI = None
+
+
+def _ronri_hiki():
+    """論理ファイル名 → 物理表名。表定義の `ronri` から逆引きを作る。"""
+    global _RONRI
+    if _RONRI is None:
+        _RONRI = {}
+        for t, v in (_hyo() or {}).items():
+            for r in (v.get('ronri') or []):
+                _RONRI.setdefault(r, t)
+    return _RONRI
 
 
 def data_fd(settou, cols, na, kuri=None):

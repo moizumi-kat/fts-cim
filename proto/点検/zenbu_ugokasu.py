@@ -87,19 +87,28 @@ def main():
             riyuu['変換できない'].append((na, '%s: %s' % (type(e).__name__, str(e)[:60])))
             continue
 
-        setsu = None
-        for sna, _dan in cls.DANRAKU:
+        # 入口を決める。節があればその先頭（「初期」があればそれ）。
+        # **節を持たず段落だけのプログラム**もある（19本。EGNIP01S ほか）。
+        # そのときは `__honbun__` の先頭の段落が入口。
+        setsu = me = None
+        for sna, dan in cls.DANRAKU:
             if sna.startswith('__'):
+                for dna, dme in dan:
+                    if dna.startswith('__') or not dme:
+                        continue
+                    setsu, me = dna, dme
+                    break
+                if setsu:
+                    break
                 continue
             setsu = sna
+            me = na_py(sna)
             if '初期' in sna or 'INIT' in sna.upper():
                 break
         if setsu is None:
-            kekka['節が無い'] += 1
-            riyuu['節が無い'].append((na, ''))
+            kekka['入口が無い'] += 1
+            riyuu['入口が無い'].append((na, ''))
             continue
-
-        me = na_py(setsu)
         try:
             con.execute('BEGIN')
         except Exception:

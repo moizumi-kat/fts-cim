@@ -166,11 +166,23 @@ def _pack(b, shou=0):
 
 
 def _ebcdic(b):
-    return b.decode('cp037', 'replace').rstrip()
+    """EBCDIC n バイト → n 文字。**末尾の空白は切らない**（2026-11-24）。
+
+       COBOL の項目は固定長で、現行ファイルは末尾を空白（0x40）で埋めている。
+       切ってしまうと、SQL Server の char(n)（桁いっぱいまで空白で埋めて返す）
+       と振る舞いが変わり、実データとの突き合わせで食い違う
+       （鑑の 件名３・特記事項 で実測。9,796件＋α がずれた）。
+    """
+    return b.decode('cp037', 'replace')
 
 
 def _jef(b):
-    return teigitai_moji._nibyte(b).rstrip('　 ')
+    """JEF n×2 バイト → n 文字。**末尾の全角空白も切らない**（_ebcdic と同じ理由）。
+
+       外字は**桁が変わらない**置き換えを使う（nibyte_data）。見出し用の
+       'No.'（3文字）を使うと固定長の項目で後ろの文字が半分に切れる。
+    """
+    return teigitai_moji.nibyte_data(b)
 
 
 def hitotsu(rec, cols):

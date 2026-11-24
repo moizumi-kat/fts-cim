@@ -63,11 +63,13 @@ con.commit()
 
 # ================================================================
 print('■ 取り込んだ現物の件数')
-for t, n in (('AJBGFP', 1151), ('AHATMP', 1848), ('ASOSMP', 545), ('ANAMMP', 357),
-             ('ATORMP', 7579), ('ASIYMP', 143), ('ABUHMP', 4994), ('ATYUMP', 1569),
-             ('ASUNMP', 923), ('CCALMP', 12418)):
+# 2026-11-24 に **実データ492本（SFL.zip）** が届き、件数が増えた。
+# 固定の件数で見ると「増えたこと」を誤りと数えてしまうので、
+# **中身があること**を見る（下の突き合わせが本番の検算）。
+for t in ('AJBGFP', 'AHATMP', 'ASOSMP', 'ANAMMP', 'ATORMP', 'ASIYMP',
+          'ABUHMP', 'ATYUMP', 'ASUNMP', 'CCALMP'):
     j = hiku('SELECT COUNT(*) FROM %s' % t)[0][0]
-    miru('%s %d件' % (t, n), j == n, '実際 %d' % j)
+    miru('%s に現物がある' % t, j > 0, '%d件' % j)
 # ワークと札は空でよい（村上様）。履歴（ARMIJP）は .SFL から入ったので中身がある。
 for t in ('AWKGFP', 'AWKKFP', 'AWKMFP', 'ACHKFP'):
     j = hiku('SELECT COUNT(*) FROM %s' % t)[0][0]
@@ -116,13 +118,21 @@ miru('発番編集Ｒ：6113＋0558 → 61130558', p.g('見積なんば') == '61
 # ここが本番。現物の鑑 1,151件すべてで
 #   見積ＮＯ ＝ 年1 ＋ 作成部所2 ＋ 施主大分類1 ＋ 連番4
 # が成り立つか。成り立てば 発番編集Ｒ の作りは現行と同じ。
+# **数字だけの見積ＮＯ**がこの形になる。実データ12,955件のうち122件は
+# `6YD30044` のように英字を含み、この形では**ない**（古い付番と思われる）。
+# 発番編集Ｒ が作るのは数字だけの形なので、そちらで検算する。
 chigau = []
+eiji = 0
 for r in hiku('SELECT MITUNO, CRTBSY, SEDICD FROM AJBGFP'):
     m, bsy, sedi = s(r[0]), s(r[1]), s(r[2])
+    if not m.isdigit():
+        eiji += 1
+        continue
     if len(m) != 8 or m[1:3] != bsy.zfill(2) or m[3:4] != sedi:
         chigau.append((m, bsy, sedi))
-miru('現物1,151件すべてが「年1＋支店2＋施主1＋連番4」', not chigau,
-     '%d件ちがう 例 %r' % (len(chigau), chigau[:3]))
+miru('数字だけの見積ＮＯは「年1＋支店2＋施主1＋連番4」', not chigau,
+     '%d件ちがう 例 %r（英字を含む見積ＮＯ %d件は対象外）'
+     % (len(chigau), chigau[:3], eiji))
 
 # 発番ファイルの連番で、実際にその番号が作れるか（現物の最大番号と突き合わせ）
 tameshi = 0
@@ -175,7 +185,13 @@ def matomo(kata, naga, db_atai, shou=0):
          その規則をここで**別に書き起こして**から比べる（移植側の関数は使わない
          ＝同じ理屈を2度書かないと検算にならないため）。
     """
-    d = s(db_atai)
+    # **英数は先頭の空白を落とさない**（2026-11-24 実測で判明）。
+    #   COBOL の MOVE は左詰めで、先頭の全角空白もそのまま写る。
+    #   ここで strip() していたため、`　×17＋御用品` のような値で
+    #   「移植が正しいのに誤りに見える」ことが 9,796件あった。
+    #   数字は左の0や空白を落として比べるので従来どおり strip する。
+    d = s(db_atai) if kata == '9' else ('' if db_atai is None
+                                       else str(db_atai)).rstrip()
     if kata == '9':
         # 画面が小数の桁を持つ項目（掛率は小数2桁）は、桁を上げてから入る。
         #   表の 3.6 は画面で '360'（表示 3.60）。上げずに比べると合わない。
