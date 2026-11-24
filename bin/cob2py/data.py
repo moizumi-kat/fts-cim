@@ -325,6 +325,92 @@ def _wakeru(ko_kazu, na_kazu):
     return ichiban
 
 
+def _gyo_kurikaeshi(ko):
+    """一覧画面の**繰返し行**を見つける（2026-11-24 実測）。
+
+       定義体は、2行目以降の入力項目を `]00001` `]00002` … という連番で持つ。
+       これは**直前の行（雛形）の繰り返し**で、COBOL 側は OCCURS で書く。
+         A10060D1 … 雛形 9項目（項番表示／項目区分／製品区分／見積書用品名／
+                     品名／数量／単位／掛率／金額）× 15行・刻み113バイト
+         A10070D1 … 雛形 6項目 × 10行・刻み82
+         A30010D2 … 雛形 6項目 × 16行・刻み79
+       **筋が通ることを確かめてからでないと組まない**（長さの並びが雛形と一致し、
+       位置が刻みどおりに並び、雛形の全項目に名前があること）。合わなければ
+       None を返し、呼んだ側は「長さだけ正しい入れ物」に落とす
+       ＝COBOL の名前で引いたところで止まる（黙って別の値を出さない）。
+       戻り値 (雛形の開始位置, 雛形の項目数, 行数, 刻み)
+    """
+    kakko = [i for i, k in enumerate(ko) if k['nm'][:1] == ']']
+    if not kakko:
+        return None
+    if kakko != list(range(kakko[0], kakko[-1] + 1)):
+        return None                       # 連なっていない
+    i0 = kakko[0]
+    if i0 == 0:
+        return None
+    kl = [ko[i]['naga'] for i in kakko]
+    for m in range(1, min(i0, 40) + 1):
+        if len(kl) % m:
+            continue
+        hina = ko[i0 - m:i0]
+        if not all(kl[j] == hina[j % m]['naga'] for j in range(len(kl))):
+            continue
+        kizami = ko[kakko[0]]['ichi'] - hina[0]['ichi']
+        if kizami <= 0:
+            continue
+        if not all(ko[kakko[j]]['ichi']
+                   == hina[j % m]['ichi'] + kizami * (j // m + 1)
+                   for j in range(len(kl))):
+            continue
+        if not all(x.get('cob') for x in hina):
+            return None                   # 雛形に名前が無ければ組まない
+        return i0 - m, m, len(kl) // m + 1, kizami
+    return None
+
+
+def _gamen_ko_kuri(teigi, ko, kuri, kata=None):
+    """繰返し行のある画面の記憶域を組む。位置は**定義体のものをそのまま使う**。
+
+       項目ごとに「制御部5バイト＋データ」で、制御部は直前の5バイト
+       （データの位置 −5）。A10050D1・A10040D1 で位置が連なることを確認済み。
+    """
+    hajime, m, gyo_su, kizami = kuri
+    oya = Ko(1, teigi['na'])
+    naga = 0
+    for i, k in enumerate(ko):
+        if k['nm'][:1] == ']':
+            naga = max(naga, k['ichi'] - 1 + k['naga2'])
+            continue                       # 2行目以降は雛形の繰返しで表す
+        na = k.get('cob') or k['nm']
+        kai = gyo_su if hajime <= i < hajime + m else 0
+        dan = (kizami,) if kai else ()
+        g = Ko(3, na)
+        g.oya = oya
+        g.occurs = kai
+        g.dan = list(dan)
+        moto = k['ichi'] - 1 - len(SEIGYO)
+        for j, sn in enumerate(SEIGYO):
+            c = Ko(5, sn + ' OF ' + na)
+            c.kata = 'X'; c.keta = 1; c.naga = 1; c.ichi = moto + j
+            c.occurs = kai; c.dan = list(dan)
+            c.oya = g
+            g.ko.append(c)
+        d = Ko(5, na)
+        d.kata = (kata or {}).get(na, 'X')
+        d.keta = k['naga2']; d.naga = k['naga2']; d.ichi = k['ichi'] - 1
+        if d.kata == '9':
+            d.shou = (k.get('hen') or [0, 0, '', 0])[3] or 0
+        d.occurs = kai; d.dan = list(dan)
+        d.oya = g
+        g.ko.append(d)
+        g.ichi = g.ko[0].ichi
+        g.naga = d.ichi + d.naga - g.ichi
+        oya.ko.append(g)
+        naga = max(naga, d.ichi + d.naga)
+    oya.naga = naga
+    return oya
+
+
 def gamen_ko(teigi, namae, kata=None):
     """定義体1本 ＋ 項目名の並び → Ko（01レコード）。合わなければ None。"""
     # R＝入力項目／W＝出力項目。S（区切りの印）は場所を取らないので外す。
@@ -336,6 +422,10 @@ def gamen_ko(teigi, namae, kata=None):
     ko = [k for k in teigi['ko'] if k['ichi']]
     ko.sort(key=lambda k: k['ichi'])
     if len(ko) != len(namae):
+        # 繰返し行（] の連なり）が筋よく決まるなら、OCCURS として組む。
+        kuri = _gyo_kurikaeshi(ko)
+        if kuri:
+            return _gamen_ko_kuri(teigi, ko, kuri, kata)
         # 一覧画面（概算・項目・明細・科目）は「見出し部＋繰返しの行」で、
         # COBOL 側は OCCURS で書くため数が合わない。
         #
