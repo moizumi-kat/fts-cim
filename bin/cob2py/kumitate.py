@@ -56,7 +56,68 @@ def _copybook():
                 continue
             for f in d.rglob('*.COB'):
                 _COPY.setdefault(f.stem.upper(), f)
+        # 原文置き場にも**コピー原文が混ざっている**（2026-11-24 実測）。
+        #   `COPY JYUSYORI OF FZSLIB` の JYUSYORI は、ソース一覧では
+        #   「PROCEDURE DIVISION が無いプログラム」として挙がっていたが、
+        #   実体はコピー原文（段落だけを書いた断片）だった。8本ある。
+        # **PROCEDURE DIVISION を持たないものだけ**を採る（プログラム本体を
+        # 取り違えないため）。
+        mo2 = os.environ.get('FTSCIM_SRC')
+        if mo2:
+            d = pathlib.Path(mo2)
+            if d.exists():
+                for f in d.rglob('*.COB'):
+                    na = f.stem.upper()
+                    if na in _COPY:
+                        continue
+                    try:
+                        if 'PROCEDURE' in f.read_text('utf-8', 'replace').upper():
+                            continue
+                    except Exception:
+                        continue
+                    _COPY[na] = f
     return _COPY
+
+
+def copy_tenkai(go, michi, fukasa=0):
+    """手続き部の `COPY 〜 [OF ライブラリ].` を、原文の語に置き換える。
+
+       FZSLIB のコピー原文は**段落を書いた断片**なので、データ部の COPY と違って
+       「取り込んで展開する」しかない（8本・12文のうち8文がこれだった）。
+       XMDLIB／XFDLIB は画面・ファイルなので触らない。
+    """
+    if fukasa > 5:
+        return go
+    mochi = _copybook()
+    import os
+    ima = pathlib.Path(michi).resolve().parent
+    out = []
+    i = 0
+    kaeta = False
+    while i < len(go):
+        g = go[i]
+        if not g.na('COPY') or i + 1 >= len(go) or go[i+1].shu != 'na':
+            out.append(g); i += 1; continue
+        na = go[i+1].v.upper()
+        j = i + 2
+        lib = ''
+        if j + 1 < len(go) and go[j].na('OF', 'IN') and go[j+1].shu == 'na':
+            lib = go[j+1].v.upper(); j += 2
+        if j < len(go) and go[j].shu == 'ki' and go[j].v == '.':
+            j += 1
+        if lib in ('XMDLIB', 'XFDLIB'):
+            out.append(g); i += 1; continue
+        f = mochi.get(na)
+        if f is None:
+            kari = ima / ('%s.COB' % na)
+            f = kari if kari.exists() else None
+        if f is None:
+            out.append(g); i += 1; continue
+        naka = ji.waru(_yomu_moji(f))
+        out += copy_tenkai(naka, str(f), fukasa + 1)
+        i = j
+        kaeta = True
+    return out if kaeta else go
 
 
 def fd_copy_rec(go, hajime, owari):
@@ -377,6 +438,11 @@ def kioku_hyo(ne):
 def kumu(michi):
     t = pathlib.Path(michi).read_text('utf-8', 'replace')
     go = ji.waru(t)
+    p0 = sagasu(go, 'PROCEDURE', 'DIVISION')
+    if p0 >= 0:
+        # 手続き部の COPY（FZSLIB など）は原文で展開する。データ部の COPY は
+        # 従来どおり copy_ireru が別に読む（二重に足さないため、ここは手続き部だけ）。
+        go = go[:p0] + copy_tenkai(go[p0:], michi)
     pgm = pathlib.Path(michi).stem
     m = re.search(r'PROGRAM-ID\s*\.\s*([A-Z0-9#@$\-]+)', t, re.I)
     if m:

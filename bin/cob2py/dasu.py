@@ -37,6 +37,8 @@ def _tome(g):
 
 
 class Dasu:
+    kari = 0                                 # ON SIZE ERROR 用の一時名の通し番号
+
     def __init__(self, pgm, setsu, namae, hairetsu):
         self.pgm = pgm              # プログラム名
         self.setsu = setsu          # 節の並び
@@ -749,6 +751,33 @@ class Dasu:
             i += 1
         j = self._shiki_owari(go, i, owari)
         shiki, _ = self.shiki(go, i, j)
+        # `ON SIZE ERROR …`（桁あふれのときだけ走る処理）。
+        #   COBOL は「入れ先の整数部に収まらなければ入れずに、そちらを走らせる」。
+        #   黙って飛ばすと誤った結果を出しうるので、**判定ごと写す**。
+        if j < owari and (go[j].na('ON') or go[j].na('SIZE')):
+            k = j
+            while k < owari and go[k].na('ON', 'SIZE', 'ERROR'):
+                k += 1
+            self.kari += 1
+            na_kari = '_v%d' % self.kari
+            de.append('%s%s = %s' % (T, na_kari, shiki))
+            jo = ' and '.join('self.hamaru(%s, %s%s)' % (na, na_kari, soe)
+                              for na, soe, _m in saki)
+            de.append('%sif %s:' % (T, jo))
+            for na, soe, maru in saki:
+                de.append('%s    self.S(%s, %s%s%s)'
+                          % (T, na, na_kari, ', marume=True' if maru else '', soe))
+            de.append('%selse:' % T)
+            k = self._nakami(go, k, owari, int(len(T) / 4) + 1, de,
+                             ('NOT', 'END-COMPUTE'))
+            if k < owari and go[k].na('NOT'):
+                while k < owari and go[k].na('NOT', 'ON', 'SIZE', 'ERROR'):
+                    k += 1
+                de.append('%s# NOT ON SIZE ERROR' % T)
+                de.append('%sif %s:' % (T, jo))
+                k = self._nakami(go, k, owari, int(len(T) / 4) + 1, de,
+                                 ('END-COMPUTE',))
+            return k
         for na, soe, maru in saki:
             de.append('%sself.S(%s, %s%s%s)'
                       % (T, na, shiki, ', marume=True' if maru else '', soe))

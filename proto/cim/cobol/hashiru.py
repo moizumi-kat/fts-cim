@@ -299,6 +299,21 @@ class Pgm:
         """88レベル（条件名）。いまは写していないので止める。"""
         raise Mikansei('条件名 %s（88レベル）' % na, 0)
 
+    def hamaru(self, na, v, oya=None):
+        """その項目に値が収まるか（桁あふれしないか）。
+
+           COBOL の `ON SIZE ERROR` は、計算結果が入れ先の桁に収まらないときだけ
+           走る。収まるかどうかは**整数部の桁数**で決まる（小数は丸められる）。
+        """
+        _r, k = self._hiku(na, oya)
+        if not k.keta:
+            return True
+        seisu = k.keta - (k.shou or 0)
+        try:
+            return abs(D(v)) < (D(10) ** seisu)
+        except Exception:
+            return True
+
     def hatsu(self, na, kai=None):
         """INITIALIZE。英数は空白・数はゼロに戻す。
 
