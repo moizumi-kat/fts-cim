@@ -158,6 +158,17 @@ def main():
                    if x[1].split('…')[-1].strip()[:60] == mes][:4]
             print('                 例: %s' % ' '.join(rei))
 
+    # 止まったところを全件、一覧に書き出す（人に見せて一緒に潰すため）
+    ichiran = ここ / '止まったところ.txt'
+    with open(ichiran, 'w', encoding='utf-8') as f:
+        f.write('# %d本を動かしてみて止まったところ（全件）\n' % len(moto))
+        f.write('# 区分\tプログラム\t止まった場所と理由\n')
+        for k in sorted(riyuu, key=lambda x: -len(riyuu[x])):
+            for na_, mes in sorted(riyuu[k]):
+                f.write('%s\t%s\t%s\n' % (k, na_, mes))
+    print()
+    print('■ 止まったところの全件を %s に書き出しました' % ichiran)
+
     # 実データが変わっていないこと
     chigai = []
     for t, n in mae.items():
