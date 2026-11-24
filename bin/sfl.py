@@ -173,7 +173,7 @@ def _ebcdic(b):
        と振る舞いが変わり、実データとの突き合わせで食い違う
        （鑑の 件名３・特記事項 で実測。9,796件＋α がずれた）。
     """
-    return b.decode('cp037', 'replace')
+    return teigitai_moji.ebcdic_data(b)
 
 
 def _jef(b):
