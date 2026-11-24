@@ -658,18 +658,20 @@ UTF-8 に直したときに落ちている。つまり
 
 ### いま欲しいもの
 
-- **FZSLIB のコピー原文 8本** … `JYUSYORI` `BUTSYOR1` `GENSYOR1` `JHYSYORI`
-  `KETGAMEN` `SINSYORI` `SZUGAMEN` `URIGAMEN`。
-  `COPY 〜 OF FZSLIB` で取り込まれているが原文が手元に無く、**写せない文が
-  この8か所だけ残っている**（ほかは12文中4文の `ON SIZE ERROR` のみ）。
-  なお同名のファイルが「ソースが無いプログラム」としても挙がっており、
-  **実体はコピー原文（PROCEDURE DIVISION を持たない断片）**だった。
 - **DDL と定義体の食い違い 8件のご確認** … → 2.55 の表。
   `ABUHMP.PARTNA` は実データに32文字が16件あるので定義体（char(32)）が正と見ている。
 - **定義体が無い8表** `ATESAKIF` `FGENKA` `KFKNSWK` `SENGFS` `SENKFS`
   `TENURI2F` `TENURI3F` `TENURISF`（急ぎではない。実データにも無い）
 
 ### もう要らなくなったもの（経緯の記録）
+
+- ~~FZSLIB のコピー原文 8本~~ … **すでに手元にあった**（2026-11-24）。
+  `JYUSYORI` `BUTSYOR1` `GENSYOR1` `JHYSYORI` `KETGAMEN` `SINSYORI`
+  `SZUGAMEN` `URIGAMEN` は、原文置き場に入っていた。
+  「ソースが無いプログラム」として挙がっていたものの実体が、
+  **段落だけを書いたコピー原文**だった。
+  → `bin/cob2py/kumitate.copy_tenkai()` が手続き部の COPY を展開する。
+  **教訓：依頼する前に、いただいた資料を全部探す。**
 
 - ~~XMDLIB の画面定義 352種~~ … **定義体（.SMD）の中に項目の名前が入っていた**
   （2026-11-24・村上様のご指摘で発見）。1件24バイトで「英名4＋空白4＋JEF16」。
