@@ -305,6 +305,25 @@ class Dasu:
                     soe = soe2
                 de.append('%sself.hatsu(%r%s)' % (T, na, soe))
             return i
+        if u == 'INSPECT':
+            # `INSPECT WK-BUNAME2 REPLACING ALL VAL-HEX28 BY VAL-HEX40`（4か所）
+            j = i + 1
+            (na, soe), j = self._saki(go, j)
+            if j < owari and go[j].na('REPLACING'):
+                j += 1
+                kumi = []
+                while j < owari and go[j].na('ALL', 'LEADING', 'FIRST'):
+                    j += 1
+                    a, j = self.atai(go, j)
+                    if j < owari and go[j].na('BY'):
+                        j += 1
+                    b, j = self.atai(go, j)
+                    kumi.append((a, b))
+                for a, b in kumi:
+                    de.append('%sself.S(%s, str(self.V(%s%s)).replace(%s, %s)%s)'
+                              % (T, na, na, soe, a, b, soe))
+                return j
+            return self._owari(go, i, owari)
         if u == 'CONTINUE':
             de.append('%spass' % T); return i + 1
         if u == 'NEXT' and i + 1 < owari and go[i+1].na('SENTENCE'):
@@ -330,7 +349,8 @@ class Dasu:
             return self._open(go, i, owari, T, de, u)
         if u in ('READ', 'WRITE', 'REWRITE', 'DELETE', 'START'):
             return self._file(go, i, owari, ji, de, u)
-        if g.shu == 'ki' and g.v == '.':
+        if g.shu == 'ki' and g.v in ('.', ',', ';'):
+            # `MOVE "Y" TO CR-KBN,` のように読点で文を切る書き方がある（5か所）。
             return i + 1
         if u == 'END' and i + 1 < owari and go[i+1].na('PROGRAM'):
             # `END PROGRAM 名前.` は入れ子プログラムの終わりの印。
@@ -372,7 +392,14 @@ class Dasu:
         if i < owari and go[i].na('TO'):
             i += 1
         saki = []
-        while i < owari and go[i].shu == 'na' and not _tome(go[i]):
+        while i < owari:
+            # 送り先は読点で区切ることもできる
+            # （`MOVE 見積１ TO Ｐ－見積番号１ , 保存－見積１`・3か所）。
+            if go[i].shu == 'ki' and go[i].v == ',':
+                i += 1
+                continue
+            if go[i].shu != 'na' or _tome(go[i]):
+                break
             na, i = self._saki(go, i)
             saki.append(na)
         for na, soe in saki:
@@ -453,6 +480,11 @@ class Dasu:
             if g.shu == 'ki' and g.v == '.':
                 i += 1
                 break
+            # 呼んだ側が指定した終わりの語でも抜ける。**これを見ていなかった**ので
+            # `READ … INVALID KEY … NOT INVALID KEY …` の NOT（TOME に無い）で
+            # 抜けられず、NOT 以降が未変換になっていた（11か所・2026-11-24）。
+            if g.shu == 'na' and tome and g.v.upper() in tome:
+                break
             if g.shu == 'na' and g.v.upper() in TOME:
                 # `NEXT SENTENCE`（＝何もしない）は文なので抜けない。
                 # `IF … THEN NEXT SENTENCE ELSE …` の ELSE が落ちていた（2026-11-24）。
@@ -478,13 +510,28 @@ class Dasu:
         return i
 
     def _evaluate(self, go, i, owari, ji, de):
+        """EVALUATE。**主題が複数（ALSO）の形にも対応**（2026-11-24）。
+
+             EVALUATE  項番開始     ALSO  項番終了
+                WHEN   NOT ZERO    ALSO  NOT ZERO
+                WHEN   NOT ZERO    ALSO  ZERO
+                   …
+           WHEN の中の ALSO は主題と位置で対応して **かつ**（and）、
+           WHEN が続いているぶんは **または**（or）。48か所あった。
+        """
         T = '    ' * ji
         i += 1
-        shudai = None
-        if not go[i].na('TRUE'):
-            shudai, i = self.atai(go, i)
-        else:
-            i += 1
+        shudai = []                      # 主題。TRUE のところは None
+        while True:
+            if go[i].na('TRUE'):
+                shudai.append(None); i += 1
+            else:
+                v, i = self.atai(go, i)
+                shudai.append(v)
+            if i < owari and go[i].na('ALSO'):
+                i += 1
+                continue
+            break
         hajime = True
         while i < owari and go[i].na('WHEN'):
             jouken = []
@@ -493,15 +540,15 @@ class Dasu:
                 if go[i].na('OTHER'):
                     jouken = None; i += 1; continue
                 j = i
-                while j < owari and not _tome(go[j]) and not (
-                        go[j].shu == 'ki' and go[j].v == '.'):
+                # THRU は範囲の印なので、ここでは切れ目にしない
+                # （`WHEN 1 THRU 2` の THRU 以降が落ちていた・5か所）。
+                while j < owari and not (
+                        go[j].shu == 'ki' and go[j].v == '.') and not (
+                        _tome(go[j]) and not go[j].na('THRU', 'THROUGH')):
                     j += 1
-                if shudai is None:
-                    jouken.append('(%s)' % self.jouken(go, i, j))
-                else:
-                    jouken.append('(%s)' % self._when(shudai, go, i, j))
+                jouken.append('(%s)' % self._when_zenbu(shudai, go, i, j))
                 i = j
-                if i < owari and (go[i].na('WHEN')):
+                if i < owari and go[i].na('WHEN'):
                     continue
                 break
             if jouken is None:
@@ -515,8 +562,44 @@ class Dasu:
             i += 1
         return i
 
+    def _also_waru(self, go, i, j):
+        """[i, j) を、括弧の外側の ALSO で区切る。"""
+        kugiri = []
+        kara = i
+        kakko = 0
+        for k in range(i, j):
+            g = go[k]
+            if g.shu == 'ki' and g.v == '(':
+                kakko += 1
+            elif g.shu == 'ki' and g.v == ')':
+                kakko -= 1
+            elif kakko == 0 and g.na('ALSO'):
+                kugiri.append((kara, k)); kara = k + 1
+        kugiri.append((kara, j))
+        return kugiri
+
+    def _when_zenbu(self, shudai, go, i, j):
+        """WHEN の中身（ALSO で区切られる）を主題と突き合わせて条件にする。"""
+        bu = self._also_waru(go, i, j)
+        de = []
+        for k, (a, b) in enumerate(bu):
+            if a >= b:
+                continue
+            s = shudai[k] if k < len(shudai) else None
+            de.append('(%s)' % (self.jouken(go, a, b) if s is None
+                                else self._when(s, go, a, b)))
+        return ' and '.join(de) if de else 'False'
+
     def _when(self, shudai, go, i, j):
-        """EVALUATE の WHEN の値。THRU（範囲）にも対応。"""
+        """EVALUATE の WHEN の値。THRU（範囲）・NOT・ANY にも対応。"""
+        if go[i].na('ANY'):
+            return 'True'
+        if go[i].na('NOT'):
+            saki = self._when(shudai, go, i + 1, j)
+            # `== x` を `!= x` に、範囲は否定にする
+            if saki.startswith('%s == ' % shudai):
+                return '%s != %s' % (shudai, saki[len('%s == ' % shudai):])
+            return 'not (%s)' % saki
         if j - i >= 3 and go[i+1].na('THRU', 'THROUGH'):
             a, _ = self.atai(go, i)
             b, _ = self.atai(go, i + 2)
@@ -543,6 +626,26 @@ class Dasu:
                 j, _ = self._jouken_made(go, i + 1, owari)
                 de.append('%swhile not (%s):' % (T, self.jouken(go, i + 1, j)))
                 de.append('%s    %s' % (T, yobi))
+                return j
+            if i < owari and go[i].na('VARYING'):
+                # `PERFORM AWKK-1300-RTN VARYING IX-1 FROM 1 BY 1 UNTIL …`
+                # ＝節を呼ぶ形の PERFORM VARYING（12か所）。
+                i += 1
+                (na2, soe2), i = self._saki(go, i)
+                i += 1                                   # FROM
+                kara, i = self.atai(go, i)
+                zutsu = 'D(1)'
+                if i < owari and go[i].na('BY'):
+                    zutsu, i = self.atai(go, i + 1)
+                de.append('%sself.S(%s, %s%s)' % (T, na2, kara, soe2))
+                j, _ = self._jouken_made(go, i + 1, owari) if (
+                    i < owari and go[i].na('UNTIL')) else (i, i)
+                jo = self.jouken(go, i + 1, j) if i < owari and go[i].na(
+                    'UNTIL') else 'True'
+                de.append('%swhile not (%s):' % (T, jo))
+                de.append('%s    %s' % (T, yobi))
+                de.append('%s    self.S(%s, self.V(%s%s) + (%s)%s)'
+                          % (T, na2, na2, soe2, zutsu, soe2))
                 return j
             de.append('%s%s' % (T, yobi))
             return i
@@ -772,15 +875,30 @@ class Dasu:
             i += 2
         soe = []
         if shu == 'START':
-            # START ファイル KEY [比べ方] キー1 キー2 …
+            # START ファイル [POSITIONING POINTER IS x] KEY [比べ方] キー1 キー2 …
+            #   `POSITIONING POINTER IS WK-P1` は富士通の拡張（6か所）。
+            #   どこから読み始めるかの覚えを持つ指定で、順に読む位置は
+            #   f_hajime が持つので、ここでは読み飛ばす。
+            if i < owari and go[i].na('POSITIONING'):
+                i += 1
+                if i < owari and go[i].na('POINTER'):
+                    i += 1
+                if i < owari and go[i].na('IS'):
+                    i += 1
+                if i < owari and go[i].shu == 'na' and not go[i].na('KEY'):
+                    i += 1                      # 覚えを入れる項目（読み飛ばす）
             while i < owari and go[i].na('KEY', 'IS', 'NOT', 'GREATER',
                                          'EQUAL', 'THAN', 'OR'):
                 i += 1
             if i < owari and go[i].shu == 'ki' and go[i].v in HIKAKU:
                 soe.append(repr(go[i].v)); i += 1
             while i < owari and go[i].shu == 'na' and not _tome(go[i]):
-                soe.append('kagi=%r' % go[i].v if False else repr(go[i].v))
+                soe.append(repr(go[i].v))
                 i += 1
+                # キーも `SEIBAN OF FSKKML2` と修飾で書くことがある
+                while (i + 1 < owari and go[i].na('OF', 'IN')
+                       and go[i+1].shu == 'na'):
+                    i += 2
             de.append('%sself.f_hajime(%r%s)'
                       % (T, f, (', ' + ', '.join(soe)) if soe else ''))
             while i < owari and go[i].na('INVALID', 'KEY', 'NOT', 'END-START'):
@@ -794,7 +912,8 @@ class Dasu:
                     i += 1
                 de.append('%sif %sself.jotai(%r) == %s:'
                           % (T, 'not ' if gyaku else '', f, hantei))
-                i = self._nakami(go, i, owari, ji + 1, de)
+                i = self._nakami(go, i, owari, ji + 1, de,
+                                 ('INVALID', 'NOT', 'END-START'))
             return i
         while i < owari and go[i].na('RECORD', 'INTO', 'FROM', 'KEY', 'IS',
                                      'NEXT', 'PREVIOUS', 'WITH', 'NO', 'LOCK',

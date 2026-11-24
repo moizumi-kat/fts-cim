@@ -14,6 +14,18 @@
 """
 import re
 
+try:
+    from . import teigitai_moji            # JEF の読み取りを使い回す
+except Exception:                          # 単体で動かすとき
+    import os, sys as _sys
+    _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import teigitai_moji
+
+
+def _jef(b):
+    """JEF のバイト列 → 文字。表に無いコードは 〓。"""
+    return teigitai_moji._nibyte(b)
+
 KIGOU = ['**', '>=', '<=', '<>', '=', '>', '<', '+', '-', '*', '/', '(', ')', ',', '.', ';', ':']
 _NA = re.compile(r'[^\x00-\x20\'"().,;:=<>+*/]+')
 
@@ -55,10 +67,60 @@ def honbun(text):
     return out
 
 
+def _hirakippanashi(b):
+    """この行が、閉じていない直定数で終わっているか。"""
+    i, n = 0, len(b)
+    while i < n:
+        c = b[i]
+        if b.startswith('*>', i):
+            return None
+        if c in '\'"':
+            j = i + 1
+            while j < n:
+                if b[j] == c:
+                    if j + 1 < n and b[j+1] == c:
+                        j += 2
+                        continue
+                    break
+                j += 1
+            if j >= n:
+                return c                      # 閉じていない
+            i = j + 1
+            continue
+        i += 1
+    return None
+
+
+def tsunagu(gyoretsu):
+    """継続行（標識欄が `-`）を前の行につなぐ（2026-11-24）。
+
+       COBOL は長い直定数を次の行へ続けられる。続きの行は標識欄が `-` で、
+       **最初の引用符は直定数の一部ではない**（そこから続きが始まる印）。
+         MOVE  NC"ＥＮＴＥＲ：実行　ＰＦ５：前項目　ＰＦ６：次項目
+       -              "　ＰＦ１０：取消／終了"
+       これを見ていなかったので、直定数が途中で切れ、残りが別の文に見えていた
+       （23本のプログラムにある）。
+    """
+    out = []
+    for gyo, b, hyoshiki in gyoretsu:
+        if hyoshiki == '-' and out:
+            mae_gyo, mae = out[-1]
+            t = b.lstrip()
+            q = _hirakippanashi(mae)
+            if q and t[:1] == q:
+                t = t[1:]                     # 続きの印の引用符は落とす
+                out[-1] = (mae_gyo, mae + t)
+            else:
+                out[-1] = (mae_gyo, mae.rstrip() + ' ' + t)
+            continue
+        out.append((gyo, b))
+    return out
+
+
 def waru(text):
     """原文 → 語の並び。"""
     go = []
-    for gyo, b, hyoshiki in honbun(text):
+    for gyo, b in tsunagu(honbun(text)):
         i, n = 0, len(b)
         while i < n:
             c = b[i]
@@ -80,6 +142,17 @@ def waru(text):
                     j += 1
                 go.append(Go('mo', b[i+1:j].replace(c*2, c), gyo, i))
                 i = j + 1; continue
+            # 全角の16進の直定数 NX"7CD2"（JEF のコードを直に書く。16か所）。
+            #   JEF として読む。表に無いコードは 〓 にする（長さは全角1文字のまま）。
+            if (c in 'Nn' and i + 2 < n and b[i+1] in 'Xx' and b[i+2] in '\'"'):
+                q = b[i+2]
+                j = b.find(q, i + 3)
+                if j > 0:
+                    h = b[i+3:j]
+                    if re.fullmatch(r'[0-9A-Fa-f]*', h) and len(h) % 4 == 0:
+                        go.append(Go('mo', _jef(bytes.fromhex(h)), gyo, i))
+                        i = j + 1
+                        continue
             # 16進の直定数 X"28" / X'0027'（JEF のシフトコード等に使われる）
             #   `MOVE X"28" TO WK-HINMEIM` や `VALUE X"28"` の形（実測 208か所）。
             #   **バイトを1文字ずつに写す**（latin-1）。PIC X(01) VALUE X"28" のように
