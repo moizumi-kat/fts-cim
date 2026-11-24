@@ -14,6 +14,7 @@ SPACE = '\x00SPACE'            # MOVE SPACE の印（型を見て空白かゼロ
 TAKAI = '\x00HIGH'
 HIKUI = '\x00LOW'
 SEIJOU, OWARI, NASHI, JYUUFUKU = '00', '10', '23', '22'
+NAIFAIRU = '35'          # OPEN したがファイルが無い
 
 
 def D(v):
@@ -190,17 +191,31 @@ class Pgm:
             self.hyo.setdefault(na, (toku, toku.hyo[na]))
         self.f = {}
         self.f_jotai = {}
+        # OPEN したのに表をつなげられなかったファイル（後で人に見せる）
+        self.hyo_nai = set()
         # 索引でないファイル（VLD のメッセージ列・画面・帳票）へ書いたもの。
         # 表が無いので、ここに貯めて後ろの処理へ渡す。
         self.kaita = {}
         if con is not None and db is not None:
             for na, d in self.FAIRU.items():
-                if d.get('kumi') != 'INDEXED' or not d.get('kagi'):
-                    continue
-                hyo = (d['ronri'] or '')[:-3] + 'FP' if (d['ronri'] or '').endswith('FL1') \
-                    else (d['ronri'] or '')
-                hyo = self._hyomei(d['ronri'])
-                kagi = [self._kagi_retsu(k, hyo, db) for k in d['kagi']]
+                sakuin = d.get('kumi') == 'INDEXED' and d.get('kagi')
+                hyo = self._hyomei(d.get('ronri'))
+                if not sakuin:
+                    # ■ 順ファイルもつなぐ（2026-11-24）
+                    #   `SELECT FJKNML1 ASSIGN TO DA-VS-FJKNMP` のように
+                    #   ORGANIZATION も RECORD KEY も書かない**順ファイル**が
+                    #   あり、これを一切つないでいなかったので READ が
+                    #   「表が無い」で止まっていた（94本）。
+                    #   物理名は ASSIGN 句に書いてあるので、**その表が
+                    #   実在するときだけ**つなぐ。実在しないものは帳票・
+                    #   画面・メッセージ列なので、従来どおり self.kaita へ。
+                    try:
+                        if not hyo or hyo not in db.TABLES:
+                            continue
+                    except Exception:
+                        continue
+                kagi = [self._kagi_retsu(k, hyo, db)
+                        for k in (d.get('kagi') or [])]
                 try:
                     self.f[na] = F.Fairu(con, hyo, kagi, d['ronri'], db=db)
                 except Exception:
@@ -425,10 +440,30 @@ class Pgm:
 
     # ── ファイル ────────────────────────────
     def hiraku(self, f, mode='I-O'):
-        self.f_jotai[f] = SEIJOU
+        """OPEN。**FILE STATUS の項目へ状態を書く**（2026-11-24）。
+
+           書き忘れていたため、原文の
+             `IF AJBG-STSCD NOT = '00' … OPEN ERR … ABEND`
+           が空文字と '00' を比べて必ず異常になり、**532本が ABEND**
+           していた。OPEN は実際には成功している（`hiraku` は常に正常）。
+
+           索引ファイルなのに表をつなげていない（表が無い）ときだけ
+           '35'（ファイル無し）を返す。黙って成功にすると、無い表を
+           読んだのか空の表を読んだのか分からなくなる。"""
+        d = self.FAIRU.get(f, {})
+        if d.get('kumi') == 'INDEXED' and d.get('kagi') and f not in self.f:
+            st = NAIFAIRU
+            self.hyo_nai.add(f)
+        else:
+            st = SEIJOU
+        self.f_jotai[f] = st
+        self._jotai_kaku(f, st)
+        return st
 
     def tojiru(self, f):
         self.f_jotai[f] = SEIJOU
+        self._jotai_kaku(f, SEIJOU)
+        return SEIJOU
 
     def jotai(self, f):
         return self.f_jotai.get(f, SEIJOU)
@@ -491,7 +526,8 @@ class Pgm:
         fa = self.f.get(f)
         if fa is None:
             raise Mikansei('READ %s（表が無い）' % f, 0)
-        if 'NEXT' in soe:
+        if 'NEXT' in soe or fa.jun:
+            # 順ファイルは `READ ファイル` だけでも順読み（NEXT と同じ）
             st = fa.tsugi()
         else:
             st = fa.yomu(*self._kagi(f))

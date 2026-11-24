@@ -92,6 +92,48 @@ def yomu(path):
     return namae, out, len(b)
 
 
+def rec_na(b, shiru=None):
+    """**01レベル（レコード）の COBOL 名**を取り出す（2026-11-24 実測）。
+
+       ■ どこに入っているか
+         項目名表（1件24バイト。4バイトのコード＋空白4＋名前16）の
+         **すぐ前に、同じ24バイトの形で「定義体名＋レコード名」が1件**ある。
+             0x0720  "A18030D1"（8バイト）＋ JEF16バイト → 処理終了画面
+             0x0738  ff ff ff ff        （表の区切り）
+             0x073c  項目名表のはじめ（F001 …）
+       ■ なぜ要るか
+         原文は `COPY A18030D1 OF XMDLIB JOINING 画面 AS PREFIX.` と書き、
+         `MOVE LOW-VALUE TO 画面－処理終了画面` のように**レコードごと**
+         動かす。レコード名が無いと、ここで「知らない項目」で止まる
+         （45件のうち41件がこれ・2026-11-24 実測）。
+       ■ 取れないもの
+         一覧画面など 112本はこの欄が無い（表が項目名から始まる）。
+         その場合は None を返し、従来どおり定義体名で呼ぶ。
+    """
+    shiru = shiru or set()
+    i = 0
+    while i + 24 <= len(b):
+        if b[i+4:i+8] != b'\x40\x40\x40\x40':
+            i += 1; continue
+        try:
+            nm = b[i:i+4].decode('cp500').strip()
+        except Exception:
+            i += 1; continue
+        if not nm or nm not in shiru:
+            i += 1; continue
+        na = teigitai_moji._nibyte(b[i+8:i+24]).replace('\u3000', '').strip()
+        if not na or na.startswith('\u3013'):
+            i += 1; continue
+        r = i - 28                     # 24バイトの欄＋区切り4バイト
+        if r < 0:
+            return None
+        s = teigitai_moji._nibyte(b[r+8:r+24]).replace('\u3000', '').strip()
+        if s and '\x00' not in s and not s.startswith('\u3013'):
+            return s
+        return None
+    return None
+
+
 def komoku_na(b, shiru=None):
     """項目の**COBOL での名前**を取り出す。
 

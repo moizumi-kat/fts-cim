@@ -64,6 +64,13 @@ class Fairu:
         self.con = con
         self.hyo = hyo
         self.kagi = list(kagi)
+        # ■ 順ファイル（SELECT 〜 ASSIGN TO DA-VS-…／RECORD KEY なし）
+        #   キーが無いので、**行番号（rowid）を並び順の鍵**にする。
+        #   これを入れるまで順ファイルは一切つながっておらず、
+        #   READ が「表が無い」で止まっていた（94本・2026-11-24）。
+        self.jun = not self.kagi
+        if self.jun:
+            self.kagi = ['_gyo']
         self.ronri = ronri or hyo
         self.db = db
         self.moji = _moji_kagi(hyo, self.kagi)    # 末尾空白を見ないで比べる列
@@ -74,7 +81,11 @@ class Fairu:
 
     # ── 組み立て ────────────────────────────────
     def _Q(self, n):
-        return '[%s]' % n
+        return 'rowid' if n == '_gyo' else '[%s]' % n
+
+    def _sel(self):
+        """SELECT に並べる列。順ファイルは rowid も取る。"""
+        return 'rowid AS [_gyo], *' if self.jun else '*'
 
     def _hidari(self, k):
         """比較の左辺。文字のキーは末尾空白を落として比べる。"""
@@ -126,7 +137,8 @@ class Fairu:
         """READ（乱）。キーを指定して1件読む。"""
         if not kagi_atai:
             kagi_atai = tuple(self.rec.get(k) for k in self.kagi)
-        sql = 'SELECT * FROM %s WHERE %s' % (self._Q(self.hyo), self._where())
+        sql = ('SELECT %s FROM %s WHERE %s'
+               % (self._sel(), self._Q(self.hyo), self._where()))
         r = self.db.q1(self.con, sql, tuple(self._hikisu(kagi_atai, '=')))
         if r is None:
             self.status = NASHI
@@ -140,8 +152,9 @@ class Fairu:
     def hajime(self, *kagi_atai, ijou=True):
         """START。順読みの開始位置を決める（KEY >= / KEY >）。"""
         hikaku = '>=' if ijou else '>'
-        sql = ('SELECT * FROM %s WHERE %s ORDER BY %s'
-               % (self._Q(self.hyo), self._where(hikaku), self._junjo()))
+        sql = ('SELECT %s FROM %s WHERE %s ORDER BY %s'
+               % (self._sel(), self._Q(self.hyo), self._where(hikaku),
+                  self._junjo()))
         r = self.db.q1(self.con, sql, tuple(self._hikisu(kagi_atai, hikaku)))
         if r is None:
             self.status = NASHI
@@ -162,16 +175,19 @@ class Fairu:
         if getattr(self, '_tsugi_wa_ima', False):
             # START の直後は、その位置のレコードが1件目になる
             self._tsugi_wa_ima = False
-            sql = ('SELECT * FROM %s WHERE %s ORDER BY %s'
-                   % (self._Q(self.hyo), self._where(), self._junjo()))
+            sql = ('SELECT %s FROM %s WHERE %s ORDER BY %s'
+                   % (self._sel(), self._Q(self.hyo), self._where(),
+                      self._junjo()))
             r = self.db.q1(self.con, sql, tuple(self._hikisu(self._ichi, '=')))
         else:
             if self._ichi is None:
-                sql = 'SELECT * FROM %s ORDER BY %s' % (self._Q(self.hyo), self._junjo())
+                sql = ('SELECT %s FROM %s ORDER BY %s'
+                       % (self._sel(), self._Q(self.hyo), self._junjo()))
                 r = self.db.q1(self.con, sql, ())
             else:
-                sql = ('SELECT * FROM %s WHERE %s ORDER BY %s'
-                       % (self._Q(self.hyo), self._where('>'), self._junjo()))
+                sql = ('SELECT %s FROM %s WHERE %s ORDER BY %s'
+                       % (self._sel(), self._Q(self.hyo),
+                          self._where('>'), self._junjo()))
                 r = self.db.q1(self.con, sql, tuple(self._hikisu(self._ichi, '>')))
         if r is None:
             self._owari = True
@@ -186,12 +202,18 @@ class Fairu:
         """WRITE。同じキーが既にあれば "22"。"""
         if rec is not None:
             self.rec = dict(rec)
-        kagi_atai = tuple(self.rec.get(k) for k in self.kagi)
-        sql = 'SELECT * FROM %s WHERE %s' % (self._Q(self.hyo), self._where())
-        if self.db.q1(self.con, sql, tuple(self._hikisu(kagi_atai, '='))) is not None:
-            self.status = JYUUFUKU
-            return self.status
-        hashira = list(self.rec.keys())
+        if self.jun:
+            # 順ファイルは「後ろに足す」だけ。キーが無いので重複も見ない。
+            hashira = [h for h in self.rec if h != '_gyo']
+        else:
+            kagi_atai = tuple(self.rec.get(k) for k in self.kagi)
+            sql = ('SELECT %s FROM %s WHERE %s'
+                   % (self._sel(), self._Q(self.hyo), self._where()))
+            if self.db.q1(self.con, sql,
+                          tuple(self._hikisu(kagi_atai, '='))) is not None:
+                self.status = JYUUFUKU
+                return self.status
+            hashira = list(self.rec.keys())
         sql = ('INSERT INTO %s (%s) VALUES (%s)'
                % (self._Q(self.hyo), ', '.join(self._Q(h) for h in hashira),
                   ', '.join('?' * len(hashira))))

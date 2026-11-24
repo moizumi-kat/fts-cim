@@ -326,10 +326,25 @@ def gamen_ireru(t, go, d_i, p_i):
     import re as _re
     teigi = _teigitai()
     out = []
-    for m in _re.finditer(r'COPY\s+([A-Z0-9]+)\s+OF\s+XMDLIB', t, _re.I):
+    # 注記・デバッグ行を落とした本文で探す（継続行をまたぐため）
+    hon = '\n'.join(ln[1:67] for ln in t.splitlines()
+                    if ln and ln[0] not in '*/Dd')
+    for m in _re.finditer(r'COPY\s+([A-Z0-9]+)\s+OF\s+XMDLIB((?:[^.]|\n)*)',
+                          hon, _re.I):
         na = m.group(1).upper()
         if na not in teigi:
             continue
+        # ■ JOINING の接頭辞を取る（2026-11-24）
+        #   `COPY A18030D1 OF XMDLIB JOINING 画面 AS PREFIX.` に対し
+        #   原文は `画面－操作指示` と書く。定義体から取った名前に
+        #   **接頭辞を付けていなかった**ので「知らない項目」で止まっていた。
+        #   区切りは、接頭辞が日本語なら全角ハイフン U+FF0D、英数なら `-`。
+        mj = _re.search(r'JOINING\s+(\S+)', m.group(2) or '', _re.I)
+        settou = ''
+        if mj:
+            pre = mj.group(1).rstrip('.')
+            sep = '-' if pre.isascii() else '\uff0d'
+            settou = pre + sep
         # 項目の名前は **定義体に入っている**（2026-11-24・村上様のご指摘で発見）。
         # 定義体に無いぶんだけ、COBOL の「制御項目初期化Ｒ」から補う。
         # 記憶域を占める項目は位置（ichi）が 0 でないもの（data.gamen_ko と同じ）。
@@ -337,8 +352,8 @@ def gamen_ireru(t, go, d_i, p_i):
         ko.sort(key=lambda x: x['ichi'])
         # 名前は「項目名表（cob）」と「項目コードそのもの」の両方から採る
         # （data.komoku_na_aru を参照）。
-        teigi_na = [data.komoku_na(x) if data.komoku_na_aru(x) else None
-                    for x in ko]
+        teigi_na = [settou + data.komoku_na(x) if data.komoku_na_aru(x)
+                    else None for x in ko]
         cob = _seigyo_namae(t)
         if all(teigi_na):
             namae = teigi_na
@@ -347,8 +362,12 @@ def gamen_ireru(t, go, d_i, p_i):
         else:
             namae = [a or b for a, b in zip(
                 teigi_na, (cob + [None] * len(ko))[:len(ko)])]
-            namae = [a or x['nm'] for a, x in zip(namae, ko)]
-        k = data.gamen_ko(teigi[na], namae, _gamen_kata(t, namae))
+            namae = [a or (settou + x['nm']) for a, x in zip(namae, ko)]
+        # 01レベルの名前（`画面－処理終了画面`）。定義体から取る。
+        rec = teigi[na].get('rec')
+        rec_na = (settou + rec) if (settou and rec) else None
+        k = data.gamen_ko(teigi[na], namae, _gamen_kata(t, namae),
+                          rec_na, settou)
         if k:
             out.append(k)
     return out

@@ -41,6 +41,10 @@ def hitotsu(path, kind):
                     'hen': [k['hen'], k['hen2'], k['kugiri'], k['shousuu']]})
     out.sort(key=lambda x: (x['gyo'], x['keta']))
     return {'na': path.stem, 'kind': kind,
+            # rec … 01レベル（レコード）の COBOL 名。原文は
+            #   `MOVE LOW-VALUE TO 画面－処理終了画面` と**レコードごと**
+            #   動かすので、これが無いと止まる（smd_parse.rec_na 参照）。
+            'rec': smd_parse.rec_na(b, {k['nm'] for k in ko}),
             'gyo': (max(x['gyo'] for x in out) + 1) if out else 0,
             'ko': out}
 

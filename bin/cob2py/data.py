@@ -400,20 +400,21 @@ def _gyo_kurikaeshi(ko):
     return None
 
 
-def _gamen_ko_kuri(teigi, ko, kuri, kata=None):
+def _gamen_ko_kuri(teigi, ko, kuri, kata=None, rec_na=None, settou=''):
     """繰返し行のある画面の記憶域を組む。位置は**定義体のものをそのまま使う**。
 
        項目ごとに「制御部5バイト＋データ」で、制御部は直前の5バイト
        （データの位置 −5）。A10050D1・A10040D1 で位置が連なることを確認済み。
     """
     hajime, m, gyo_su, kizami = kuri
-    oya = Ko(1, teigi['na'])
+    oya = Ko(1, rec_na or teigi['na'])
     naga = 0
     for i, k in enumerate(ko):
         if k['nm'][:1] == ']':
             naga = max(naga, k['ichi'] - 1 + k['naga2'])
             continue                       # 2行目以降は雛形の繰返しで表す
-        na = komoku_na(k)
+        # 接頭辞（`画面－`）を付ける。付けないと原文の名前で引けない。
+        na = settou + komoku_na(k)
         kai = gyo_su if hajime <= i < hajime + m else 0
         dan = (kizami,) if kai else ()
         g = Ko(3, na)
@@ -443,7 +444,7 @@ def _gamen_ko_kuri(teigi, ko, kuri, kata=None):
     return oya
 
 
-def gamen_ko(teigi, namae, kata=None):
+def gamen_ko(teigi, namae, kata=None, rec_na=None, settou=''):
     """定義体1本 ＋ 項目名の並び → Ko（01レコード）。合わなければ None。"""
     # R＝入力項目／W＝出力項目。S（区切りの印）は場所を取らないので外す。
     # **記憶域を占める項目は「位置（ichi）が 0 でないもの」**（2026-11-24 実測）。
@@ -457,7 +458,8 @@ def gamen_ko(teigi, namae, kata=None):
         # 繰返し行（] の連なり）が筋よく決まるなら、OCCURS として組む。
         kuri = _gyo_kurikaeshi(ko)
         if kuri:
-            return _gamen_ko_kuri(teigi, ko, kuri, kata)
+            return _gamen_ko_kuri(teigi, ko, kuri, kata, rec_na,
+                                  settou)
         # 一覧画面（概算・項目・明細・科目）は「見出し部＋繰返しの行」で、
         # COBOL 側は OCCURS で書くため数が合わない。
         #
@@ -476,7 +478,7 @@ def gamen_ko(teigi, namae, kata=None):
         # 作り、名前は定義体のもの（R001 など）にしておく。
         # COBOL の名前で引こうとしたところで止まるので、黙って通りはしない。
         namae = [k['nm'] for k in ko]
-    oya = Ko(1, teigi['na'])
+    oya = Ko(1, rec_na or teigi['na'])
     ichi = 0
     for k, na in zip(ko, namae):
         g = Ko(3, na)
