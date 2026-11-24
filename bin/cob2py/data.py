@@ -567,11 +567,94 @@ def _kurikaeshi(cols):
     return out
 
 
-def fd_ko(settou, cols, na=None):
-    """接頭辞＋表の列 → Ko（01レコード）。繰返しと集団項目を戻す。"""
+def fd_ko(settou, cols, na=None, kuri=None):
+    """接頭辞＋表の列 → Ko（01レコード）。繰返しと集団項目を戻す。
+
+       kuri（表定義の `kuri`＝定義体から起こした [(基本名, 回数, 刻み)]）が
+       あればそれを使う（2026-11-24）。無ければ列名から推測する（_kurikaeshi）。
+       列名からの推測では、**交互に並ぶ集団項目の繰返し**
+       （KOMKBN_1 KOMRIT_1 KOMKBN_2 KOMRIT_2 …）を見落とす。
+       これで `AWKK-KOMKBN (1)` が引けるようになった。
+    """
     oya = Ko(1, na or (settou + 'REC'))
     ichi = 0
     ichi_hyo = {}
+    if kuri:
+        kuri_hyo = {b: (n, kz) for b, n, kz in kuri}
+        # まず列の物理位置を出す（列の並び＝現物の並び。定義体で裏取り済み）
+        ichi_retsu = {}
+        for c in cols:
+            _ka, _ke, _sh, _co, nn = _kata_kara(c[1])
+            ichi_retsu[c[0]] = (ichi, nn)
+            ichi += nn
+        dekita = set()
+        for c in cols:
+            cna = c[0]
+            m = _re2.match(r'^(.*?)_+(\d+)$', cna)
+            moto = m.group(1).rstrip('_') if m else None
+            if moto in kuri_hyo:
+                if moto in dekita:
+                    continue
+                n, kz = kuri_hyo[moto]
+                kata, keta, shou, comp, naga = _kata_kara(c[1])
+                k = Ko(3, settou + moto)
+                k.kata, k.keta, k.shou, k.comp = kata, keta, shou, comp
+                k.naga = naga
+                k.ichi = ichi_retsu['%s_1' % (moto.ljust(6, '_')
+                                              if len(moto) < 6 else moto)][0] \
+                    if ('%s_1' % (moto.ljust(6, '_') if len(moto) < 6 else moto)
+                        ) in ichi_retsu else ichi_retsu[cna][0]
+                k.occurs = n
+                k.dan = [kz]
+                k.oya = oya
+                oya.ko.append(k)
+                ichi_hyo[moto] = (k.ichi, naga)
+                dekita.add(moto)
+                continue
+            kata, keta, shou, comp, naga = _kata_kara(c[1])
+            k = Ko(3, settou + cna)
+            k.kata, k.keta, k.shou, k.comp = kata, keta, shou, comp
+            k.naga = naga; k.ichi = ichi_retsu[cna][0]; k.occurs = 0; k.oya = oya
+            k.dan = []
+            oya.ko.append(k)
+            ichi_hyo[cna] = (k.ichi, naga)
+        # 接頭辞が日本語のときは、COBOL は**日本語の項目名**で書く（2026-11-24 実測）。
+        #   `COPY AWKGFL1 OF XFDLIB JOINING ワ鑑 AS PREFIX.` に対して
+        #   `ワ鑑－見積ナンバー`（MITUNO）・`ワ鑑－科目名称(IX1)`（KAMNAM_n）。
+        # 表定義は日本語の項目名も持っている（cols の3つめ）ので、別名として足す。
+        # 区切りは全角ハイフン U+FF0D。
+        _betsu = []
+        for c in cols:
+            ja = (c[2] or '').strip() if len(c) > 2 else ''
+            if not ja:
+                continue
+            m = _re2.match(r'^(.*?)_+(\d+)$', c[0])
+            moto = m.group(1).rstrip('_') if m else c[0]
+            mot = next((k for k in oya.ko if k.na == settou + moto), None)
+            if mot is None:
+                continue
+            for sep in ('-', '\uff0d'):
+                nm = settou[:-1] + sep + ja
+                if any(k.na == nm for k in oya.ko):
+                    continue
+                k2 = Ko(3, nm)
+                k2.kata, k2.keta, k2.shou, k2.comp = (mot.kata, mot.keta,
+                                                      mot.shou, mot.comp)
+                k2.naga = mot.naga; k2.ichi = mot.ichi
+                k2.occurs = mot.occurs; k2.dan = list(mot.dan); k2.oya = oya
+                _betsu.append(k2)
+        oya.ko += _betsu
+        for gna, bu in _GUN.items():
+            if not gna.startswith(settou):
+                continue
+            if all(b in ichi_hyo for b in bu):
+                a = ichi_hyo[bu[0]][0]
+                owari = ichi_hyo[bu[-1]][0] + ichi_hyo[bu[-1]][1]
+                g = Ko(3, gna)
+                g.kata = None; g.naga = owari - a; g.ichi = a; g.oya = oya
+                oya.ko.append(g)
+        oya.naga = ichi
+        return oya
     for cna, ty, occ in _kurikaeshi(cols):
         kata, keta, shou, comp, naga = _kata_kara(ty)
         k = Ko(3, settou + cna)

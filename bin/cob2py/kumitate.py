@@ -274,13 +274,13 @@ def fd_ireru(fc, sude, joining=None):
                 hyomei = k; break
         if not hyomei:
             continue
-        out.append(data_fd(settou, TABLES[hyomei]['cols'], rec_na))
+        out.append(data_fd(settou, TABLES[hyomei]['cols'], rec_na,
+                           TABLES[hyomei].get('kuri')))
     return out
 
 
-def data_fd(settou, cols, na):
-    k = data.fd_ko(settou, cols, na)
-    return k
+def data_fd(settou, cols, na, kuri=None):
+    return data.fd_ko(settou, cols, na, kuri)
 
 
 _TEIGI = None
@@ -438,6 +438,54 @@ def kioku_hyo(ne):
     return out
 
 
+def tokubetsu_teisu(go):
+    """SPECIAL-NAMES の SYMBOLIC CONSTANT を読む（2026-11-24 実測）。
+
+         SPECIAL-NAMES.
+                STATION   IS   DSP
+                SYMBOLIC  CONSTANT
+                定数      IS   1000000
+                正常      IS   "00"
+                終了      IS   "10"   …  .
+       `IF WK-STS NOT = 正常` のように**名前つきの直定数**として使う。
+       849本すべてが持っており、見ないと「知らない項目 正常」で止まる。
+    """
+    out = {}
+    i = next((k for k, g in enumerate(go) if g.na('SPECIAL-NAMES')), -1)
+    if i < 0:
+        return out
+    # SYMBOLIC CONSTANT のところまで進む。
+    # `SPECIAL-NAMES.` の直後にピリオドが来るので、ピリオドでは止めない。
+    # 次の SECTION／DIVISION まで見る。
+    j = i + 1
+    while j < len(go):
+        if go[j].na('SYMBOLIC'):
+            break
+        if go[j].na('SECTION', 'DIVISION'):
+            return out
+        j += 1
+    if j >= len(go) or not go[j].na('SYMBOLIC'):
+        return out
+    j += 1
+    if j < len(go) and go[j].na('CONSTANT', 'CONSTANTS'):
+        j += 1
+    while j + 2 < len(go):
+        if go[j].shu == 'ki' and go[j].v == '.':
+            break
+        if go[j].shu != 'na' or not go[j+1].na('IS'):
+            break
+        na = go[j].v
+        v = go[j+2]
+        if v.shu == 'mo':
+            out[na] = repr(v.v)
+        elif v.shu == 'su':
+            out[na] = "D('%s')" % v.v
+        else:
+            out[na] = repr(v.v)
+        j += 3
+    return out
+
+
 def kumu(michi):
     t = pathlib.Path(michi).read_text('utf-8', 'replace')
     go = ji.waru(t)
@@ -478,7 +526,7 @@ def kumu(michi):
             j += 1
     setsu = tetsuzuki.wakeru(go, j, len(go))
 
-    d = dasu.Dasu(pgm, setsu, namae, hairetsu)
+    d = dasu.Dasu(pgm, setsu, namae, hairetsu, tokubetsu_teisu(go))
     b = ['# -*- coding: utf-8 -*-',
          '"""%s を写したもの。bin/cob2py が自動生成。**手で直さない。**' % pathlib.Path(michi).name,
          '',

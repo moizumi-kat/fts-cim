@@ -200,7 +200,7 @@ class Pgm:
                 hyo = (d['ronri'] or '')[:-3] + 'FP' if (d['ronri'] or '').endswith('FL1') \
                     else (d['ronri'] or '')
                 hyo = self._hyomei(d['ronri'])
-                kagi = [k.split('-', 1)[-1] for k in d['kagi']]
+                kagi = [self._kagi_retsu(k, hyo, db) for k in d['kagi']]
                 try:
                     self.f[na] = F.Fairu(con, hyo, kagi, d['ronri'], db=db)
                 except Exception:
@@ -421,6 +421,33 @@ class Pgm:
                 return f
         return na
 
+    @staticmethod
+    def _kagi_retsu(na, hyo, db):
+        """RECORD KEY の項目名 → 表の列名（2026-11-24）。
+
+           接頭辞を外す。区切りは ASCII の `-` と**全角ハイフン U+FF0D** の
+           どちらもある（接頭辞が日本語だと全角）。
+           外した名前が列に無ければ、**日本語の項目名から英名を引く**
+             `ワ鑑－見積ナンバー` → `見積ナンバー` → `MITUNO`
+           （表定義の cols は (列名, 型, 日本語項目名, PIC)）。
+        """
+        mo = na
+        for sep in ('-', '\uff0d'):
+            if sep in mo:
+                mo = mo.split(sep, 1)[-1]
+                break
+        try:
+            cols = db.TABLES[hyo]['cols']
+        except Exception:
+            return mo
+        aru = {c[0] for c in cols}
+        if mo in aru:
+            return mo
+        for c in cols:
+            if len(c) > 2 and (c[2] or '').strip() == mo:
+                return c[0]
+        return mo
+
     def _kagi(self, f):
         d = self.FAIRU.get(f, {})
         return [self.V(k) for k in d.get('kagi', [])]
@@ -539,20 +566,36 @@ class Pgm:
         return None
 
     def _rec_toru(self, f):
+        """レコードの項目を {列名: 値} にする。
+
+           接頭辞（JOINING … AS PREFIX）が同じ項目を集めるが、**その表の列に
+           あるものだけ**を採る（2026-11-24）。接頭辞は作業領域の項目にも
+           付いていることがあり（`W020-STACD` は AWKKFP の列ではなく
+           FILE STATUS の項目）、混ぜると INSERT が落ちる。
+        """
         s = self._settou(f)
         d = {}
         if not s:
             return d
+        fa = self.f.get(f)
+        aru = None
+        if fa is not None and getattr(fa, 'db', None) is not None:
+            try:
+                aru = {c[0] for c in fa.db.TABLES[fa.hyo]['cols']}
+            except Exception:
+                aru = None
         for na, (r, k) in self.hyo.items():
             if not na.startswith(s) or not k.kata:
                 continue
             retsu = na[len(s):]
             if k.occurs:
                 for i in range(k.occurs):
-                    d['%s_%d' % (retsu.ljust(6, '_') if len(retsu) < 6 else retsu,
-                                 i + 1)] = self.V(na, kai=i)
-                    d['%s_%d' % (retsu, i + 1)] = self.V(na, kai=i)
-            else:
+                    for nm in ('%s_%d' % (retsu.ljust(6, '_')
+                                          if len(retsu) < 6 else retsu, i + 1),
+                               '%s_%d' % (retsu, i + 1)):
+                        if aru is None or nm in aru:
+                            d[nm] = self.V(na, kai=i)
+            elif aru is None or retsu in aru:
                 d[retsu] = self.V(na)
         d.pop('STSCD', None)
         return d

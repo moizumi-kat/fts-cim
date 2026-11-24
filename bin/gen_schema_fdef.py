@@ -116,6 +116,37 @@ def hirogeru(f):
     return out
 
 
+def kurikaeshi(f):
+    """定義体 → 繰返し項目の一覧 [(基本名, 回数, 刻み)]（2026-11-24）。
+
+       COBOL は `AWKK-KOMKBN (1)` のように繰返しを添字で書くので、表の列
+       （KOMKBN_1 KOMKBN_2 …）から**繰返しを戻す**必要がある。
+       列名から推測すると、交互に並ぶ集団項目の繰返し
+       （KOMKBN_1 KOMRIT_1 KOMKBN_2 KOMRIT_2 …）を見落とす。
+       **定義体には回数と刻みが入っている**ので、そこから起こす。
+         刻み … 集団項目の繰返しならその集団項目の1回分の長さ、
+                 項目そのものの繰返しならその項目の長さ
+    """
+    oya = {k['na']: k for k in f['ko']}
+    out = []
+    for k in f['ko']:
+        if k['kata'] == 'G' or not k['kaisu'] or k['hyo'] not in (1, 2):
+            continue
+        if k['hyo'] == 1:
+            kizami = k['naga']
+        else:
+            p = oya.get(k['oya'])
+            mi = 0
+            while p is not None and p['hyo'] != 1 and mi < 20:
+                p = oya.get(p['oya']) if p['oya'] else None
+                mi += 1
+            if p is None:
+                continue
+            kizami = p['naga']
+        out.append((k['na'], k['kaisu'], kizami))
+    return out
+
+
 def _seiki(s):
     """char(08) と char(8) を同じものとして見るための正規化。"""
     return re.sub(r'\((\d+)\)', lambda m: '(%d)' % int(m.group(1)), s)
@@ -174,6 +205,7 @@ for na in sorted(TABLES):
 
     ikiru = {c[0] for c in cols}
     t['cols'] = cols
+    t['kuri'] = kurikaeshi(f)            # 繰返し項目（基本名, 回数, 刻み）
     t['naga'] = f['naga']
     t['rec'] = f['rec']
     t['src'] = 'teigitai'
@@ -215,7 +247,8 @@ for na, (moto, nm, konkyo) in ONAJI.items():
     if na in TABLES or moto not in TABLES:
         continue
     m = TABLES[moto]
-    TABLES[na] = {'cols': list(m['cols']), 'naga': m['naga'], 'rec': m.get('rec'),
+    TABLES[na] = {'cols': list(m['cols']), 'kuri': list(m.get('kuri') or []),
+                  'naga': m['naga'], 'rec': m.get('rec'),
                   'nm': nm, 'lib': 'FADLIB', 'ronri': [], 'hantei': '要確認',
                   'pk': [], 'notnull': [], 'default': {},
                   'src': 'onaji', 'moto': moto, 'konkyo': konkyo}
@@ -227,6 +260,7 @@ for na, (nm, lib, konkyo) in MOTTEKURU.items():
     TABLES[na] = {
         'cols': [(rna, kata_sql(k), k['midashi'] or '', pic(k))
                  for rna, k in hirogeru(f)],
+        'kuri': kurikaeshi(f),
         'naga': f['naga'], 'rec': f['rec'], 'nm': nm, 'lib': lib,
         'ronri': [], 'hantei': '要確認', 'pk': [], 'notnull': [], 'default': {},
         'src': 'teigitai', 'moto': None, 'konkyo': konkyo}

@@ -39,8 +39,12 @@ def _tome(g):
 class Dasu:
     kari = 0                                 # ON SIZE ERROR 用の一時名の通し番号
 
-    def __init__(self, pgm, setsu, namae, hairetsu):
+    def __init__(self, pgm, setsu, namae, hairetsu, teisu=None):
         self.pgm = pgm              # プログラム名
+        # SPECIAL-NAMES の SYMBOLIC CONSTANT（名前つきの直定数）。
+        #   SPECIAL-NAMES.  SYMBOLIC CONSTANT 定数 IS 1000000  正常 IS "00" …
+        # 849本すべてが持っている（実測）。これを見ないと「知らない項目 正常」で止まる。
+        self.teisu = dict(teisu or {})
         self.setsu = setsu          # 節の並び
         self.namae = namae          # 使える項目名の集合
         self.hairetsu = hairetsu    # 繰返しのある項目名
@@ -69,6 +73,8 @@ class Dasu:
         u = g.v.upper()
         if u in JOGAI:
             return JOGAI[u], i + 1
+        if g.v in self.teisu:              # SYMBOLIC CONSTANT
+            return self.teisu[g.v], i + 1
         if u == 'ALL' and i + 1 < len(go):
             v, j = self.atai(go, i + 1)
             return 'ZENBU(%s)' % v, j
