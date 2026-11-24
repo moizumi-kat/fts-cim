@@ -1,392 +1,413 @@
 # -*- coding: utf-8 -*-
 """富士通ASPの保存ファイル（.SFL）から、レコードをそのまま取り出す。
 
-  ■ 分かったこと（2026-11-20 実測。ABANMP を CSV と1バイトずつ突き合わせて確定）
-    ・先頭は EBCDIC の "SIB2IFADLIB" ではじまる容れ物。しばらくヘッダが続き、
-      そのあとに**固定長のレコードがすきま無く**並ぶ。
-    ・1レコードの形
-        +0        1バイト  レコードの印（生きている＝0x80）
-        +1 から   定義の順に項目が並ぶ
-    ・項目の入りかた（表定義の型と1対1）
-        char(n)      … EBCDIC n バイト
-        nchar(n)     … JEF  n×2 バイト
-        numeric(n,0) … ゾーン10進 n バイト（EBCDIC の F0-F9）
-        decimal(n,m) … パック10進 (n+2)÷2 バイト（最後の半バイトが符号）
-    ・レコード長は**表定義から計算できる**（印1バイト＋各項目）。
-      ABANMP は 271 バイトで、現物の並び（271間隔）と一致した。
-    ・データの始まる位置はファイルごとに違うので、**レコードとして
-      筋が通る位置を探して**決める（下の さがす）。
-    ・そこから先は**固定長の枠がすきま無く並ぶ**。枠の印が 0x80 でないものは
-      空き枠（消したあと・予備）なので飛ばす。
-      CCALMP で実証：4,864 から 51 バイトごとに枠が並び、生きている枠だけを
-      拾うと 1096＋730＋365＋10227 ＝ **12,418件 でCSVと完全一致**した。
-      空き枠の境目はすべて 51 の倍数＝同じ枠割りの上に乗っている。
+  ■ 出どころ（2026-11-24）
+    村上様が SFL.zip に同梱してくださった **sfl2csv.ps1**（.SFL を CSV にする
+    PowerShell）が、形式を正確に書き起こしている。ここはその仕様どおりに作った。
+    → genbutsu/20261124_SFL/sfl2csv.ps1
+    それまでは「筋の通るレコードが並ぶ位置を探す」という当てもので読んでいた。
+    当てものは120本中80本しか刻みを当てられず、**SF編成を取り違えていた**
+    （SF編成はブロック構造なので、すきま無く並んでいない）。
+
+  ■ 形式は 256バイト境界のブロックで見分ける
+    PF編成（物理ファイル）… どこかの 256バイト境界に EBCDIC "CNTL" がある
+      CNTL +0x10  レコード長（2バイト）
+      CNTL +0x20  有効件数（4バイト）
+      CNTL +0x24  総件数（削除済みを含む・4バイト）
+      データ部は CNTL +0x800 から。
+        1枠 ＝ 印1バイト（0x80 有効／0x00 削除済み）＋レコード
+        印が 0xFF で終わり。
+    SF編成（順編成ファイル）… 0x300 に EBCDIC "FLB " がある
+      0x328  レコード長（2バイト）
+      0x32A  1ブロックのレコード数
+      0x32B  ブロック長（512バイト単位）
+      データ部は 0x500 から。各ブロックの先頭4バイトは
+        件数（2バイト）＋ブロック番号（2バイト）。件数 0x8000 のブロックで終わり。
+      **SF編成はファイルの中に項目定義を持たない** → 定義体（.SMB）から与える。
+
+  ■ 値の入りかた（型は定義体の X/N/U/P）
+    X … EBCDIC（cp037）n バイト
+    N … JEF n バイト。0x4040 は全角空白。どちらも 0xA1〜0xFE なら EUC-JP と同じ。
+    U … ゾーン10進。各バイトの下位4ビットが数字。最後のバイトの上位が 0xD0 なら負。
+    P … パック10進。16進にして最後の1桁が符号（D か B なら負）。
+    小数は桁で表す（COBOL は小数点を持たない）ので、定義の小数桁で割る。
 """
-import re, sys, pathlib
+import re, pathlib
+from decimal import Decimal
 
 try:
     from . import teigitai_moji            # JEF の読み取りを使い回す
 except Exception:
     import teigitai_moji
 
-SEI = 0x80                                  # 生きているレコードの印
+SEI = 0x80                                  # 有効なレコードの印
+KESHI = 0x00                                # 削除済み
+OWARI = 0xFF                                # 終わりの印
+
+_CNTL = bytes((0xC3, 0xD5, 0xE3, 0xD3))     # EBCDIC "CNTL"
+_FLB = bytes((0xC6, 0xD3, 0xC2, 0x40))      # EBCDIC "FLB "
 
 
+def _u16(b, o):
+    return b[o] * 256 + b[o + 1]
+
+
+def _u32(b, o):
+    return _u16(b, o) * 65536 + _u16(b, o + 2)
+
+
+# ── 形式を見分けて、レコードの位置を並べる ───────────
+def kaiseki(michi_ka_byte):
+    """.SFL → {'kata','naga','ichi','yuukou','soukei','kesu','owari_made'}
+
+       ichi は**有効なレコードの先頭位置**の並び。
+    """
+    b = (michi_ka_byte if isinstance(michi_ka_byte, (bytes, bytearray))
+         else pathlib.Path(michi_ka_byte).read_bytes())
+
+    cntl = -1
+    for o in range(0, len(b) - 4, 256):
+        if b[o:o + 4] == _CNTL:
+            cntl = o
+            break
+
+    if cntl >= 0:
+        naga = _u16(b, cntl + 0x10)
+        yuukou = _u32(b, cntl + 0x20)
+        soukei = _u32(b, cntl + 0x24)
+        ichi, kesu = [], 0
+        p = cntl + 0x800
+        while p + naga < len(b) and b[p] != OWARI:
+            if b[p] == SEI:
+                ichi.append(p + 1)
+            else:
+                kesu += 1
+            p += naga + 1
+        return {'kata': 'PF', 'naga': naga, 'ichi': ichi, 'yuukou': yuukou,
+                'soukei': soukei, 'kesu': kesu,
+                'owari_made': p + naga < len(b)}
+
+    if b[0x300:0x304] != _FLB:
+        raise ValueError('CNTL も FLB も見つかりません（未対応の形式）')
+
+    naga = _u16(b, 0x328)
+    hako = b[0x32A]                          # 1ブロックのレコード数
+    hako_naga = b[0x32B] * 512               # ブロック長
+    ichi = []
+    p = 0x500
+    while p + 4 <= len(b):
+        kazu = _u16(b, p)
+        if kazu == 0x8000:
+            break
+        if kazu > hako:
+            raise ValueError('ブロックの件数が不正（0x%X で %d 件）' % (p, kazu))
+        for k in range(kazu):
+            ichi.append(p + 4 + k * naga)
+        p += hako_naga
+    return {'kata': 'SF', 'naga': naga, 'ichi': ichi, 'yuukou': len(ichi),
+            'soukei': len(ichi), 'kesu': 0, 'hako': hako,
+            'hako_naga': hako_naga, 'owari_made': p + 4 <= len(b)}
+
+
+# ── 型とバイト数 ───────────────────────────────
 def naga(ty):
-    """列の型 → バイト数。
+    """列の型 → バイト数。定義体の型と1対1（可変長は無い）。
 
-       varchar／nvarchar は**先頭2バイトに長さ**を持つ（可変長項目）。
-       これが ABUHMP の謎の正体だった（2026-11-20）。部品名称4,994件すべての
-       先頭に付いていた「文字でない2バイト」は、**長さの欄**。
-       CSVへ書き出すときに、その2バイトごと文字として出てしまっていた。
+       以前は varchar／nvarchar に「先頭2バイトの長さ欄」があるとみていたが、
+       それは誤りだった（2026-11-24）。ABUHMP 部品名称の謎の2バイトは
+       長さ欄ではなく、DDL が char(30) と2バイト足りなかったため
+       （定義体では X(32)。実データに32文字が16件ある）。
     """
     m = re.match(r'(nvarchar|varchar|char|nchar|numeric|decimal)\((\d+)(?:,(\d+))?\)',
                  str(ty))
     if not m:
         raise ValueError('知らない型: %r' % ty)
     k, a = m.group(1), int(m.group(2))
-    if k == 'char':
+    if k in ('char', 'varchar'):
         return a
-    if k == 'nchar':
+    if k in ('nchar', 'nvarchar'):
         return a * 2
-    if k == 'varchar':
-        return a + 2
-    if k == 'nvarchar':
-        return a * 2 + 2
     if k == 'numeric':
         return a
     return (a + 2) // 2
 
 
 def rec_naga(cols):
-    return 1 + sum(naga(c[1]) for c in cols)
+    """列の並び → レコード長（印の1バイトは含めない）。"""
+    return sum(naga(c[1]) for c in cols)
 
 
+# ── 値の取り出し ───────────────────────────────
 def _zone(b, shou=0):
-    """ゾーン10進（EBCDIC の数字）→ 文字の数字。
-
-       shou は小数の桁数。COBOL は小数点を**持たず**桁で表すので、
-       numeric(5,1) の "00001" は 0.1 になる（ASUNMP の重量で実測）。"""
-    out = []
-    for c in b:
-        if 0xF0 <= c <= 0xF9:
-            out.append(chr(0x30 + (c - 0xF0)))
-        elif 0xC0 <= c <= 0xC9:          # 正の符号つき最下位桁
-            out.append(chr(0x30 + (c - 0xC0)))
-        elif 0xD0 <= c <= 0xD9:          # 負
-            out.append(chr(0x30 + (c - 0xD0)))
-            s = ''.join(out)
-            if shou:
-                s = (s[:-shou] or '0') + '.' + s[-shou:]
-            return '-' + s
-        elif c == 0x40:
-            out.append('0')              # 空白は0とみなす（現行もそう動く）
-        else:
-            return None
-    s = ''.join(out)
-    if shou:
-        s = (s[:-shou] or '0') + '.' + s[-shou:]
-    return s
-
-
-def _pack(b, shou):
-    """パック10進 → 文字の数。最後の半バイトが符号（C/F=正 D=負）。"""
-    ke = []
-    for c in b:
-        ke.append(c >> 4); ke.append(c & 0x0F)
-    fugo = ke.pop()
-    if any(k > 9 for k in ke):
+    """ゾーン10進。各バイトの下位4ビットが数字。最後の上位が 0xD0 なら負。"""
+    if not b:
         return None
-    s = ''.join(str(k) for k in ke)
-    if shou:
-        s = (s[:-shou] or '0') + '.' + s[-shou:]
-    return ('-' if fugo == 0x0D else '') + s
+    s = ''.join(str(x & 0x0F) for x in b)
+    if not s.isdigit():
+        return None
+    v = Decimal(s)
+    if (b[-1] & 0xF0) == 0xD0:
+        v = -v
+    return v / (10 ** shou) if shou else v
+
+
+def _pack(b, shou=0):
+    """パック10進。16進にして最後の1桁が符号（D か B なら負）。"""
+    if not b:
+        return None
+    s = b.hex().upper()
+    fugo, kazu = s[-1], s[:-1]
+    if not kazu.isdigit():
+        return None
+    v = Decimal(kazu)
+    if fugo in ('D', 'B'):
+        v = -v
+    return v / (10 ** shou) if shou else v
 
 
 def _ebcdic(b):
-    return b.decode('cp500', 'replace')
+    return b.decode('cp037', 'replace').rstrip()
 
 
 def _jef(b):
-    return teigitai_moji._nibyte(b)
+    return teigitai_moji._nibyte(b).rstrip('　 ')
 
 
 def hitotsu(rec, cols):
     """1レコードのバイト列 → {列名: 値}。筋が通らなければ None。"""
     d = {}
-    i = 1
-    for na, ty, _ja, _pic in cols:
+    i = 0
+    for na_, ty, _ja, _pic in cols:
         n = naga(ty)
-        b = rec[i:i+n]
-        if len(b) < n:
+        bb = rec[i:i + n]
+        if len(bb) < n:
             return None
         k = str(ty)
-        if k.startswith('nvarchar'):
-            ln = b[0] * 256 + b[1]
-            if ln > n - 2:
-                return None
-            d[na] = _jef(b[2:2+ln])
-        elif k.startswith('varchar'):
-            ln = b[0] * 256 + b[1]
-            if ln > n - 2:
-                return None
-            d[na] = _ebcdic(b[2:2+ln])
-        elif k.startswith('nchar'):
-            d[na] = _jef(b)
-        elif k.startswith('char'):
-            d[na] = _ebcdic(b)
-        elif k.startswith('numeric'):
-            m = re.match(r'numeric\((\d+),(\d+)\)', k)
-            v = _zone(b, int(m.group(2)) if m else 0)
-            if v is None:
-                return None
-            d[na] = v
+        if k.startswith(('nchar', 'nvarchar')):
+            d[na_] = _jef(bb)
+        elif k.startswith(('char', 'varchar')):
+            d[na_] = _ebcdic(bb)
         else:
-            m = re.match(r'decimal\((\d+),(\d+)\)', k)
-            v = _pack(b, int(m.group(2)))
+            m = re.match(r'(numeric|decimal)\((\d+),(\d+)\)', k)
+            shou = int(m.group(3))
+            v = _zone(bb, shou) if m.group(1) == 'numeric' else _pack(bb, shou)
             if v is None:
-                return None
-            d[na] = v
+                return None                  # HIGH-VALUE 等。呼び手が空で埋める
+            d[na_] = v
         i += n
     return d
 
 
-def sagasu(b, cols, hoshii=3):
-    """データの始まる位置を探す。**連続して筋の通るレコード**が
-       hoshii 件そろう最初の位置を採る。"""
-    n = rec_naga(cols)
-    for st in range(0, min(len(b) - n, 200000)):
-        if b[st] != SEI:
-            continue
-        ok = 0
-        for k in range(hoshii):
-            p = st + k * n
-            if p + n > len(b):
-                break
-            if b[p] != SEI or hitotsu(b[p:p+n], cols) is None:
-                break
-            ok += 1
-        if ok >= min(hoshii, (len(b) - st) // n):
-            return st, n
-    return None, n
-
-
 def yomu(michi, cols):
-    """.SFL 1本 → ([ {列名: 値} ], データの先頭位置, 飛ばした空き枠の数)。"""
+    """.SFL 1本 → ([ {列名: 値} ], データの先頭位置, 読めなかった枠の数)。"""
     b = pathlib.Path(michi).read_bytes()
-    st, n = sagasu(b, cols)
-    if st is None:
-        return [], 0, 0
-    out = []
-    aki = 0
-    for p in range(st, len(b) - n + 1, n):
-        if b[p] != SEI:
-            aki += 1
+    j = kaiseki(b)
+    if j['naga'] != rec_naga(cols):
+        raise ValueError('レコード長が合いません（ファイル %d / 定義 %d）'
+                         % (j['naga'], rec_naga(cols)))
+    out, dame = [], 0
+    for p in j['ichi']:
+        r = hitotsu(b[p:p + j['naga']], cols)
+        if r is None:
+            dame += 1
             continue
-        d = hitotsu(b[p:p+n], cols)
-        if d is None:
-            aki += 1
-            continue
-        out.append(d)
-    return out, st, aki
-
-
-# ── 型の当て直し ────────────────────────────────
-"""■ なぜ要るか（2026-11-20 実測）
-   表定義（cim/schema_gen）の numeric／decimal は、出どころが
-   ファイル一覧のPDFだったり変換表だったりで、**ゾーン10進かパック10進かが
-   表によって食い違う**。
-     ABANMP … 作成日は decimal（パック5バイト）＝現物と合う
-     AHATMP … 作成日は numeric（ゾーン8バイト）と書いてあるが、
-               現物の枠は81バイトで、パック（5バイト）でないと合わない
-   原文のコピー原文は手元に無い（5本だけ）ので、**現物の並びから当て直す**。
-   当て方は「枠の長さが合い、かつ全レコードが筋の通る形で読めること」。
-"""
-
-def _tsukuri(cols, pakku):
-    """pakku（パックにする列名の集合）を当てはめた列定義を返す。"""
-    out = []
-    for na, ty, ja, pic in cols:
-        k = str(ty)
-        if na in pakku and k.startswith('numeric'):
-            m = re.match(r'numeric\((\d+),(\d+)\)', k)
-            ty = 'decimal(%s,%s)' % (m.group(1), m.group(2))
-        elif na not in pakku and k.startswith('decimal'):
-            m = re.match(r'decimal\((\d+),(\d+)\)', k)
-            if m.group(2) == '0':
-                ty = 'numeric(%s,0)' % m.group(1)
-        out.append((na, ty, ja, pic))
-    return out
-
-
-def _tameshi(b, cols):
-    """この列定義で読めるか試す。読めた件数を返す。"""
-    st, n = sagasu(b, cols, hoshii=3)
-    if st is None:
-        return 0, None, 0
-    rec, aki = [], 0
-    for p in range(st, len(b) - n + 1, n):
-        if b[p] != SEI:
-            aki += 1; continue
-        d = hitotsu(b[p:p+n], cols)
-        if d is None:
-            aki += 1; continue
-        rec.append(d)
-    return len(rec), st, aki
-
-
-def ateru(michi, cols):
-    """現物に合う列定義を探し当てる。
-
-       戻り値 (列定義, レコード, 先頭位置)。見つからなければ (None, [], 0)。
-       試す順番
-         1. 表定義そのまま
-         2. 作成日・更新日・更新時間など**日付時刻らしい列**をパックに
-         3. 小数桁のある列をパックに
-         4. 2と3のくみあわせ
-    """
-    b = pathlib.Path(michi).read_bytes()
-    suu = [c[0] for c in cols if str(c[1]).startswith(('numeric', 'decimal'))]
-    hiduke = [c[0] for c in cols
-              if str(c[1]).startswith(('numeric', 'decimal'))
-              and re.search(r'(DAY|TIM|HI|YMD|NICHI)$', c[0])]
-    shosu = [c[0] for c in cols
-             if re.match(r'(numeric|decimal)\(\d+,[1-9]\)', str(c[1]))]
-    ima = {c[0] for c in cols if str(c[1]).startswith('decimal')}
-    kouho = [ima,
-             ima | set(hiduke),
-             ima | set(shosu),
-             ima | set(hiduke) | set(shosu),
-             set(hiduke),
-             set(hiduke) | set(shosu),
-             set(),
-             set(suu)]
-    ichiban = (0, None, None, 0)
-    mita = []
-    for p in kouho:
-        if p in mita:
-            continue
-        mita.append(p)
-        c2 = _tsukuri(cols, p)
-        n, st, aki = _tameshi(b, c2)
-        if n > ichiban[0]:
-            ichiban = (n, c2, st, aki)
-    if not ichiban[1]:
-        return None, [], 0
-    c2, st = ichiban[1], ichiban[2]
-    rec, _st, _aki = yomu(michi, c2)
-    return c2, rec, st
-
-
-# ── 現物の枠長から型を解く ──────────────────────────
-"""■ なぜ要るか（2026-11-20 実測）
-   表定義の型は出どころがまちまちで、現物と食い違うことがある。
-     ・numeric と書いてあるがパック10進（AHATMP の作成日）
-     ・varchar と書いてあるが**固定長で入っている**（ABKNFP。SQL Server へ
-       移すときの書き方であって、オフコンの並びではない）
-   そこで、現物から**枠の長さ**を測り、その長さになる型の組み合わせを
-   探して、実際に全件読めるものを採る。推測ではなく現物に合わせる。
-"""
-
-def waku_nagasa(b, atari=None, haba=400):
-    """現物から枠の長さを測る。0x80 の印が等間隔に並ぶことを使う。"""
-    ins = [i for i in range(len(b)) if b[i] == SEI]
-    if len(ins) < 8:
-        return []
-    mi = {}
-    lo, hi = (max(8, atari - haba), atari + haba) if atari else (8, 1200)
-    inset = set(ins)
-    hajime = ins[len(ins)//4]
-    for n in range(lo, hi + 1):
-        k = 0
-        p = hajime
-        while p + n < len(b) and k < 400:
-            if p not in inset:
-                break
-            k += 1; p += n
-        if k >= 8:
-            mi[n] = k
-    return [n for n, _ in sorted(mi.items(), key=lambda kv: (-kv[1], kv[0]))[:6]]
-
-
-def _erabi(ty):
-    """その列が取りうるバイト数（現物でありうる形）。"""
-    k = str(ty)
-    m = re.match(r'(nvarchar|varchar|char|nchar|numeric|decimal)\((\d+)(?:,(\d+))?\)', k)
-    if not m:
-        return []
-    shu, a = m.group(1), int(m.group(2))
-    b = int(m.group(3) or 0)
-    if shu == 'char':
-        return [('char(%d)' % a, a)]
-    if shu == 'nchar':
-        return [('nchar(%d)' % a, a * 2)]
-    if shu == 'varchar':                        # 固定長 か 長さ2バイト付き
-        return [('char(%d)' % a, a), ('varchar(%d)' % a, a + 2)]
-    if shu == 'nvarchar':
-        return [('nchar(%d)' % a, a * 2), ('nvarchar(%d)' % a, a * 2 + 2)]
-    # 数はゾーンかパックか
-    return [('numeric(%d,%d)' % (a, b), a), ('decimal(%d,%d)' % (a, b), (a + 2) // 2)]
-
-
-def waku_tanmatsu(b):
-    """端末ＩＤ（WKSTN…）の出てくる間隔から枠の長さを測る。
-       0x80 の並びで測れない表（空き枠が続く表）でも、こちらなら測れる。"""
-    import collections
-    w = 'WKSTN'.encode('cp500')
-    ichi = []; i = -1
-    while True:
-        i = b.find(w, i + 1)
-        if i < 0:
-            break
-        ichi.append(i)
-    if len(ichi) < 4:
-        return []
-    c = collections.Counter(ichi[k+1] - ichi[k] for k in range(len(ichi) - 1))
-    return [n for n, k in c.most_common(4) if 8 <= n <= 4000 and k >= 3]
-
-
-def toku(michi, cols, kouho=None, tameshi=40):
-    """現物に合う型の組み合わせを解く。(列定義, レコード, 先頭位置)。"""
-    b = pathlib.Path(michi).read_bytes()
-    try:
-        atari = rec_naga(cols)
-    except Exception:
-        atari = None
-    nagasa = kouho or (waku_tanmatsu(b) + waku_nagasa(b, atari))
-    nagasa = list(dict.fromkeys(nagasa))
-    eri = [_erabi(c[1]) for c in cols]
-    if any(not e for e in eri):
-        return None, [], 0
-    for N in nagasa:
-        mato = N - 1                              # 印1バイトを除く
-        # 動的計画法で「合計が mato になる選び方」を数通り作る
-        michi_dp = [{} for _ in range(len(cols) + 1)]
-        michi_dp[0][0] = []
-        for i, e in enumerate(eri):
-            tsugi = michi_dp[i + 1]
-            for s, sen in michi_dp[i].items():
-                for j, (_ty, ln) in enumerate(e):
-                    t = s + ln
-                    if t <= mato and t not in tsugi:
-                        tsugi[t] = sen + [j]
-            if len(tsugi) > 20000:
-                break
-        sen = michi_dp[len(cols)].get(mato)
-        if sen is None:
-            continue
-        c2 = [(c[0], eri[i][sen[i]][0], c[2], c[3]) for i, c in enumerate(cols)]
-        n, st, _aki = _tameshi(b, c2)
-        if n >= 1:
-            rec, _st, _a = yomu(michi, c2)
-            if rec:
-                return c2, rec, st
-    return None, [], 0
+        out.append(r)
+    return out, (j['ichi'][0] if j['ichi'] else 0), dame
 
 
 def yomitoru(michi, cols):
-    """まず定義どおり、だめなら現物の枠長から解く。"""
-    c2, rec, st = ateru(michi, cols)
-    if rec:
-        return c2, rec, st
-    return toku(michi, cols)
+    """load_sfl.py 向け。(列の並び, レコードの並び, 先頭位置) を返す。
+
+       型の当て直し（旧 toku）は要らなくなった。レコード長はファイル自身が
+       持っており、定義体（.SMB）と合うことを確かめるだけでよい。
+    """
+    rec, st, _dame = yomu(michi, cols)
+    return cols, rec, st
+
+
+# ── PF編成はファイル自身が項目定義を持つ ─────────────
+"""■ どこにあるか（sfl2csv.ps1 より・2026-11-24）
+     0x040E  項目数（2バイト）
+     1280 + i*32 から1項目32バイト
+       +8  (8)  項目名（EBCDIC）
+       +16 (2)  1要素のバイト長
+       +18 (1)  型（U ゾーン10進／P パック10進／X 英数／N 日本語JEF）
+       +20 (2)  桁数
+       +24 (2)  レコード内の開始位置（1起点）
+       +26 (2)  繰返し1回分のバイト長
+       +28 (2)  繰返し回数（0＝繰返しなし）
+   **小数の桁はここに無い**（スクリプトも小数点を付けずに出す）。
+   小数が要るときは定義体（.SMB）から取る。
+"""
+
+
+def ko_teigi(michi_ka_byte):
+    """PF編成の .SFL → 項目定義の並び。SF編成は定義を持たないので [] を返す。"""
+    b = (michi_ka_byte if isinstance(michi_ka_byte, (bytes, bytearray))
+         else pathlib.Path(michi_ka_byte).read_bytes())
+    cntl = -1
+    for o in range(0, len(b) - 4, 256):
+        if b[o:o + 4] == _CNTL:
+            cntl = o
+            break
+    if cntl < 0:
+        return []
+    out = []
+    for i in range(_u16(b, 0x40E)):
+        o = 1280 + i * 32
+        if o + 32 > len(b):
+            break
+        out.append({
+            'na': b[o + 8:o + 16].decode('cp037', 'replace').strip(),
+            'naga': _u16(b, o + 16),
+            'kata': b[o + 18:o + 19].decode('cp037', 'replace'),
+            'keta': _u16(b, o + 20),
+            'ichi': _u16(b, o + 24),
+            'step': _u16(b, o + 26),
+            'kaisu': _u16(b, o + 28),
+        })
+    return out
+
+
+def hirogeru(ko):
+    """項目定義 → (列名, 項目, レコード内のオフセット0起点) の並び。
+
+       **繰返しが「連なり」か「交互」かは 刻み(step) と 長さ(naga) で決まる**
+       （2026-11-24 実測）。
+         刻み＝長さ … その項目の繰返しが連続して並ぶ（例 AJBGFP MITGAK
+                       位置549 長7 刻み7 反復2 → 549, 556）
+         刻み＞長さ … 兄弟と交互に並ぶ＝集団項目の繰返し（例 NOKIB4SF
+                       KAISHI 位置42 長4 刻み8 反復50、OWARI 位置46 長4 刻み8）
+       sfl2csv.ps1 は「同じ刻み・反復の項目をまとめる」としているが、それだと
+       AJBGFP の MITGAK と SASKIN（どちらも刻み7・反復2だが連なり）を交互に
+       並べてしまう。値は明示オフセットで読むので CSV の値は正しく、列の順だけ
+       入れ替わる。ここでは**位置どおりの順**にする（定義体から起こした表定義と
+       一致し、422本中392本はもともと一致していた）。
+       列名は英名を _ で6文字に詰めて _1, _2 …（変換仕様書4.2）。
+    """
+    out = []
+    i = 0
+    while i < len(ko):
+        k = ko[i]
+        if not k['kaisu']:
+            out.append((k['na'], k, k['ichi'] - 1))
+            i += 1
+            continue
+        if k['step'] == k['naga']:
+            # 連なり。この項目だけで展開する。
+            for n in range(1, k['kaisu'] + 1):
+                out.append(('%s_%d' % (k['na'].ljust(6, '_'), n), k,
+                            k['ichi'] - 1 + (n - 1) * k['step']))
+            i += 1
+            continue
+        # 交互。同じ刻み・反復で、1回分の中に収まる兄弟をまとめる。
+        g = [k]
+        j = i + 1
+        while (j < len(ko) and ko[j]['kaisu'] == k['kaisu']
+               and ko[j]['step'] == k['step']
+               and ko[j]['ichi'] < k['ichi'] + k['step']):
+            g.append(ko[j])
+            j += 1
+        for n in range(1, k['kaisu'] + 1):
+            for m in g:
+                out.append(('%s_%d' % (m['na'].ljust(6, '_'), n), m,
+                            m['ichi'] - 1 + (n - 1) * m['step']))
+        i = j
+    return out
+
+
+# ── 大きいファイルを逐次に読む ─────────────────────
+"""■ なぜ要るか（2026-11-24）
+   AJBMFP1.SFL は 1.9GB、AJBKFP1.SFL は 1.7GB ある。ファイルを丸ごと読んで
+   レコードを全部リストに持つ作りだとメモリが足りず、取り込みが途中で殺された。
+   そこでヘッダだけ読んで、あとは**少しずつ読みながら1件ずつ返す**。
+"""
+_YOMI = 1 << 23                             # 一度に読む量（8MB）
+
+
+def _cntl_sagasu(f, kagiri=1 << 26):
+    """開いたファイルから CNTL の位置を探す。無ければ -1。256バイト境界のみ見る。"""
+    f.seek(0)
+    ichi = 0
+    nokori = b''
+    while ichi < kagiri:
+        b = f.read(_YOMI)
+        if not b:
+            break
+        b = nokori + b
+        for o in range(0, len(b) - 3, 256):
+            if b[o:o + 4] == _CNTL:
+                return ichi + o
+        tsukatta = (len(b) // 256) * 256
+        nokori = b[tsukatta:]
+        ichi += tsukatta
+    return -1
+
+
+def atama(michi):
+    """.SFL のヘッダだけ読む → {'kata','naga','hajime','yuukou','soukei',...}"""
+    with open(michi, 'rb') as f:
+        cntl = _cntl_sagasu(f)
+        if cntl >= 0:
+            f.seek(cntl)
+            h = f.read(0x30)
+            return {'kata': 'PF', 'naga': _u16(h, 0x10),
+                    'yuukou': _u32(h, 0x20), 'soukei': _u32(h, 0x24),
+                    'hajime': cntl + 0x800}
+        f.seek(0x300)
+        h = f.read(0x30)
+        if h[:4] != _FLB:
+            raise ValueError('CNTL も FLB も見つかりません（未対応の形式）')
+        return {'kata': 'SF', 'naga': _u16(h, 0x28), 'hako': h[0x2A],
+                'hako_naga': h[0x2B] * 512, 'hajime': 0x500,
+                'yuukou': None, 'soukei': None}
+
+
+def nagare(michi, cols):
+    """.SFL を少しずつ読みながら {列名: 値} を1件ずつ返す。
+
+       レコード長が定義と合わなければ、最初に例外にする（黙って読まない）。
+    """
+    j = atama(michi)
+    naga_ = j['naga']
+    if naga_ != rec_naga(cols):
+        raise ValueError('レコード長が合いません（ファイル %d / 定義 %d）'
+                         % (naga_, rec_naga(cols)))
+    with open(michi, 'rb') as f:
+        if j['kata'] == 'PF':
+            waku = naga_ + 1
+            f.seek(j['hajime'])
+            nokori = b''
+            while True:
+                b = f.read(max(_YOMI // waku, 1) * waku)
+                if not b:
+                    return
+                b = nokori + b
+                n = len(b) // waku
+                for i in range(n):
+                    p = i * waku
+                    if b[p] == OWARI:
+                        return
+                    if b[p] != SEI:
+                        continue
+                    r = hitotsu(b[p + 1:p + waku], cols)
+                    if r is not None:
+                        yield r
+                nokori = b[n * waku:]
+        else:
+            hako, hako_naga = j['hako'], j['hako_naga']
+            f.seek(j['hajime'])
+            while True:
+                b = f.read(hako_naga)
+                if len(b) < 4:
+                    return
+                kazu = _u16(b, 0)
+                if kazu == 0x8000:
+                    return
+                if kazu > hako:
+                    raise ValueError('ブロックの件数が不正（%d 件）' % kazu)
+                for k in range(kazu):
+                    p = 4 + k * naga_
+                    r = hitotsu(b[p:p + naga_], cols)
+                    if r is not None:
+                        yield r

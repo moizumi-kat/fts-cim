@@ -328,8 +328,12 @@ def _wakeru(ko_kazu, na_kazu):
 def gamen_ko(teigi, namae, kata=None):
     """定義体1本 ＋ 項目名の並び → Ko（01レコード）。合わなければ None。"""
     # R＝入力項目／W＝出力項目。S（区切りの印）は場所を取らないので外す。
-    ko = [k for k in teigi['ko']
-          if k['midashi'] is None and k['nm'][:1] in ('R', 'W')]
+    # **記憶域を占める項目は「位置（ichi）が 0 でないもの」**（2026-11-24 実測）。
+    # 以前は項目の印が R／W のものだけを採っていたが、印は A〜Z や ] まであり
+    # （A10050D1 の 件名かな=A001・件名２=A004・件名３=A002 が落ちていた）、
+    # 印で絞るのは誤りだった。位置で絞ると A10040D1 は 55項目・1,123バイトの
+    # まま（＝実機で裏取り済みの値を再現）、A10050D1 は 28項目そろう。
+    ko = [k for k in teigi['ko'] if k['ichi']]
     ko.sort(key=lambda k: k['ichi'])
     if len(ko) != len(namae):
         # 一覧画面（概算・項目・明細・科目）は「見出し部＋繰返しの行」で、

@@ -154,7 +154,7 @@ for na in sorted(TABLES):
             if d is None:
                 sa.append((c[0], c[1], None))
                 continue
-            a, b = _seiki(c[1]), d[1]
+            a, b = _seiki(c[1]), _seiki(d[1])   # char(08) と char(8) は同じ
             if a == b:
                 continue
             # varchar/nvarchar/decimal は SQL 側の言い換え。長さが同じなら黙る。
@@ -182,6 +182,57 @@ for na in sorted(TABLES):
     t['notnull'] = [c for c in t.get('notnull') or [] if c in ikiru]
     t['default'] = {c: v for c, v in (t.get('default') or {}).items() if c in ikiru}
     naoshita.append(na)
+
+# ---- 表定義に無かったファイルを足す（2026-11-24）---------------------
+"""実データ（SFL.zip・492本）に在ったが、482表の一覧に無かった7本を調べた。
+     AERGFS   営業状況連携ファイル（鑑）  … A25010PB.COB の FD が
+              `COPY AEJGFP OF XFDLIB` なので**AEJGFP と同じ並び**。
+              実データのレコード長 700 ＝ AEJGFP の 700 と一致。
+     AERKFS   営業状況連携ファイル（項目）… 同じ FD が `COPY AEJKFP`。
+              実データ 110 ＝ AEJKFP の 110 と一致。
+     GKUMIKSF 定義体（.SMB）あり。長さ 419 が実データと一致。PKOUJOU3.CL が使う。
+     PJYURIFP 定義体（.SMB）あり。長さ 150 が実データと一致。原文からの参照は無い。
+   足せなかった3本（**並びがどこにも無い**。一時ファイルの控え）
+     AJKTFS    7バイト。CB1Z0010.CL の `CNVFILE FILE-B11200S1 TOFILE-AJKTFS`。
+               写し元 B11200S1 は一時ファイルで定義が無い。
+     D20520BK 60バイト。CL3D0000.CL の写し元 D20520S3（一時）に定義が無い。
+     D20530BK 17バイト。同じく D20530S1（一時）に定義が無い。
+   どれも SF編成で、SF編成はファイルの中に項目定義を持たない（sfl2csv.ps1）。
+"""
+ONAJI = {
+    'AERGFS': ('AEJGFP', '営業状況連携ファイル（鑑）',
+               'A25010PB.COB の FD が COPY AEJGFP OF XFDLIB。実データ700＝AEJGFP700'),
+    'AERKFS': ('AEJKFP', '営業状況連携ファイル（項目）',
+               'A25010PB.COB の FD が COPY AEJKFP OF XFDLIB。実データ110＝AEJKFP110'),
+}
+MOTTEKURU = {
+    'GKUMIKSF': ('組立実績連携ファイル', 'FCDLIB',
+                 '定義体あり（長419＝実データ419）。PKOUJOU3.CL が使う'),
+    'PJYURIFP': ('受注利益ファイル', 'FADLIB',
+                 '定義体あり（長150＝実データ150）。原文からの参照は無い'),
+}
+for na, (moto, nm, konkyo) in ONAJI.items():
+    if na in TABLES or moto not in TABLES:
+        continue
+    m = TABLES[moto]
+    TABLES[na] = {'cols': list(m['cols']), 'naga': m['naga'], 'rec': m.get('rec'),
+                  'nm': nm, 'lib': 'FADLIB', 'ronri': [], 'hantei': '要確認',
+                  'pk': [], 'notnull': [], 'default': {},
+                  'src': 'onaji', 'moto': moto, 'konkyo': konkyo}
+    naoshita.append(na)
+for na, (nm, lib, konkyo) in MOTTEKURU.items():
+    f = teigi.get(na)
+    if na in TABLES or f is None:
+        continue
+    TABLES[na] = {
+        'cols': [(rna, kata_sql(k), k['midashi'] or '', pic(k))
+                 for rna, k in hirogeru(f)],
+        'naga': f['naga'], 'rec': f['rec'], 'nm': nm, 'lib': lib,
+        'ronri': [], 'hantei': '要確認', 'pk': [], 'notnull': [], 'default': {},
+        'src': 'teigitai', 'moto': None, 'konkyo': konkyo}
+    naoshita.append(na)
+    if na in teigi_nashi:
+        teigi_nashi.remove(na)
 
 # ---- 検算 -------------------------------------------------------------
 warui = []

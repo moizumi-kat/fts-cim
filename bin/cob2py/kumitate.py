@@ -252,8 +252,8 @@ def gamen_ireru(t, go, d_i, p_i):
             continue
         # 項目の名前は **定義体に入っている**（2026-11-24・村上様のご指摘で発見）。
         # 定義体に無いぶんだけ、COBOL の「制御項目初期化Ｒ」から補う。
-        ko = [x for x in teigi[na]['ko']
-              if x['midashi'] is None and x['nm'][:1] in ('R', 'W')]
+        # 記憶域を占める項目は位置（ichi）が 0 でないもの（data.gamen_ko と同じ）。
+        ko = [x for x in teigi[na]['ko'] if x['ichi']]
         ko.sort(key=lambda x: x['ichi'])
         teigi_na = [x.get('cob') for x in ko]
         cob = _seigyo_namae(t)
