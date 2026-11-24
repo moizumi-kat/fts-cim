@@ -80,6 +80,20 @@ def waru(text):
                     j += 1
                 go.append(Go('mo', b[i+1:j].replace(c*2, c), gyo, i))
                 i = j + 1; continue
+            # 16進の直定数 X"28" / X'0027'（JEF のシフトコード等に使われる）
+            #   `MOVE X"28" TO WK-HINMEIM` や `VALUE X"28"` の形（実測 208か所）。
+            #   **バイトを1文字ずつに写す**（latin-1）。PIC X(01) VALUE X"28" のように
+            #   桁とバイト数が合っていることが大事なので、長さが変わる変換はしない。
+            if (c in 'Xx' and i + 1 < n and b[i+1] in '\'"'):
+                q = b[i+1]
+                j = b.find(q, i + 2)
+                if j > 0:
+                    h = b[i+2:j]
+                    if re.fullmatch(r'[0-9A-Fa-f]*', h) and len(h) % 2 == 0:
+                        go.append(Go('mo', bytes.fromhex(h).decode('latin-1'),
+                                     gyo, i))
+                        i = j + 1
+                        continue
             # 全角の直定数 NC"..." / N"..."
             if c in 'Nn' and i + 1 < n and (b[i+1] in 'Cc' and i + 2 < n and b[i+2] in '\'"'
                                             or b[i+1] in '\'"'):

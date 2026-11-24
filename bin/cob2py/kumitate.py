@@ -325,6 +325,39 @@ def _seigyo_namae(t):
     return saidai
 
 
+SEIGYO_NA = ('EDIT-STATUS', 'EDIT-OPTION', 'EDIT-COLOR',
+             'EDIT-MODE', 'EDIT-CURSOR')
+
+
+def _filler_seigyo(ko):
+    """画面の制御部を名前で引けるようにする（2026-11-24）。
+
+       画面レコードを原文の中に直接書いているプログラム（A10090PO の `Ｄ画面`）は、
+       項目ごとの5バイトの制御部を **`FILLER PIC X(005)`** としか書いていない。
+       それでも原文は `EDIT-MODE OF Ｄ見積ＮＯ` のように引く（ASP COBOL は
+       画面レコードの制御部に名前を与える）。そこで
+         「5バイトの FILLER の**直後に名前付きの基本項目**がある」
+       ところを制御部とみなし、EDIT-STATUS/OPTION/COLOR/MODE/CURSOR を
+       1バイトずつ名前付きで足す。繰返し（OCCURS）の中にも入るので、
+       直後の項目の繰返しの刻みをそのまま引き継ぐ。
+       画面でない記憶域に 5バイトの FILLER があっても、足した名前は誰も引かない
+       ので害は無い（引かれたときだけ値が取れる）。
+    """
+    tasu = []
+    for i, c in enumerate(ko):
+        if c[0] != 'FILLER' or c[2] != 5 or c[3] is None:
+            continue
+        if i + 1 >= len(ko):
+            continue
+        n = ko[i + 1]
+        if n[0] == 'FILLER' or n[3] is None:
+            continue
+        for j, sn in enumerate(SEIGYO_NA):
+            tasu.append(('%s OF %s' % (sn, n[0]), c[1] + j, 1, 'X', 1,
+                         0, False, None, n[8], n[9]))
+    return tasu
+
+
 def kioku_hyo(ne):
     """01 の並び → 記憶域の作り（出力に埋め込む表）。"""
     out = []
@@ -335,6 +368,7 @@ def kioku_hyo(ne):
                 continue
             ko.append((c.na, c.ichi - k.ichi, c.naga, c.kata, c.keta,
                        c.shou, c.fugo, c.comp, c.occurs, tuple(c.dan)))
+        ko += _filler_seigyo(ko)
         out.append((k.na, k.naga, ko,
                     [(c.na, c.value) for c in k.mina() if c.value is not None]))
     return out

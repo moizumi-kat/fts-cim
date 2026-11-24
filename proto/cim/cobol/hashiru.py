@@ -299,16 +299,26 @@ class Pgm:
         """88レベル（条件名）。いまは写していないので止める。"""
         raise Mikansei('条件名 %s（88レベル）' % na, 0)
 
-    def hatsu(self, na):
-        """INITIALIZE。英数は空白・数はゼロに戻す。"""
+    def hatsu(self, na, kai=None):
+        """INITIALIZE。英数は空白・数はゼロに戻す。
+
+           kai を付けると**その回だけ**戻す（`INITIALIZE W020-NOTBL(2)` の形。
+           表ぜんぶを戻してしまうと他の回を壊すので、回を指定する）。
+        """
         r, k = self._hiku(na)
-        for kna, kk in r.hyo.items():
-            if kk.ichi < k.ichi or kk.ichi + kk.naga > k.ichi + k.naga:
+        if kai is None:
+            hajime, naga = k.ichi, k.naga
+        else:
+            kk = kai if isinstance(kai, tuple) else (kai,)
+            hajime = r._ichi(k, kk[0] if len(kk) == 1 else kk)
+            naga = k.naga
+        for kna, c in r.hyo.items():
+            if c.ichi < hajime or c.ichi + c.naga > hajime + naga:
                 continue
-            if kk.kata == '9':
+            if c.kata == '9':
                 r.ireru(kna, 0)
-            elif kk.kata in ('X', 'N'):
-                r.nama_ireru(kk, b' ' * kk.naga)
+            elif c.kata in ('X', 'N'):
+                r.nama_ireru(c, b' ' * c.naga)
 
     def 未変換(self, kotoba, gyo):
         raise Mikansei(kotoba, gyo)

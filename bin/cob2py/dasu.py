@@ -24,6 +24,11 @@ TOME = frozenset((
     'END-WRITE END-DELETE END-REWRITE END-CALL END-ADD END-SUBTRACT '
     'END-COMPUTE END-DIVIDE END-STRING END-UNSTRING END-SEARCH '
     'AT INVALID THRU THROUGH GIVING UNTIL VARYING TIMES USING UPON '
+    # AFTER / BEFORE / ADVANCING も文の切れ目（2026-11-24 実測）。
+    #   `WRITE 帳票Ｒ FROM PRT-BODY-10 AFTER 1` の AFTER を、FROM のあとの
+    #   「キーが複数ならぶ」取り込みが飲み込んでしまい、残った `1` から先が
+    #   丸ごと未変換になっていた（201か所）。
+    'AFTER BEFORE ADVANCING '
     'REMAINDER ON SIZE ERROR NEXT').split())
 
 
@@ -278,16 +283,27 @@ class Dasu:
         if u == 'GO':
             return self._goto(go, i, owari, T, de)
         if u in ('ADD', 'SUBTRACT'):
-            return self._add(go, i, owari, T, de, u)
+            return self._jibun_end(go, self._add(go, i, owari, T, de, u),
+                                   owari, 'END-' + u)
         if u == 'COMPUTE':
-            return self._compute(go, i, owari, T, de)
+            return self._jibun_end(go, self._compute(go, i, owari, T, de),
+                                   owari, 'END-COMPUTE')
         if u == 'DIVIDE':
-            return self._divide(go, i, owari, T, de)
+            return self._jibun_end(go, self._divide(go, i, owari, T, de),
+                                   owari, 'END-DIVIDE')
         if u == 'INITIALIZE':
             # 終わりの語を見ないと、次の MOVE まで飲み込む（実測で飲み込んだ）
             i += 1
             while i < owari and go[i].shu == 'na' and not _tome(go[i]):
-                de.append('%sself.hatsu(%r)' % (T, go[i].v)); i += 1
+                na = go[i].v
+                i += 1
+                # `INITIALIZE W020-NOTBL(2)` のように添字が付くことがある（49か所）。
+                # 表ぜんぶではなく**その回だけ**戻すのが COBOL の決まり。
+                soe = ''
+                if i < owari and go[i].shu == 'ki' and go[i].v == '(':
+                    (_na2, soe2), i = self._saki(go, i - 1)
+                    soe = soe2
+                de.append('%sself.hatsu(%r%s)' % (T, na, soe))
             return i
         if u == 'CONTINUE':
             de.append('%spass' % T); return i + 1
@@ -316,6 +332,10 @@ class Dasu:
             return self._file(go, i, owari, ji, de, u)
         if g.shu == 'ki' and g.v == '.':
             return i + 1
+        if u == 'END' and i + 1 < owari and go[i+1].na('PROGRAM'):
+            # `END PROGRAM 名前.` は入れ子プログラムの終わりの印。
+            # 実行するものは無いので読み飛ばす（174本の末尾にある）。
+            return self._owari(go, i, owari)
         if u in ('END-COMPUTE', 'END-ADD', 'END-SUBTRACT', 'END-DIVIDE',
                  'END-IF', 'END-EVALUATE', 'END-PERFORM', 'END-READ',
                  'END-START', 'END-WRITE', 'END-DELETE', 'END-REWRITE',
@@ -415,6 +435,15 @@ class Dasu:
             j += 1
         return j, j
 
+    def _jibun_end(self, go, i, owari, na):
+        """演算文の自分の END-xxx が残っていたら食べる（2026-11-24）。
+
+           _nakami は TOME の語が来たら抜けるので、COMPUTE の END-COMPUTE を
+           残したままだと、IF の中身が END-COMPUTE で終わったとみなされ、
+           **続く ELSE が丸ごと未変換になっていた**（83か所）。
+        """
+        return i + 1 if (i < owari and go[i].na(na)) else i
+
     def _nakami(self, go, i, owari, ji, de, tome=None):
         """文の並びを、終わりを示す語が来るまで訳す。
            **終わりの語はここでは食べない。** 呼んだ側が自分のぶんだけ食べる。"""
@@ -425,7 +454,11 @@ class Dasu:
                 i += 1
                 break
             if g.shu == 'na' and g.v.upper() in TOME:
-                break
+                # `NEXT SENTENCE`（＝何もしない）は文なので抜けない。
+                # `IF … THEN NEXT SENTENCE ELSE …` の ELSE が落ちていた（2026-11-24）。
+                if not (g.na('NEXT') and i + 1 < owari
+                        and go[i+1].na('SENTENCE')):
+                    break
             i = self.bun(go, i, owari, ji, de)
             kaita = True
         if not kaita:
@@ -657,6 +690,18 @@ class Dasu:
         else:
             na, soe = self._na(b), ''
         maru, i = self._marume(go, i, owari)
+        # `DIVIDE 2 INTO WK-LCNT GIVING WK-WARI REMAINDER WK-AMAR`（44か所）。
+        # 商は整数に切り捨て、余りを別の項目へ入れる（COBOL の決まり）。
+        amari = None
+        if i < owari and go[i].na('REMAINDER'):
+            (amari, amari_soe), i = self._saki(go, i + 1)
+        if amari is not None:
+            waru_a, waru_b = (b, a) if 'WARU(%s, %s)' % (b, a) == shiki else (a, b)
+            de.append('%sself.S(%s, SUUJIKA(%s) // SUUJIKA(%s)%s)'
+                      % (T, na, waru_a, waru_b, soe))
+            de.append('%sself.S(%s, SUUJIKA(%s) %% SUUJIKA(%s)%s)'
+                      % (T, amari, waru_a, waru_b, amari_soe))
+            return i
         de.append('%sself.S(%s, %s%s%s)'
                   % (T, na, shiki, ', marume=True' if maru else '', soe))
         return i
@@ -719,6 +764,12 @@ class Dasu:
         if i >= owari:
             return i
         f = go[i].v; i += 1
+        # `WRITE FBHTFD OF FBHTML1.` のように修飾で書くことがある（157か所）。
+        # この場合、実体は**修飾のほう（論理ファイル名）**。
+        while (i + 1 < owari and go[i].na('OF', 'IN')
+               and go[i+1].shu == 'na'):
+            f = go[i+1].v
+            i += 2
         soe = []
         if shu == 'START':
             # START ファイル KEY [比べ方] キー1 キー2 …
