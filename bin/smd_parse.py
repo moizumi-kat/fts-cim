@@ -34,6 +34,10 @@
    使い方  python3 smd_parse.py <画面定義.SMD>
 """
 import sys, pathlib, struct
+try:
+    from . import teigitai_moji
+except Exception:
+    import teigitai_moji
 
 def yomu(path):
     b = pathlib.Path(path).read_bytes()
@@ -82,7 +86,50 @@ def yomu(path):
              'k6': f[6], 'k7': f[7]}
         k.update(hensyuu(b, f[0]))
         out.append(k)
+    cob = komoku_na(b, {k['nm'] for k in out})
+    for k in out:
+        k['cob'] = cob.get(k['nm'])
     return namae, out, len(b)
+
+
+def komoku_na(b, shiru=None):
+    """項目の**COBOL での名前**を取り出す。
+
+       ■ どこに入っているか（2026-11-24 実測。村上様のご指摘で見つけた）
+         定義体の後ろのほうに「項目名表」があり、**1件24バイト**で並ぶ。
+             +0  4バイト  項目のコード（EBCDIC。R001 など）
+             +4  4バイト  空白（0x40）
+             +8 16バイト  **項目の名前**（JEF。0x4040 で埋める）
+         先頭の位置はヘッダ 0x00CC が指すこともあるが、**定義体によって
+         違う**（0x00CC 方式だと 1.2% しか取れなかった）。そこで
+         「コードが名前表に在る24バイトの並び」を探して決める。
+       ■ 裏取り
+         A10040D1 で、COBOL の「制御項目初期化Ｒ」から取った55個の名前と
+         **完全に一致**した（システム日付／処理区／担当者ＣＤ／見積なんば…）。
+    """
+    shiru = shiru or set()
+    out = {}
+    n = len(b)
+    # **続きの塊に限らず、形の合うものを全部拾う**。
+    #   大きい定義体では表が途中で切れていることがあり、続きだけを
+    #   追うと半分しか取れなかった（220本中47本がそうだった）。
+    i = 0
+    while i + 24 <= n:
+        if b[i+4:i+8] != b'\x40\x40\x40\x40':
+            i += 1; continue
+        try:
+            nm = b[i:i+4].decode('cp500').strip()
+        except Exception:
+            i += 1; continue
+        if not nm or nm not in shiru or nm in out:
+            i += 1; continue
+        na = teigitai_moji._nibyte(b[i+8:i+24]).replace('\u3000', '').strip()
+        if na and not na.startswith('\u3013'):
+            out[nm] = na
+            i += 24
+            continue
+        i += 1
+    return out
 
 
 def hensyuu(b, a):

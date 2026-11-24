@@ -232,10 +232,16 @@ class Pgm:
 
     # ── 値の出し入れ ────────────────────────────
     def _hiku(self, na, oya=None):
-        if oya and oya in self.ryoiki:
-            r = self.ryoiki[oya]
-            if na in r.hyo:
-                return r, r.hyo[na]
+        if oya:
+            # 画面の制御部は「EDIT-STATUS OF 件名カナ」という名前で持っている
+            # （項目ごとに5バイトの制御部がある）。
+            t = self.hyo.get('%s OF %s' % (na, oya))
+            if t is not None:
+                return t
+            if oya in self.ryoiki:
+                r = self.ryoiki[oya]
+                if na in r.hyo:
+                    return r, r.hyo[na]
         t = self.hyo.get(na)
         if t is None:
             raise Mikansei('知らない項目 %s' % na, 0)
@@ -246,7 +252,8 @@ class Pgm:
         if k.kata is None:                     # 集団項目は生のまま
             v = Moji(r.nama(k, kai).decode('cp932', 'replace'))
         else:
-            v = r.toru(na, kai) if na in r.hyo else r.nama(k, kai)
+            # 表の見出しは項目自身の名前（EDIT-STATUS OF 件名カナ など）
+            v = r.toru(k.na, kai) if k.na in r.hyo else r.nama(k, kai)
             if isinstance(v, str):
                 v = Moji(v)
         if kiri is not None:
@@ -286,7 +293,7 @@ class Pgm:
             b = v if isinstance(v, bytes) else str(v).encode('cp932', 'replace')
             r.nama_ireru(k, b, kai)
             return
-        r.ireru(na, v, kai)
+        r.ireru(k.na, v, kai)
 
     def J(self, na):
         """88レベル（条件名）。いまは写していないので止める。"""

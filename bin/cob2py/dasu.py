@@ -39,6 +39,13 @@ class Dasu:
         self.hairetsu = hairetsu    # 繰返しのある項目名
         self.mikansei = []          # 写せなかった文
         self.thru = set()           # PERFORM A THRU B の組
+        # PERFORM の飛び先は **節のことも段落のこともある**。
+        # 段落は _dan_〜 という別のメソッドになるので、ここで引けるようにする。
+        self.yobisaki = {}
+        for x in setsu or []:
+            self.yobisaki[x.na] = na_py(x.na)
+            for d in x.dan:
+                self.yobisaki.setdefault(d.na, na_py('_dan_' + d.na))
 
     # ── 値 ───────────────────────────────────
     def atai(self, go, i):
@@ -495,7 +502,7 @@ class Dasu:
             saki = None
             if i < owari and go[i].na('THRU', 'THROUGH'):
                 saki = go[i+1].v; i += 2
-            yobi = ('self.%s()' % na_py(na) if not saki
+            yobi = ('self.%s()' % self.yobisaki.get(na, na_py(na)) if not saki
                     else 'self.%s()' % na_py('_thru_%s_%s' % (na, saki)))
             if saki:
                 self.thru.add((na, saki))

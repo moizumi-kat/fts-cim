@@ -37,7 +37,7 @@ def hitotsu(path, kind):
             midashi = teigitai_moji.moji(b[k['moji']:k['moji']+k['naga']], shurui)
         out.append({'nm': k['nm'], 'gyo': k['gyo'], 'keta': k['keta'],
                     'naga': k['naga'], 'naga2': k['naga2'], 'ichi': k['k6'],
-                    'midashi': midashi,
+                    'midashi': midashi, 'cob': k.get('cob'),
                     'hen': [k['hen'], k['hen2'], k['kugiri'], k['shousuu']]})
     out.sort(key=lambda x: (x['gyo'], x['keta']))
     return {'na': path.stem, 'kind': kind,
@@ -63,8 +63,9 @@ def main():
     c = len(zen) - g
     ko = sum(len(t['ko']) for t in zen.values())
     mi = sum(1 for t in zen.values() for x in t['ko'] if x['midashi'])
-    print('%s → 画面 %d本・帳票 %d本／項目 %s（うち見出し %s）'
-          % (out, g, c, format(ko, ','), format(mi, ',')))
+    cob = sum(1 for t in zen.values() for x in t['ko'] if x.get('cob'))
+    print('%s → 画面 %d本・帳票 %d本／項目 %s（見出し %s・COBOLの項目名 %s）'
+          % (out, g, c, format(ko, ','), format(mi, ','), format(cob, ',')))
     if warui:
         print('読めなかったもの %d: %s' % (len(warui), warui[:3]))
     return 1 if warui else 0

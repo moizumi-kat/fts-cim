@@ -141,25 +141,79 @@ def _hyo():
     return _HYO
 
 
-def fd_ireru(fc, sude):
+def fd_joining(go, hajime, owari):
+    """FD の中の `COPY 論理名 OF XFDLIB JOINING 接頭辞 AS PREFIX.` を読む。
+
+       接頭辞はプログラムごとに違う（AJBG-／M020-／M060- など）。
+       レコード名は「接頭辞＋論理名の頭4文字＋FD」。
+         COPY AKAKML1 OF XFDLIB JOINING M020 AS PREFIX → M020-AKAKFD
+         COPY AWKKFL1 OF XFDLIB JOINING AWKK AS PREFIX → AWKK-AWKKFD
+       （A10040PO と A10060PO の実物で確かめた。2026-11-24）
+    """
+    out = {}
+    if hajime < 0:
+        return out
+    ima = None
+    i = hajime
+    while i < owari:
+        g = go[i]
+        if g.na('FD', 'SD') and i + 1 < owari:
+            ima = go[i+1].v; i += 2; continue
+        # WORKING-STORAGE にも JOINING 付きの COPY がある
+        # （A10060PO の COPY AKAKML1 OF XFDLIB JOINING W010 AS PREFIX）。
+        # ファイルに結びつかないので、接頭辞そのものを見出しにする。
+        if g.na('WORKING-STORAGE', 'LINKAGE'):
+            ima = None
+        if g.na('COPY') and i + 1 < owari:
+            ronri = go[i+1].v.upper()
+            j = i + 2
+            lib = settou = None
+            while j < owari and not (go[j].shu == 'ki' and go[j].v == '.'):
+                if go[j].na('OF') and j + 1 < owari:
+                    lib = go[j+1].v.upper(); j += 2; continue
+                if go[j].na('JOINING') and j + 1 < owari:
+                    settou = go[j+1].v.upper(); j += 2; continue
+                j += 1
+            if lib == 'XFDLIB' and settou:
+                midashi = ima or ('＊' + settou)
+                out[midashi] = (ronri, settou,
+                                '%s-%sFD' % (settou, ronri[:-3]))
+            i = j + 1; continue
+        i += 1
+    return out
+
+
+def fd_ireru(fc, sude, joining=None):
     """FILE-CONTROL の各ファイルのレコードを、表定義から組み立てて足す。"""
     TABLES = _hyo()
     out = []
+    joining = dict(joining or {})
+    # ファイルに結びつかない JOINING（WORKING-STORAGE のもの）も記憶域にする
+    fc = dict(fc)
+    for midashi, j in list(joining.items()):
+        if midashi.startswith('＊') and midashi not in fc:
+            fc[midashi] = {'ronri': j[0], 'kagi': [], 'kumi': 'WORK'}
     for na, d in fc.items():
+        j = joining.get(na)
         kagi = d.get('kagi') or []
-        if not kagi or '-' not in kagi[0]:
+        if j:
+            settou = j[1] + '-'
+            rec_na = j[2]
+        elif kagi and '-' in kagi[0]:
+            settou = kagi[0].split('-', 1)[0] + '-'
+            rec_na = settou + 'REC'
+        else:
             continue
-        settou = kagi[0].split('-', 1)[0] + '-'
-        if (settou + kagi[0].split('-', 1)[1]) in sude:
+        if kagi and (settou + kagi[0].split('-', 1)[-1]) in sude:
             continue                      # 原文に定義があるなら触らない
-        ronri = d.get('ronri') or ''
+        ronri = (j[0] if j else (d.get('ronri') or ''))
         hyomei = None
         for k in (ronri, ronri[:-3] + 'FP', ronri[:-3] + 'MP'):
             if k in TABLES:
                 hyomei = k; break
         if not hyomei:
             continue
-        out.append(data_fd(settou, TABLES[hyomei]['cols'], settou + 'REC'))
+        out.append(data_fd(settou, TABLES[hyomei]['cols'], rec_na))
     return out
 
 
@@ -196,7 +250,21 @@ def gamen_ireru(t, go, d_i, p_i):
         na = m.group(1).upper()
         if na not in teigi:
             continue
-        namae = _seigyo_namae(t)
+        # 項目の名前は **定義体に入っている**（2026-11-24・村上様のご指摘で発見）。
+        # 定義体に無いぶんだけ、COBOL の「制御項目初期化Ｒ」から補う。
+        ko = [x for x in teigi[na]['ko']
+              if x['midashi'] is None and x['nm'][:1] in ('R', 'W')]
+        ko.sort(key=lambda x: x['ichi'])
+        teigi_na = [x.get('cob') for x in ko]
+        cob = _seigyo_namae(t)
+        if all(teigi_na):
+            namae = teigi_na
+        elif len(cob) == len(ko):
+            namae = cob
+        else:
+            namae = [a or b for a, b in zip(
+                teigi_na, (cob + [None] * len(ko))[:len(ko)])]
+            namae = [a or x['nm'] for a, x in zip(namae, ko)]
         k = data.gamen_ko(teigi[na], namae, _gamen_kata(t, namae))
         if k:
             out.append(k)
@@ -290,7 +358,8 @@ def kumu(michi):
     fc = data.file_control(go, io_i, d_i) if (io_i >= 0 and d_i > io_i) else {}
     fdrec = data.fd_rec(go, d_i, p_i) if d_i >= 0 else {}
     fdrec.update(fd_copy_rec(go, d_i, p_i))
-    ne += fd_ireru(fc, {c.na for k in ne for c in k.mina()})
+    joining = fd_joining(go, d_i, p_i) if d_i >= 0 else {}
+    ne += fd_ireru(fc, {c.na for k in ne for c in k.mina()}, joining)
     namae = {c.na for k in ne for c in k.mina()}
     hairetsu = {c.na for k in ne for c in k.mina() if c.occurs}
     # PROCEDURE DIVISION USING 〜 ＝ 呼ぶ側から受け取る項目
