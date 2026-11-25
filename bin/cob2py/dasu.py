@@ -432,6 +432,12 @@ class Dasu:
             if go[i].shu == 'ki' and go[i].v == ',':
                 i += 1
                 continue
+            # `READ … AT END MOVE "END" TO SW-END NOT AT END ADD …` のように
+            # 後ろに句が続くことがある。**NOT／AT／INVALID／WHEN を送り先に
+            # 取り込んでいた**ため `self.S('NOT','END')` を出していた
+            # （2026-11-25 実測・M30311PP）。これらは予約語で項目名にならない。
+            if go[i].na('NOT', 'AT', 'INVALID', 'WHEN', 'ON', 'SIZE', 'ERROR'):
+                break
             if go[i].shu != 'na' or _tome(go[i]):
                 break
             na, i = self._saki(go, i)
@@ -1014,12 +1020,16 @@ class Dasu:
                      (', ' + ', '.join(soe)) if soe else ''))
         # AT END / INVALID KEY / NOT INVALID KEY
         while i < owari and (go[i].na('AT', 'END', 'INVALID', 'KEY', 'NOT')):
-            hantei = 'OWARI' if go[i].na('AT', 'END') else 'NASHI'
+            # 句の語をいったん全部見てから決める。先頭だけ見ていたので
+            # `NOT AT END` が「該当なし(23)」の判定になっていた（2026-11-25）。
             gyaku = False
+            kotoba = []
             while i < owari and go[i].na('AT', 'END', 'INVALID', 'KEY', 'NOT'):
                 if go[i].na('NOT'):
                     gyaku = True
+                kotoba.append(go[i].v.upper())
                 i += 1
+            hantei = 'NASHI' if 'INVALID' in kotoba else 'OWARI'
             de.append('%sif %sself.jotai(%r) == %s:' % (T, 'not ' if gyaku else '', f, hantei))
             i = self._nakami(go, i, owari, ji + 1, de,
                              ('AT', 'INVALID', 'NOT', 'END-READ', 'END-START',

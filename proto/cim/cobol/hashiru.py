@@ -319,8 +319,40 @@ class Pgm:
                     return r, r.hyo[na]
         t = self.hyo.get(na)
         if t is None:
+            t = self._rec_sagasu(na)
+        if t is None:
             raise Mikansei('知らない項目 %s' % na, 0)
         return t
+
+    def _rec_sagasu(self, na):
+        """`接頭辞－…レコード` を、そのファイルの 01 レコードとみなす。
+
+           ■ なぜ要るか（2026-11-25 実測）
+             `INITIALIZE １０－生産実績レコードＬ１` のように、原文は
+             コピー原文（XFDLIB）に書かれた**01 レコードの名前**で
+             レコードまるごと動かす。コピー原文が手元に無いので、
+             この綴りだけは定義体からも表定義からも起こせない。
+           ■ 安全側にするための縛り
+             ・**レコードを指す綴り**に限る（レコード／REC／FD で終わる）
+             ・その接頭辞の 01 が**ちょうど1つ**のときだけ
+             当てはまらなければ、従来どおり「知らない項目」で止める。
+        """
+        if not re.search(r'(レコード.{0,3}|REC|FD)$', na):
+            return None
+        for sep in ('-', '\uff0d'):
+            if sep not in na:
+                continue
+            moto = na.split(sep, 1)[0]
+            atari = [k for k in self.ryoiki
+                     if k.split('-', 1)[0] == moto
+                     or k.split('\uff0d', 1)[0] == moto]
+            if len(atari) == 1:
+                r = self.ryoiki[atari[0]]
+                k = r.hyo.get(atari[0])
+                if k is not None:
+                    return r, k
+            return None
+        return None
 
     def V(self, na, kai=0, oya=None, kiri=None):
         r, k = self._hiku(na, oya)
@@ -551,12 +583,20 @@ class Pgm:
             return na
         if na in self.FD_REC:
             return self.FD_REC[na]
-        if '-' in na:
-            s = na.split('-', 1)[0] + '-'
+        # 区切りは ASCII の `-` と**全角ハイフン U+FF0D** のどちらもある。
+        # 全角を見ていなかったので `WRITE 新営業－営業日報照会マスタ` の
+        # 書き先が引けなかった（13本・2026-11-25）。
+        # ここへ来るのは WRITE／READ／START など**レコードまるごと**の
+        # 操作だけなので、接頭辞でファイルを決めてよい。
+        for sep in ('-', '\uff0d'):
+            if sep not in na:
+                continue
+            s = na.split(sep, 1)[0] + sep
             for f, d in self.FAIRU.items():
                 for k in d.get('kagi', []):
                     if k.startswith(s):
                         return f
+            break
         # 01 レコード名が FD と同じ綴りのこともある
         for f, d in self.FAIRU.items():
             if (d.get('ronri') or '').upper().startswith(na.upper()[:4]):
@@ -649,8 +689,12 @@ class Pgm:
             if st is not None:
                 return st
             raise Mikansei('READ %s（表が無い）' % f, 0)
-        if 'NEXT' in soe or fa.jun:
-            # 順ファイルは `READ ファイル` だけでも順読み（NEXT と同じ）
+        # ■ ACCESS MODE IS SEQUENTIAL の索引ファイルも順読み（2026-11-25）
+        #   `READ 営業日報マスタ AT END …` は順読みで、終わりなら "10"。
+        #   乱読みにしていたため「該当なし(23)」が返り、AT END が働かず
+        #   `GO TO 主処理０１０` で回り続けていた（9本が時間切れ）。
+        mode = (self.FAIRU.get(f) or {}).get('mode')
+        if 'NEXT' in soe or fa.jun or mode == 'SEQUENTIAL':
             st = fa.tsugi()
         else:
             st = fa.yomu(*self._kagi(f))
@@ -757,11 +801,21 @@ class Pgm:
             self.S(na, st)
 
     def _settou(self, f):
-        """そのファイルの項目につく接頭辞（AJBG- など）。"""
+        """そのファイルの項目につく接頭辞（AJBG- や 新営業－ など）。
+
+           区切りは ASCII の `-` と**全角ハイフン U+FF0D** のどちらもある。
+           全角を見ていなかったので、日本語の接頭辞のファイルでは
+           読んだレコードを項目へ配れず、書くときは列が0個の
+           INSERT になって `near ")": syntax error` が出た（2026-11-25）。
+        """
         d = self.FAIRU.get(f, {})
         for k in d.get('kagi', []):
-            if '-' in k:
-                return k.split('-', 1)[0] + '-'
+            for sep in ('-', '\uff0d'):
+                if sep in k:
+                    # 記憶域には**英名＋ASCIIの `-`** で入っている
+                    # （JOINING 新営業 → 新営業-SYOCD）。原文の鍵は
+                    # 全角ハイフンで書かれるので、ここで ASCII に直す。
+                    return k.split(sep, 1)[0] + '-'
         return None
 
     def _rec_ireru(self, f, fa):
@@ -857,6 +911,70 @@ class Pgm:
         'XMRCVMSG': 'メッセージ受信',
     }
 
+    # 呼んだ先のプログラム（原文を写したもの）の覚え
+    _YONDA_CLS = {}
+    _FUKASA = 0
+
+    @staticmethod
+    def _yobu_kumu(na):
+        """CALL の相手の原文を写して、クラスを返す。無ければ None。
+
+           原文は FTSCIM_SRC（既定は cim/utf8）から探す。
+           一度写したら覚えておく（同じプログラムを何度も写さない）。
+        """
+        if na in Pgm._YONDA_CLS:
+            return Pgm._YONDA_CLS[na]
+        import os, pathlib as _p, types as _t
+        moto = _p.Path(os.environ.get('FTSCIM_SRC', '')) if os.environ.get(
+            'FTSCIM_SRC') else None
+        kouho = []
+        if moto:
+            kouho.append(moto / ('%s.COB' % na))
+        ne = _p.Path(__file__).resolve().parent.parent.parent.parent
+        kouho += [ne / 'cim' / 'utf8' / ('%s.COB' % na),
+                  ne.parent / 'cim' / 'utf8' / ('%s.COB' % na)]
+        f = next((x for x in kouho if x.exists()), None)
+        if f is None:
+            Pgm._YONDA_CLS[na] = None
+            return None
+        try:
+            from cob2py import kumitate
+            honbun, _d = kumitate.kumu(str(f))
+            m = _t.ModuleType(na)
+            exec(compile(honbun, na, 'exec'), m.__dict__)
+            cls = next(v for k, v in m.__dict__.items()
+                       if isinstance(v, type)
+                       and getattr(v, 'KIOKU', None) is not None and k != 'Pgm')
+        except Exception:
+            cls = None
+        Pgm._YONDA_CLS[na] = cls
+        return cls
+
+    def _iriguchi_yobu(self):
+        """原文の先頭の節（段落だけなら本文の節）を動かす。"""
+        from cob2py.tetsuzuki import na_py
+        for sna, dan in self.DANRAKU:
+            if sna.startswith('__'):
+                for dna, dme in dan:
+                    if not dna.startswith('__') and dme:
+                        return self._setsu(sna)
+                continue
+            me = na_py(sna)
+            if hasattr(self, me):
+                return getattr(self, me)()
+        return None
+
+    def _hiki_utsusu(self, saki, hiki, uke):
+        """引数を**生バイトのまま**写す（COBOL は参照渡し）。"""
+        for a, b in zip(hiki, uke):
+            try:
+                r1, k1 = self._hiku(a)
+                r2, k2 = saki._hiku(b)
+            except Exception:
+                continue
+            n = min(k1.naga, k2.naga)
+            r2.b[k2.ichi:k2.ichi + n] = r1.b[k1.ichi:k1.ichi + n]
+
     def yobu(self, na, hiki):
         na = str(na).strip().upper()
         if na in self.ASP:
@@ -866,4 +984,23 @@ class Pgm:
         hoka = getattr(self, 'HOKA', None)
         if hoka and na in hoka:
             return hoka[na](self, hiki)
-        raise Mikansei('CALL %s' % na, 0)
+        # ■ 原文のあるプログラムは、その場で動かす（2026-11-25）
+        #   COBOL の CALL 〜 USING は**参照渡し**なので、呼ぶ前に引数を
+        #   相手の受取項目へ生バイトで写し、終わったら書き戻す。
+        if Pgm._FUKASA >= 8:
+            raise Mikansei('CALL %s（呼び出しが深すぎます）' % na, 0)
+        cls = Pgm._yobu_kumu(na)
+        if cls is None:
+            raise Mikansei('CALL %s' % na, 0)
+        ko = cls(con=self.con, db=self.db, sousa=self.sousa, kyou=self._kyou)
+        uke = list(getattr(ko, 'UKETORI', []) or [])
+        self._hiki_utsusu(ko, hiki, uke)
+        Pgm._FUKASA += 1
+        try:
+            ko._iriguchi_yobu()
+        except (ExitProgram, StopRun):
+            pass
+        finally:
+            Pgm._FUKASA -= 1
+        ko._hiki_utsusu(self, uke, hiki)      # 戻す
+        return

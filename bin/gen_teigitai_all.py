@@ -46,7 +46,7 @@ def hitotsu(path, kind):
             # rec … 01レベル（レコード）の COBOL 名。原文は
             #   `MOVE LOW-VALUE TO 画面－処理終了画面` と**レコードごと**
             #   動かすので、これが無いと止まる（smd_parse.rec_na 参照）。
-            'rec': smd_parse.rec_na(b, {k['nm'] for k in ko}),
+            'rec': smd_parse.rec_na(b, {k['nm'] for k in ko}, path.stem),
             # kozo … 項目の階層と OCCURS（smd_parse.kozo 参照）。
             #   集団項目（項目表示領域）と一覧画面の繰返しが、推測なしで組める。
             'kozo': _kozo,

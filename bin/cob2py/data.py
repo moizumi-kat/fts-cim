@@ -106,8 +106,15 @@ def _pic(ko, s):
     ko.kata = 'X'; ko.keta = max(1, n)
 
 
-def yomu(go, hajime, owari):
-    """語の並び（go[hajime:owari]）から、01 の並びを組み立てる。"""
+def yomu(go, hajime, owari, teisu=None):
+    """語の並び（go[hajime:owari]）から、01 の並びを組み立てる。
+
+       teisu … SPECIAL-NAMES の SYMBOLIC CONSTANT（`組織 IS 13`）。
+       `OCCURS 組織` のように**記号定数で回数を書く**ことがあり、
+       数字だけ取り出していたため 1 回として組み、表が小さくなって
+       添字が領域の外へ出ていた（2026-11-25 実測・SUIHY1CP ほか）。
+    """
+    teisu = teisu or {}
     i = hajime
     ne = []          # 一番上（01・77）の並び
     tsumi = []       # いま開いている階層
@@ -141,7 +148,12 @@ def yomu(go, hajime, owari):
                 _pic(ko, s)
             elif t.na('OCCURS'):
                 i += 1
-                ko.occurs = int(re.sub(r'\D', '', go[i].v) or 1)
+                v = go[i].v
+                if v in teisu:
+                    v = str(teisu[v])
+                elif str(v).upper() in teisu:
+                    v = str(teisu[str(v).upper()])
+                ko.occurs = int(re.sub(r'\D', '', str(v)) or 1)
             elif t.na('REDEFINES'):
                 i += 1
                 ko.redefines = go[i].v
@@ -346,6 +358,20 @@ def _wakeru(ko_kazu, na_kazu):
 _TOSHI = re.compile(r'^[A-Z\]][0-9]+$')
 
 
+def kioku_aru(k):
+    """この項目は記憶域を占めるか（2026-11-25 実測）。
+
+       位置（ichi）が 0 でなければ占める。
+       **位置が 0 でも、名前があって見出しの無いものは占める**。
+       位置は0起点なので、先頭に実データ項目が来る定義体がある
+       （全421本で1,008項目。CHKJBK03 の「タイトル」など）。
+       見出し（定義体に焼き付けてある字）は名前を持たないので外れる。
+    """
+    if k['ichi']:
+        return True
+    return bool(k.get('cob')) and not (k.get('midashi') or '').strip()
+
+
 def komoku_na_aru(k):
     """この項目の COBOL での名前が分かっているか（2026-11-24 実測）。
 
@@ -448,9 +474,85 @@ def _gamen_ko_kuri(teigi, ko, kuri, kata=None, rec_na=None, settou=''):
         g.ichi = g.ko[0].ichi
         g.naga = d.ichi + d.naga - g.ichi
         oya.ko.append(g)
+        # 名前とコードの両方で引けるようにする（2026-11-25）
+        hoka = settou + (k['nm'] if na != settou + k['nm']
+                         else (k.get('cob') or ''))
+        if hoka != na:
+            _ko_betsumei(oya, g, hoka)
         naga = max(naga, d.ichi + d.naga)
     oya.naga = naga
     return oya
+
+
+def _ko_betsumei(oya, g, na2):
+    """同じ位置を指す**別名**の項目を足す（名前とコードの両方で引くため）。"""
+    if not na2 or any(c.na == na2 for c in oya.ko):
+        return
+    g2 = Ko(3, na2)
+    g2.oya = oya; g2.kata = g.kata; g2.keta = g.keta
+    g2.naga = g.naga; g2.ichi = g.ichi
+    g2.occurs = g.occurs; g2.dan = list(g.dan); g2.shou = g.shou
+    for c in g.ko:
+        na3 = (c.na.split(' OF ')[0] + ' OF ' + na2) if ' OF ' in c.na else na2
+        c2 = Ko(c.level, na3)
+        c2.kata = c.kata; c2.keta = c.keta; c2.naga = c.naga
+        c2.ichi = c.ichi; c2.shou = c.shou
+        c2.occurs = c.occurs; c2.dan = list(c.dan); c2.oya = g2
+        g2.ko.append(c2)
+    oya.ko.append(g2)
+
+
+def _gamen_ko_1(na, k, kata, kai, dan, oyako):
+    """画面・帳票の項目ひとつ（制御部5バイト＋データ）を作る。
+
+       ichi は**0起点**（現物の A10040D1 と突き合わせて確認・2026-11-25）。
+       制御部5バイトはデータの手前。先頭すぎて入らない項目には付けない
+       （付けると位置が負になり、別の項目を壊す）。
+    """
+    g = Ko(3, na)
+    g.oya = oyako
+    g.occurs = kai
+    g.dan = list(dan)
+    moto = k['ichi'] - len(SEIGYO)
+    if moto >= 0:
+        for j, sn in enumerate(SEIGYO):
+            c = Ko(5, sn + ' OF ' + na)
+            c.kata = 'X'; c.keta = 1; c.naga = 1; c.ichi = moto + j
+            c.occurs = kai; c.dan = list(dan); c.oya = g
+            g.ko.append(c)
+    d = Ko(5, na)
+    d.kata = (kata or {}).get(na, 'X')
+    d.keta = k['naga2']; d.naga = k['naga2']; d.ichi = k['ichi']
+    if d.kata == '9':
+        d.shou = (k.get('hen') or [0, 0, '', 0])[3] or 0
+    d.occurs = kai; d.dan = list(dan); d.oya = g
+    g.ko.append(d)
+    g.ichi = g.ko[0].ichi
+    g.naga = d.ichi + d.naga - g.ichi
+    oyako.ko.append(g)
+    return g
+
+
+def _gamen_ko_zoku(k, settou, kata, kai, dan, oyako, sumi):
+    """**日本語の名前と英字のコードの両方**で引けるように作る（2026-11-25）。
+
+       定義体は項目に「名前（品名・数量…）」と「コード（BCODE・RRUNNO…）」の
+       両方を持っていて、原文はどちらでも書く。
+         `MOVE … TO BCODE OF F10530P1`（コード）
+         `MOVE … TO 画面－品名`（名前）
+       片方しか作っていなかったので、もう片方で引くと止まっていた。
+    """
+    g = None
+    for x in (k.get('cob'), k['nm']):
+        if not x:
+            continue
+        na = settou + x
+        if na in sumi:
+            continue
+        sumi.add(na)
+        g2 = _gamen_ko_1(na, k, kata, kai, dan, oyako)
+        g = g or g2
+    return g
 
 
 def _gamen_ko_kozo(teigi, kata=None, rec_na=None, settou=''):
@@ -474,6 +576,7 @@ def _gamen_ko_kozo(teigi, kata=None, rec_na=None, settou=''):
     gun = teigi.get('gun') or {}
     ko = {k['nm']: k for k in teigi['ko']}
     oya = Ko(1, rec_na or teigi['na'])
+    sumi = set()                     # もう作った名前
     tsumi = []                       # [(レベル, Ko, 繰返し, 刻み)]
     for e in kz:
         lv = e['lv']
@@ -496,35 +599,10 @@ def _gamen_ko_kozo(teigi, kata=None, rec_na=None, settou=''):
             tsumi.append((lv, g, g._occ, g._kiz))
             continue
         k = ko.get(e['nm'])
-        if not k or not k['ichi']:
+        if not k or not kioku_aru(k):
             continue
-        na = settou + (k.get('cob') or e['nm'])
         dan = [kiz] if kai else []
-        g = Ko(3, na)
-        g.oya = oyako
-        g.occurs = kai
-        g.dan = list(dan)
-        # ichi は**0起点**（現物の A10040D1 と突き合わせて確認・2026-11-25）。
-        # 1 を引いていたため、画面の記憶域が丸ごと1バイトずれていた。
-        moto = k['ichi'] - len(SEIGYO)
-        if moto >= 0:
-            # 制御部5バイトはデータの手前。先頭すぎて入らない項目には付けない
-            # （付けると位置が負になり、別の項目を壊す）。
-            for j, sn in enumerate(SEIGYO):
-                c = Ko(5, sn + ' OF ' + na)
-                c.kata = 'X'; c.keta = 1; c.naga = 1; c.ichi = moto + j
-                c.occurs = kai; c.dan = list(dan); c.oya = g
-                g.ko.append(c)
-        d = Ko(5, na)
-        d.kata = (kata or {}).get(na, 'X')
-        d.keta = k['naga2']; d.naga = k['naga2']; d.ichi = k['ichi']
-        if d.kata == '9':
-            d.shou = (k.get('hen') or [0, 0, '', 0])[3] or 0
-        d.occurs = kai; d.dan = list(dan); d.oya = g
-        g.ko.append(d)
-        g.ichi = g.ko[0].ichi
-        g.naga = d.ichi + d.naga - g.ichi
-        oyako.ko.append(g)
+        _gamen_ko_zoku(k, settou, kata, kai, dan, oyako, sumi)
 
     def _hani(g):
         """集団項目の位置と長さを、中身から決める。"""
@@ -549,8 +627,18 @@ def _gamen_ko_kozo(teigi, kata=None, rec_na=None, settou=''):
             g.ichi, g.naga = a, b - a
 
     _hani(oya)
-    # 集団項目は範囲を入れてあるので、そのまま足す（繰返しを二重に数えない）
-    oya.naga = max((x.ichi + x.naga for x in oya.ko if x.naga), default=0)
+    # レコードの長さは、**繰返しの最後の回まで**入れて数える（2026-11-25）。
+    #   繰返しの中の項目は ichi＋(回数-1)×刻み＋長さ まで使う。
+    #   数え落とすと領域が足りず、添字が領域の外に出てしまう。
+    owari = 0
+    for x in oya.mina():
+        if x is oya or not x.naga:
+            continue
+        n = x.ichi + x.naga
+        if x.occurs and x.dan:
+            n = x.ichi + (x.occurs - 1) * x.dan[-1] + x.naga
+        owari = max(owari, n)
+    oya.naga = owari
     return oya
 
 
@@ -566,7 +654,7 @@ def gamen_ko(teigi, namae, kata=None, rec_na=None, settou=''):
     k0 = _gamen_ko_kozo(teigi, kata, rec_na, settou)
     if k0 is not None:
         return k0
-    ko = [k for k in teigi['ko'] if k['ichi']]
+    ko = [k for k in teigi['ko'] if kioku_aru(k)]
     ko.sort(key=lambda k: k['ichi'])
     if len(ko) != len(namae):
         # 繰返し行（] の連なり）が筋よく決まるなら、OCCURS として組む。
@@ -616,6 +704,10 @@ def gamen_ko(teigi, namae, kata=None, rec_na=None, settou=''):
         g.ichi = g.ko[0].ichi
         g.naga = ichi - g.ichi
         oya.ko.append(g)
+        hoka = settou + (k['nm'] if na != settou + k['nm']
+                         else (k.get('cob') or ''))
+        if hoka != na:
+            _ko_betsumei(oya, g, hoka)
     oya.naga = ichi
     return oya
 
@@ -674,6 +766,12 @@ _GUN_JA = {
     #              …表の鍵は NENKBN＋BSYOCD＋TANCD なので 組織コード＝後ろ2つ
     #   395行      MOVE SPACE TO １０－組織コード  … まとめて空白にする
     '組織コード': ('BSYOCD', 'TANCD'),
+    # YMD＝年(4)＋月(2)＋日(1〜2)。カレンダマスタ CCALMP で使う。
+    # 根拠（X10010PX 実測・2026-11-25）
+    #   88行 MOVE KIJYUNBI（8桁の基準日）TO L1-YMD
+    #   89行 READ CCALML1 KEY IS L1-NEN L1-TSUKI L1-HIZUKE
+    #   ＝ YMD は 年・月・日 をまとめた8桁の日付。
+    'YMD': ('NEN', 'TSUKI', 'HIZUKE'),
 }
 
 

@@ -153,7 +153,7 @@ def fd_copy_rec(go, hajime, owari):
             #   **レコード名**で書く。この対応が無いので書き先が引けず
             #   「WRITE 〜（表が無い）」で108本が止まっていた。
             t = _teigitai().get(na)
-            if t and t.get('rec'):
+            if t:
                 j, settou = i + 2, ''
                 while j < owari and not (go[j].shu == 'ki' and go[j].v == '.'):
                     if go[j].na('JOINING') and j + 1 < owari:
@@ -161,8 +161,14 @@ def fd_copy_rec(go, hajime, owari):
                         settou = pre + ('-' if pre.isascii() else '\uff0d')
                         break
                     j += 1
-                out[settou + t['rec']] = ima
+                # レコード名が定義体から取れないこともある（帳票など）。
+                # そのときでも**定義体の名前そのもの**は書き先になる
+                # （`WRITE M15010D1`）ので、必ず結びつける。
+                if t.get('rec'):
+                    out[settou + t['rec']] = ima
                 out[na] = ima
+                if settou:
+                    out[settou + na] = ima
             i += 2; continue
         i += 1
     return out
@@ -303,14 +309,21 @@ def fd_ireru(fc, sude, joining=None):
                     hyomei = k; break
         if not hyomei:
             continue
+        # ■ 01 レコードの本当の名前は**表定義が持っている**（2026-11-25）
+        #   KSIWFP の rec は 'FSIWFD'。論理名 KSIWFL1 からも物理名 KSIWFP
+        #   からも作れない綴りで、ここを見ていなかったので
+        #   `FSIWFD OF KSIWFL1` が引けなかった（478表が rec を持つ）。
+        hon_rec = TABLES[hyomei].get('rec')
+        if hon_rec and not j:
+            rec_na = hon_rec              # 接頭辞が無いときはそのまま
         k = data_fd(settou, TABLES[hyomei]['cols'], rec_na,
                     TABLES[hyomei].get('kuri'))
-        _rec_betsumei(k, settou, ronri, rec_na)
+        _rec_betsumei(k, settou, ronri, rec_na, hon_rec)
         out.append(k)
     return out
 
 
-def _rec_betsumei(oya, settou, ronri, rec_na):
+def _rec_betsumei(oya, settou, ronri, rec_na, hon_rec=None):
     """01レコードの**別名**を足す（2026-11-24 実測）。
 
        原文は 01 レコードをコピー原文の名前で書く。コピー原文（XFDLIB）が
@@ -324,14 +337,24 @@ def _rec_betsumei(oya, settou, ronri, rec_na):
        範囲を推測していない）。
     """
     from .data import Ko
+    # 接頭辞の区切りは ASCII の `-`。原文が日本語の接頭辞を使うときは
+    # **全角ハイフン U+FF0D** で書くので、両方を別名にする。
+    moto = settou[:-1] if settou else ''
+    kugiri = ['-', '\uff0d'] if (moto and not moto.isascii()) else ['-']
     na = []
+    if hon_rec:
+        na.append(hon_rec)
+        for sep in kugiri:
+            if moto:
+                na.append(moto + sep + hon_rec)
     if ronri and len(ronri) > 3:
         na.append(ronri[:-3] + 'FD')
     na.append('RECFD')
-    if settou:
-        na.append(settou + 'レコード')
-        if ronri and len(ronri) > 3:
-            na.append(settou + ronri[:-3] + 'FD')
+    if moto:
+        for sep in kugiri:
+            na.append(moto + sep + 'レコード')
+            if ronri and len(ronri) > 3:
+                na.append(moto + sep + ronri[:-3] + 'FD')
     for x in na:
         if x == rec_na or any(c.na == x for c in oya.ko):
             continue
@@ -405,7 +428,7 @@ def gamen_ireru(t, go, d_i, p_i):
         # 項目の名前は **定義体に入っている**（2026-11-24・村上様のご指摘で発見）。
         # 定義体に無いぶんだけ、COBOL の「制御項目初期化Ｒ」から補う。
         # 記憶域を占める項目は位置（ichi）が 0 でないもの（data.gamen_ko と同じ）。
-        ko = [x for x in teigi[na]['ko'] if x['ichi']]
+        ko = [x for x in teigi[na]['ko'] if data.kioku_aru(x)]
         ko.sort(key=lambda x: x['ichi'])
         # 名前は「項目名表（cob）」と「項目コードそのもの」の両方から採る
         # （data.komoku_na_aru を参照）。
@@ -428,6 +451,18 @@ def gamen_ireru(t, go, d_i, p_i):
         k = data.gamen_ko(teigi[na], namae, _gamen_kata(t, namae),
                           rec_na, settou)
         if k:
+            # ■ 定義体の名前そのものでも引けるようにする（2026-11-25）
+            #   `COPY M15010D1 OF XMDLIB JOINING 画面 AS PREFIX.` でも、
+            #   原文は `MOVE LOW-VALUE TO M15010D1` と**定義体の名前**で
+            #   レコードまるごと動かすことがある（13本が止まっていた）。
+            from .data import Ko as _Ko
+            for x in (na, (settou + na) if settou else None):
+                if not x or x == k.na or any(c.na == x for c in k.ko):
+                    continue
+                g = _Ko(3, x)
+                g.kata = None; g.keta = k.naga; g.naga = k.naga
+                g.ichi = 0; g.occurs = 0; g.dan = []; g.oya = k
+                k.ko.append(g)
             out.append(k)
     return out
 
@@ -504,9 +539,15 @@ def _filler_seigyo(ko):
        画面でない記憶域に 5バイトの FILLER があっても、足した名前は誰も引かない
        ので害は無い（引かれたときだけ値が取れる）。
     """
+    import re as _re2
     tasu = []
     for i, c in enumerate(ko):
-        if c[0] != 'FILLER' or c[2] != 5 or c[3] is None:
+        # 名前の無い FILLER だけでなく、**`D1-FIL01` のように名前を付けた
+        # 5バイトの埋めもの**も制御部（2026-11-25 実測。B10511PO は
+        # 画面レコードを原文に直接書き、`EDIT-STATUS OF D1-CODE1` と引く）。
+        if not (c[0] == 'FILLER' or _re2.search(r'FIL\d*$', str(c[0]), _re2.I)):
+            continue
+        if c[2] != 5 or c[3] is None:
             continue
         if i + 1 >= len(ko):
             continue
@@ -600,7 +641,8 @@ def kumu(michi):
     p_i = sagasu(go, 'PROCEDURE', 'DIVISION')
     if p_i < 0:
         raise ValueError('PROCEDURE DIVISION がありません')
-    ne = data.yomu(go, d_i + 2, p_i) if d_i >= 0 else []
+    teisu = tokubetsu_teisu(go)
+    ne = data.yomu(go, d_i + 2, p_i, teisu) if d_i >= 0 else []
     ne += copy_ireru(t, go)
     ne += gamen_ireru(t, go, d_i, p_i)
     fc = data.file_control(go, io_i, d_i) if (io_i >= 0 and d_i > io_i) else {}
@@ -623,7 +665,7 @@ def kumu(michi):
             j += 1
     setsu = tetsuzuki.wakeru(go, j, len(go))
 
-    d = dasu.Dasu(pgm, setsu, namae, hairetsu, tokubetsu_teisu(go))
+    d = dasu.Dasu(pgm, setsu, namae, hairetsu, teisu)
     b = ['# -*- coding: utf-8 -*-',
          '"""%s を写したもの。bin/cob2py が自動生成。**手で直さない。**' % pathlib.Path(michi).name,
          '',

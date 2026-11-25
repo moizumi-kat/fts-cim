@@ -59,12 +59,27 @@ class Ryoiki:
             return i
         return k.ichi + (k.dan[-1] if k.dan else k.naga) * int(kai)
 
+    def _hamiru(self, k, i):
+        """領域からはみ出していないか見る（2026-11-25）。
+
+           添字が範囲の外だと `self.b[i:i+naga] = v` が**バイト列を
+           そこまで伸ばして**しまい、何ギガにもなって固まる
+           （実際に EGCODE で固まり、点検が止まった）。
+           COBOL なら添字誤り。黙って伸ばさず、はっきり止める。
+        """
+        if i < 0 or i + k.naga > len(self.b):
+            raise IndexError(
+                '添字が領域の外です（項目 %s・位置 %d・長さ %d・領域 %d）'
+                % (k.na, i, k.naga, len(self.b)))
+
     def nama(self, k, kai=0):
         i = self._ichi(k, kai)
+        self._hamiru(k, i)
         return bytes(self.b[i:i + k.naga])
 
     def nama_ireru(self, k, v, kai=0):
         i = self._ichi(k, kai)
+        self._hamiru(k, i)
         v = (v + b' ' * k.naga)[:k.naga]
         self.b[i:i + k.naga] = v
 

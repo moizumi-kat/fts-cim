@@ -44,8 +44,12 @@ class Sousa(vld.Kioku):
         return None, vld.NYURYOKU
 
 
-class Jikan(Exception):
-    pass
+class Jikan(BaseException):
+    """時間切れ。**BaseException から作る**（2026-11-25）。
+
+       Exception から作ると、途中の `except Exception` に握り潰されて
+       止まらなくなる（実際に NIPDEL3S で回り続けた）。
+    """
 
 
 def _tomeru(signum, frame):
@@ -122,6 +126,11 @@ def main():
             p = cls(con=con, db=cimdb, sousa=Sousa(), kyou=kyou)
             if not hasattr(p, me):
                 raise AttributeError('節 %s が見つからない' % setsu)
+            # ■ 画面が1枚出たところで止める（2026-11-25）
+            #   現行は「画面を出す→入力を待つ→処理する」の繰返しで、
+            #   入力を待たずに返すと同じところを回り続ける。
+            #   画面が出た＝そのプログラムは動いている、と数える。
+            p.gamen_tome = 1
             signal.setitimer(signal.ITIMER_REAL, BYOU)
             if honbun:
                 p._setsu(honbun)
@@ -137,6 +146,9 @@ def main():
             mes = str(e)[:70]
             if ku in ('ExitProgram', 'StopRun'):
                 kekka['通った'] += 1
+                tsuuka.append(na)
+            elif ku == 'GamenDeta':
+                kekka['画面が出た'] += 1
                 tsuuka.append(na)
             else:
                 kekka[ku] += 1

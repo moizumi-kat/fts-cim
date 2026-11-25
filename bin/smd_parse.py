@@ -88,52 +88,39 @@ def yomu(path):
         k.update(hensyuu(b, f[0]))
         out.append(k)
     cob = komoku_na(b, {k['nm'] for k in out})
+    # **コードが4文字とは限らない**（W00101 のような6文字もある・2026-11-25）。
+    #   komoku_na は4バイトのコードしか見ないので、8バイトのコードも見る
+    #   gun_na で補う。これで NPJYU4D1 の「当日受注＝W00101」などが付く。
+    gun = gun_na(b)
     for k in out:
-        k['cob'] = cob.get(k['nm'])
+        k['cob'] = cob.get(k['nm']) or gun.get(k['nm'])
     return namae, out, len(b)
 
 
-def rec_na(b, shiru=None):
-    """**01レベル（レコード）の COBOL 名**を取り出す（2026-11-24 実測）。
+def rec_na(b, shiru=None, teigi_na=None):
+    """**01レベル（レコード）の COBOL 名**を取り出す（2026-11-25）。
 
-       ■ どこに入っているか
-         項目名表（1件24バイト。4バイトのコード＋空白4＋名前16）の
-         **すぐ前に、同じ24バイトの形で「定義体名＋レコード名」が1件**ある。
-             0x0720  "A18030D1"（8バイト）＋ JEF16バイト → 処理終了画面
-             0x0738  ff ff ff ff        （表の区切り）
-             0x073c  項目名表のはじめ（F001 …）
-       ■ なぜ要るか
-         原文は `COPY A18030D1 OF XMDLIB JOINING 画面 AS PREFIX.` と書き、
-         `MOVE LOW-VALUE TO 画面－処理終了画面` のように**レコードごと**
-         動かす。レコード名が無いと、ここで「知らない項目」で止まる
-         （45件のうち41件がこれ・2026-11-24 実測）。
-       ■ 取れないもの
-         一覧画面など 112本はこの欄が無い（表が項目名から始まる）。
-         その場合は None を返し、従来どおり定義体名で呼ぶ。
+       1件24バイトの表に「**定義体の名前**（8バイト・EBCDIC・0x40 詰め）＋
+       名前16バイト（JEF）」という欄があり、そこがレコード名。
+           0x0720  "A18030D1" ＋ JEF16バイト → 処理終了画面
+       定義体の名前と同じコードの欄だけを採るので、取り違えようがない。
+       無ければ None（原文は定義体の名前そのままでレコードを呼ぶ）。
     """
-    shiru = shiru or set()
-    i = 0
-    while i + 24 <= len(b):
-        if b[i+4:i+8] != b'\x40\x40\x40\x40':
-            i += 1; continue
-        try:
-            nm = b[i:i+4].decode('cp500').strip()
-        except Exception:
-            i += 1; continue
-        if not nm or nm not in shiru:
-            i += 1; continue
-        na = teigitai_moji._nibyte(b[i+8:i+24]).replace('\u3000', '').strip()
-        if not na or na.startswith('\u3013'):
-            i += 1; continue
-        r = i - 28                     # 24バイトの欄＋区切り4バイト
-        if r < 0:
-            return None
-        s = teigitai_moji._nibyte(b[r+8:r+24]).replace('\u3000', '').strip()
-        if s and '\x00' not in s and not s.startswith('\u3013'):
-            return s
+    if not teigi_na:
         return None
+    kagi = teigi_na.encode('cp500').ljust(8, b'\x40')
+    i = b.find(kagi)
+    while i >= 0:
+        # レコード名の欄は**表の終わりの印 ff ff ff ff の直前**にある。
+        # これを見ないと、定義体の名前が別のところ（画面の見出し）にも
+        # 出てくるので取り違える（A10040D1 で「＊＊＊見積」を拾った）。
+        if i + 28 <= len(b) and b[i+24:i+28] == b'\xff\xff\xff\xff':
+            s = teigitai_moji._nibyte(b[i+8:i+24]).replace('\u3000', '').strip()
+            if (s and '\x00' not in s and not s.startswith('\u3013')
+                    and not re.search(r'[\x00-\x1f]', s)):
+                return s
+        i = b.find(kagi, i + 1)
     return None
-
 
 def komoku_na(b, shiru=None):
     """項目の**COBOL での名前**を取り出す。
@@ -293,7 +280,11 @@ def kozo(b, shiru):
                 cc = q[16:24].decode('cp500').rstrip(' ')
             except Exception:
                 break
-            if cc not in shiru:
+            # 集団項目（MAS001 など）は名前表に載っていないことがある。
+            # 種別が16（集団項目）で綴りが名前の形なら、通す。
+            #   これで打ち切っていたため、帳票は5項目で切れていた。
+            if cc not in shiru and not (q[4] == 16
+                                        and re.match(r'^[A-Z0-9]+$', cc)):
                 break
             mi.append({'nm': cc, 'lv': q[1], 'naga': q[3], 'ty': q[4],
                        'occurs': int.from_bytes(q[6:8], 'big'),
