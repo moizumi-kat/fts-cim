@@ -237,6 +237,24 @@ ONAJI = {
     'AERKFS': ('AEJKFP', '営業状況連携ファイル（項目）',
                'A25010PB.COB の FD が COPY AEJKFP OF XFDLIB。実データ110＝AEJKFP110'),
 }
+# 定義体はあるが、**実データと長さが合わない**3本。
+# 対になるファイルの定義で置き換える（2026-11-25 実測）。
+#   どれも「ゾーン10進（U）とパック10進（P）の取り違え」で、
+#   バイト数の差が1桁まで合う。
+#     FGENKA 46 → CGENKA 40  JSKOSU 5→3・HEIBEI 9→5 で 46-6=40
+#     SENGFS 43 → AREGFS 40  JYOHIZ 8→5 で 43-3=40
+#     SENKFS 75 → AREKFS 60  日付5項目 8→5 で 75-15=60
+#   裏取りは3つそろっている。
+#     ① 実データ（.SFL のヘッダ）が 40／40／60
+#     ② ＣＬ   FGENKA は `SORTD INFILE-FGENKA,INRL-40`
+#              SENGFS は `OVRF FILE-AREGFS,TOFILE-SENGFS`（AREGFS の身代わり）
+#              SENKFS は `OVRF FILE-AREKFS,TOFILE-SENKFS`
+#     ③ 対になるファイルの定義体（CGENKA／AREGFS／AREKFS）が 40／40／60
+KAKIKAE = {
+    'FGENKA': ('CGENKA', '実データ40・CL の INRL-40・CGENKA 40 の3つが一致'),
+    'SENGFS': ('AREGFS', '実データ40・OVRF で AREGFS の身代わり・AREGFS 40'),
+    'SENKFS': ('AREKFS', '実データ60・OVRF で AREKFS の身代わり・AREKFS 60'),
+}
 MOTTEKURU = {
     'GKUMIKSF': ('組立実績連携ファイル', 'FCDLIB',
                  '定義体あり（長419＝実データ419）。PKOUJOU3.CL が使う'),
@@ -252,6 +270,18 @@ for na, (moto, nm, konkyo) in ONAJI.items():
                   'nm': nm, 'lib': 'FADLIB', 'ronri': [], 'hantei': '要確認',
                   'pk': [], 'notnull': [], 'default': {},
                   'src': 'onaji', 'moto': moto, 'konkyo': konkyo}
+    naoshita.append(na)
+for na, (moto, konkyo) in KAKIKAE.items():
+    if na not in TABLES or moto not in TABLES:
+        continue
+    m = TABLES[moto]
+    t = TABLES[na]
+    t['cols'] = list(m['cols'])
+    t['kuri'] = list(m.get('kuri') or [])
+    t['naga'] = m['naga']
+    t['src'] = 'kakikae'
+    t['moto'] = moto
+    t['konkyo'] = konkyo
     naoshita.append(na)
 for na, (nm, lib, konkyo) in MOTTEKURU.items():
     f = teigi.get(na)
