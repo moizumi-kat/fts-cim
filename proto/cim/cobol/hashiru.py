@@ -75,28 +75,75 @@ class Moji(str):
                 return a, Decimal(str(hoka))
         return None, None
 
+    def _uzume(self, hoka):
+        """文字どうしは**短いほうの右を空白で埋めて**から比べる。
+
+           ■ ＣＯＢＯＬ の決まり（2026-11-25 実測で判明）
+             `IF SEL-FLG = "ON"` は、SEL-FLG が X(003) なら
+             `"ON "` と `"ON "` を比べるので**真**。
+             そのまま比べていたため `'ON ' != 'ON'` となり、
+             `PERFORM … UNTIL SEL-FLG = "ON"` が終わらなかった
+             （A30120PP ほか。10秒で打ち切られていた）。
+           ■ 値そのものは桁を詰めたまま持つ
+             末尾の空白を落とすと、画面やファイルへ書くときに桁が変わる。
+             **比べるときだけ**そろえる。
+        """
+        if not isinstance(hoka, str):
+            return None, None
+        a, b = str(self), str(hoka)
+        n = max(len(a), len(b))
+        return a.ljust(n), b.ljust(n)
+
     def __lt__(self, h):
         a, b = self._soroeru(h)
-        return a < b if a is not None else str.__lt__(self, h)
+        if a is not None:
+            return a < b
+        a, b = self._uzume(h)
+        if a is not None:
+            return a < b
+        return str.__lt__(self, h)
 
     def __le__(self, h):
         a, b = self._soroeru(h)
-        return a <= b if a is not None else str.__le__(self, h)
+        if a is not None:
+            return a <= b
+        a, b = self._uzume(h)
+        if a is not None:
+            return a <= b
+        return str.__le__(self, h)
 
     def __gt__(self, h):
         a, b = self._soroeru(h)
-        return a > b if a is not None else str.__gt__(self, h)
+        if a is not None:
+            return a > b
+        a, b = self._uzume(h)
+        if a is not None:
+            return a > b
+        return str.__gt__(self, h)
 
     def __ge__(self, h):
         a, b = self._soroeru(h)
-        return a >= b if a is not None else str.__ge__(self, h)
+        if a is not None:
+            return a >= b
+        a, b = self._uzume(h)
+        if a is not None:
+            return a >= b
+        return str.__ge__(self, h)
 
     def __eq__(self, h):
         a, b = self._soroeru(h)
-        return a == b if a is not None else str.__eq__(self, h)
+        if a is not None:
+            return a == b
+        a, b = self._uzume(h)
+        if a is not None:
+            return a == b
+        return str.__eq__(self, h)
 
     def __ne__(self, h):
-        return not self.__eq__(h)
+        # 相手が文字でも数でもないときは __eq__ が NotImplemented を返す。
+        # それを not で裏返すと Python が警告を出すので、そのまま返す。
+        r = self.__eq__(h)
+        return r if r is NotImplemented else (not r)
 
     def __hash__(self):
         return str.__hash__(self)

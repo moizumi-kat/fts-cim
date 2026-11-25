@@ -89,8 +89,6 @@ class Ryoiki:
         b = self.nama(k, kai)
         if k.kata == '9':
             return self._kazu(k, b)
-        if k.kata == 'N':
-            return b.decode('cp932', 'replace')
         return b.decode('cp932', 'replace')
 
     def ireru(self, na, v, kai=0):
