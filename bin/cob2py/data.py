@@ -418,7 +418,7 @@ def _gamen_ko_kuri(teigi, ko, kuri, kata=None, rec_na=None, settou=''):
     naga = 0
     for i, k in enumerate(ko):
         if k['nm'][:1] == ']':
-            naga = max(naga, k['ichi'] - 1 + k['naga2'])
+            naga = max(naga, k['ichi'] + k['naga2'])
             continue                       # 2行目以降は雛形の繰返しで表す
         # 接頭辞（`画面－`）を付ける。付けないと原文の名前で引けない。
         na = settou + komoku_na(k)
@@ -428,7 +428,9 @@ def _gamen_ko_kuri(teigi, ko, kuri, kata=None, rec_na=None, settou=''):
         g.oya = oya
         g.occurs = kai
         g.dan = list(dan)
-        moto = k['ichi'] - 1 - len(SEIGYO)
+        # ichi は**0起点**（現物の A10040D1 と突き合わせて確認・2026-11-25）。
+        # 1 を引いていたため、画面の記憶域が丸ごと1バイトずれていた。
+        moto = k['ichi'] - len(SEIGYO)
         for j, sn in enumerate(SEIGYO):
             c = Ko(5, sn + ' OF ' + na)
             c.kata = 'X'; c.keta = 1; c.naga = 1; c.ichi = moto + j
@@ -437,7 +439,7 @@ def _gamen_ko_kuri(teigi, ko, kuri, kata=None, rec_na=None, settou=''):
             g.ko.append(c)
         d = Ko(5, na)
         d.kata = (kata or {}).get(na, 'X')
-        d.keta = k['naga2']; d.naga = k['naga2']; d.ichi = k['ichi'] - 1
+        d.keta = k['naga2']; d.naga = k['naga2']; d.ichi = k['ichi']
         if d.kata == '9':
             d.shou = (k.get('hen') or [0, 0, '', 0])[3] or 0
         d.occurs = kai; d.dan = list(dan)
@@ -451,6 +453,107 @@ def _gamen_ko_kuri(teigi, ko, kuri, kata=None, rec_na=None, settou=''):
     return oya
 
 
+def _gamen_ko_kozo(teigi, kata=None, rec_na=None, settou=''):
+    """**定義体の構造表どおり**に画面の記憶域を組む（2026-11-25）。
+
+       定義体には、コピー原文（XMDLIB）と同じ階層が入っている
+       （smd_parse.kozo 参照）。
+           lv01 項目表示領域                      ← 集団項目
+           lv02 項目表示テーブル OCCURS 15 刻み80
+           lv03 項番表示・品名・数量 …            ← 明細1行ぶん
+       これを使うと、**一覧画面の繰返しも集団項目も推測しないで**組める。
+       従来は行の並びから繰返しを当てていたため、名前が決まらない画面が
+       53本あった。
+
+       構造表の無い定義体（繰返しも集団項目も無い画面）では None を返し、
+       従来どおり位置の順に並べる。
+    """
+    kz = teigi.get('kozo')
+    if not kz:
+        return None
+    gun = teigi.get('gun') or {}
+    ko = {k['nm']: k for k in teigi['ko']}
+    oya = Ko(1, rec_na or teigi['na'])
+    tsumi = []                       # [(レベル, Ko, 繰返し, 刻み)]
+    for e in kz:
+        lv = e['lv']
+        while tsumi and tsumi[-1][0] >= lv:
+            tsumi.pop()
+        oyako = tsumi[-1][1] if tsumi else oya
+        kai = kiz = 0
+        for _l, _g, o, z in tsumi:
+            if o:
+                kai, kiz = o, z
+        if e['ty'] == 16:            # 集団項目
+            g = Ko(3, settou + (gun.get(e['nm']) or e['nm']))
+            g.kata = None
+            g.occurs = 0
+            g.dan = []
+            g.oya = oyako
+            g._occ = e.get('occurs') or 0      # 範囲を出すときに使う
+            g._kiz = e.get('kizami') or 0
+            oyako.ko.append(g)
+            tsumi.append((lv, g, g._occ, g._kiz))
+            continue
+        k = ko.get(e['nm'])
+        if not k or not k['ichi']:
+            continue
+        na = settou + (k.get('cob') or e['nm'])
+        dan = [kiz] if kai else []
+        g = Ko(3, na)
+        g.oya = oyako
+        g.occurs = kai
+        g.dan = list(dan)
+        # ichi は**0起点**（現物の A10040D1 と突き合わせて確認・2026-11-25）。
+        # 1 を引いていたため、画面の記憶域が丸ごと1バイトずれていた。
+        moto = k['ichi'] - len(SEIGYO)
+        if moto >= 0:
+            # 制御部5バイトはデータの手前。先頭すぎて入らない項目には付けない
+            # （付けると位置が負になり、別の項目を壊す）。
+            for j, sn in enumerate(SEIGYO):
+                c = Ko(5, sn + ' OF ' + na)
+                c.kata = 'X'; c.keta = 1; c.naga = 1; c.ichi = moto + j
+                c.occurs = kai; c.dan = list(dan); c.oya = g
+                g.ko.append(c)
+        d = Ko(5, na)
+        d.kata = (kata or {}).get(na, 'X')
+        d.keta = k['naga2']; d.naga = k['naga2']; d.ichi = k['ichi']
+        if d.kata == '9':
+            d.shou = (k.get('hen') or [0, 0, '', 0])[3] or 0
+        d.occurs = kai; d.dan = list(dan); d.oya = g
+        g.ko.append(d)
+        g.ichi = g.ko[0].ichi
+        g.naga = d.ichi + d.naga - g.ichi
+        oyako.ko.append(g)
+
+    def _hani(g):
+        """集団項目の位置と長さを、中身から決める。"""
+        ko2 = [x for x in g.ko if x.level != 88]
+        for x in ko2:
+            if x.kata is None:
+                _hani(x)
+        mochi = [x for x in ko2 if x.naga]
+        if not mochi:
+            return
+        a = min(x.ichi for x in mochi)
+        # 繰返しの集団項目は「1回ぶんの長さ×回数」。項目ごとの長さ×回数で
+        # 出すと、刻みの隙間を数えないので範囲がはみ出す（実測で 4172 に
+        # なり、次の集団項目に食い込んだ）。
+        occ = getattr(g, '_occ', 0)
+        kiz = getattr(g, '_kiz', 0)
+        if occ and kiz:
+            b = a + occ * kiz
+        else:
+            b = max(x.ichi + x.naga * max(1, x.occurs) for x in mochi)
+        if g.kata is None and g is not oya:
+            g.ichi, g.naga = a, b - a
+
+    _hani(oya)
+    # 集団項目は範囲を入れてあるので、そのまま足す（繰返しを二重に数えない）
+    oya.naga = max((x.ichi + x.naga for x in oya.ko if x.naga), default=0)
+    return oya
+
+
 def gamen_ko(teigi, namae, kata=None, rec_na=None, settou=''):
     """定義体1本 ＋ 項目名の並び → Ko（01レコード）。合わなければ None。"""
     # R＝入力項目／W＝出力項目。S（区切りの印）は場所を取らないので外す。
@@ -459,6 +562,10 @@ def gamen_ko(teigi, namae, kata=None, rec_na=None, settou=''):
     # （A10050D1 の 件名かな=A001・件名２=A004・件名３=A002 が落ちていた）、
     # 印で絞るのは誤りだった。位置で絞ると A10040D1 は 55項目・1,123バイトの
     # まま（＝実機で裏取り済みの値を再現）、A10050D1 は 28項目そろう。
+    # **定義体に構造表があれば、それが正しい**（推測しない・2026-11-25）
+    k0 = _gamen_ko_kozo(teigi, kata, rec_na, settou)
+    if k0 is not None:
+        return k0
     ko = [k for k in teigi['ko'] if k['ichi']]
     ko.sort(key=lambda k: k['ichi'])
     if len(ko) != len(namae):

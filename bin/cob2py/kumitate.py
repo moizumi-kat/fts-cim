@@ -303,9 +303,42 @@ def fd_ireru(fc, sude, joining=None):
                     hyomei = k; break
         if not hyomei:
             continue
-        out.append(data_fd(settou, TABLES[hyomei]['cols'], rec_na,
-                           TABLES[hyomei].get('kuri')))
+        k = data_fd(settou, TABLES[hyomei]['cols'], rec_na,
+                    TABLES[hyomei].get('kuri'))
+        _rec_betsumei(k, settou, ronri, rec_na)
+        out.append(k)
     return out
+
+
+def _rec_betsumei(oya, settou, ronri, rec_na):
+    """01レコードの**別名**を足す（2026-11-24 実測）。
+
+       原文は 01 レコードをコピー原文の名前で書く。コピー原文（XFDLIB）が
+       手元に無くても、実例から次の綴りだと分かっている。
+         `FNHNFD OF FNHNFL1` `FNHNFD OF FNHNFL3`  … 論理名の末尾3文字を
+                                                     落として FD を付ける
+         `RECFD OF C10020S1`                      … 作業ファイルは RECFD
+         `仮前－レコード` `原価鑑－レコード`        … 接頭辞＋「レコード」
+       これが無いと WRITE／INITIALIZE の相手が引けず24本が止まっていた。
+       範囲はレコード全体なので、取り違えようがない（集団項目と違い
+       範囲を推測していない）。
+    """
+    from .data import Ko
+    na = []
+    if ronri and len(ronri) > 3:
+        na.append(ronri[:-3] + 'FD')
+    na.append('RECFD')
+    if settou:
+        na.append(settou + 'レコード')
+        if ronri and len(ronri) > 3:
+            na.append(settou + ronri[:-3] + 'FD')
+    for x in na:
+        if x == rec_na or any(c.na == x for c in oya.ko):
+            continue
+        g = Ko(3, x)
+        g.kata = None; g.keta = oya.naga; g.naga = oya.naga
+        g.ichi = 0; g.occurs = 0; g.dan = []; g.oya = oya
+        oya.ko.append(g)
 
 
 _RONRI = None
@@ -389,7 +422,9 @@ def gamen_ireru(t, go, d_i, p_i):
             namae = [a or (settou + x['nm']) for a, x in zip(namae, ko)]
         # 01レベルの名前（`画面－処理終了画面`）。定義体から取る。
         rec = teigi[na].get('rec')
-        rec_na = (settou + rec) if (settou and rec) else None
+        # 接頭辞が無い画面もある（`COPY A30010D1 OF XMDLIB.`）。その場合は
+        # レコード名そのまま（`仮受注登録画面１`）で原文が書く。
+        rec_na = (settou + rec) if rec else None
         k = data.gamen_ko(teigi[na], namae, _gamen_kata(t, namae),
                           rec_na, settou)
         if k:

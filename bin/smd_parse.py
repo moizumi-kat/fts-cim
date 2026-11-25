@@ -33,6 +33,7 @@
 
    使い方  python3 smd_parse.py <画面定義.SMD>
 """
+import re
 import sys, pathlib, struct
 try:
     from . import teigitai_moji
@@ -225,3 +226,80 @@ if __name__ == '__main__':
             if migi > 80:
                 biko += '★80桁を超える(右端%d) ' % migi
             print('   %-7s %4d %4d %4d   %s' % (k['nm'], k['gyo'], k['keta'], k['naga'], biko))
+
+
+def gun_na(b):
+    """定義体の中の **コード → 名前** を全部拾う（項目も集団項目もレコードも）。
+
+       1件24バイト。8バイトのコード（EBCDIC・0x40 詰め）＋16バイトの名前（JEF）。
+       `komoku_na` は4バイトのコード（項目）だけを見ていたが、
+       **集団項目（MAS001＝項目表示領域）とレコード名は8バイト**なので拾えない。
+    """
+    out = {}
+    i = 0
+    while i + 24 <= len(b):
+        try:
+            c = b[i:i+8].decode('cp500')
+        except Exception:
+            i += 1; continue
+        cs = c.rstrip(' ')
+        if (not cs or not cs.isascii()
+                or not re.match(r'^[A-Z0-9\]$#@]+$', cs)
+                or c[len(cs):] != ' ' * (8 - len(cs))):
+            i += 1; continue
+        na = teigitai_moji._nibyte(b[i+8:i+24]).replace('\u3000', '').strip()
+        if na and '\x00' not in na and not na.startswith('\u3013'):
+            out.setdefault(cs, na)
+            i += 24; continue
+        i += 1
+    return out
+
+
+def kozo(b, shiru):
+    """**項目の階層（レベル）と OCCURS** を取り出す（2026-11-25 実測）。
+
+       ■ どこに入っているか
+         定義体の後ろに、1件24バイトの「構造表」がある。
+             +0   0x18（この表の1件の長さ）
+             +1   レベル番号（01・02・03 …）
+             +3   データの長さ
+             +4   種別（0=英数 1=数 2=漢字 **16=集団項目**）
+             +6-7 OCCURS の回数（集団項目のとき）
+             +10-11 1回ぶんの長さ（刻み）
+             +16-23 コード（EBCDIC。R001・MAS001 など）
+       ■ 何が分かるか（A10060D1 で実測）
+             lv01 MAS001 項目表示領域          ← 集団項目
+             lv02 MAS002 項目表示テーブル OCCURS 15 刻み80
+             lv03 W011〜W019 項番表示・品名・数量…  ← 明細1行ぶん
+         ＝ コピー原文（XMDLIB）に書いてあるのと同じ中身。
+         これが読めるので、**一覧画面の繰返しと集団項目を推測しないで**
+         組めるようになった（従来は行の並びから推測していた）。
+       ■ 無い定義体もある
+         集団項目も繰返しも無い画面には、この表が無い（421本中323本）。
+         その場合は従来どおり、位置の順に並べるだけでよい。
+    """
+    yoi = []
+    i = 0
+    while i + 24 <= len(b):
+        r = b[i:i+24]
+        if r[0] != 0x18 or not (1 <= r[1] <= 49):
+            i += 1; continue
+        j, mi = i, []
+        while j + 24 <= len(b):
+            q = b[j:j+24]
+            if q[0] != 0x18 or not (1 <= q[1] <= 49):
+                break
+            try:
+                cc = q[16:24].decode('cp500').rstrip(' ')
+            except Exception:
+                break
+            if cc not in shiru:
+                break
+            mi.append({'nm': cc, 'lv': q[1], 'naga': q[3], 'ty': q[4],
+                       'occurs': int.from_bytes(q[6:8], 'big'),
+                       'kizami': int.from_bytes(q[10:12], 'big')})
+            j += 24
+        if len(mi) > len(yoi):
+            yoi = mi
+        i = j if j > i else i + 1
+    return yoi

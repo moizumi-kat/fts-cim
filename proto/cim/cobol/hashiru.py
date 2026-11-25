@@ -443,15 +443,61 @@ class Pgm:
                     [(d, m) for d, m in dan]) if d2 == e.saki]
                 if saki:
                     i = saki[0]; continue
+                # ■ 節の外への GO TO（2026-11-25）
+                #   COBOL は節をまたいで GO TO でき、飛び先から**そのまま
+                #   順に**続く。節の中しか探していなかったので6本が
+                #   抜けていた。
+                mina = [d for _s, d, _m in self._jun()]
+                if e.saki in mina:
+                    return self._zentai(mina.index(e.saki))
+                raise
+            i += 1
+
+    def _zentai(self, k):
+        """節をまたいだ GO TO の飛び先から、原文の終わりまで順に動かす。"""
+        zen = list(self._jun())
+        na = [d for _s, d, _m in zen]
+        i = k
+        while i < len(zen):
+            me = zen[i][2]
+            if me is None:
+                i += 1; continue
+            try:
+                getattr(self, me)()
+            except _Tobu as e:
+                if e.saki in na:
+                    i = na.index(e.saki); continue
                 raise
             i += 1
 
     def _thru(self, kara, made):
+        """PERFORM 〜 THRU 〜。
+
+           ■ 飛び先は段落とは限らない（2026-11-25 実測）
+             `PERFORM KOMK-RTN THRU KOMK-EXT` の KOMK-RTN は**節**で、
+             KOMK-EXT はその節の中の段落。段落名だけで探していたため
+             8本が「段落が無い」で止まっていた（コピー原文の不足ではない）。
+             節の名前なら、その節の**最初の段落**を始まりに、
+             **最後の段落**を終わりに読み替える。
+        """
         zen = list(self._jun())
         na = [d for _s, d, _m in zen]
-        if kara not in na or made not in na:
+        setsu_a = {}
+        setsu_b = {}
+        for k, (sna, _d, _m) in enumerate(zen):
+            setsu_a.setdefault(sna, k)
+            setsu_b[sna] = k
+
+        def _saki(x, owari=False):
+            if x in na:
+                return na.index(x)
+            if x in setsu_a:
+                return setsu_b[x] if owari else setsu_a[x]
+            return None
+
+        a, b = _saki(kara), _saki(made, True)
+        if a is None or b is None:
             raise Mikansei('PERFORM %s THRU %s' % (kara, made), 0)
-        a, b = na.index(kara), na.index(made)
         i = a
         while i <= b:
             me = zen[i][2]

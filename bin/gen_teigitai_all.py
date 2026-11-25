@@ -39,12 +39,19 @@ def hitotsu(path, kind):
                     'naga': k['naga'], 'naga2': k['naga2'], 'ichi': k['k6'],
                     'midashi': midashi, 'cob': k.get('cob'),
                     'hen': [k['hen'], k['hen2'], k['kugiri'], k['shousuu']]})
+    _gun = smd_parse.gun_na(b)
+    _kozo = smd_parse.kozo(b, set(_gun) | {k['nm'] for k in ko})
     out.sort(key=lambda x: (x['gyo'], x['keta']))
     return {'na': path.stem, 'kind': kind,
             # rec … 01レベル（レコード）の COBOL 名。原文は
             #   `MOVE LOW-VALUE TO 画面－処理終了画面` と**レコードごと**
             #   動かすので、これが無いと止まる（smd_parse.rec_na 参照）。
             'rec': smd_parse.rec_na(b, {k['nm'] for k in ko}),
+            # kozo … 項目の階層と OCCURS（smd_parse.kozo 参照）。
+            #   集団項目（項目表示領域）と一覧画面の繰返しが、推測なしで組める。
+            'kozo': _kozo,
+            # gun … コード→名前（集団項目・レコード名を含む）
+            'gun': _gun,
             'gyo': (max(x['gyo'] for x in out) + 1) if out else 0,
             'ko': out}
 
