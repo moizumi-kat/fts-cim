@@ -73,6 +73,8 @@ class Fairu:
             self.kagi = ['_gyo']
         self.ronri = ronri or hyo
         self.db = db
+        self._kaa = None
+        self._kaa_cols = None
         self.moji = _moji_kagi(hyo, self.kagi)    # 末尾空白を見ないで比べる列
         self.rec = {}                 # いま読んでいるレコード
         self.status = SEIJOU
@@ -95,10 +97,40 @@ class Fairu:
         """比較の右辺の値。文字のキーは末尾空白を落とす。"""
         return v.rstrip(' ') if (k in self.moji and isinstance(v, str)) else v
 
+    def _gyochi(self):
+        """**行の値の比較**（`(a,b) > (?,?)`）を使えるか。
+
+           ■ なぜ使いたいか（2026-11-26 実測）
+             辞書順の「より大きい」を OR で書くと、ＳＱＬite は索引を
+             範囲検索に使えず**毎回そのつど全表走査**になる。
+                 OR で書く  → SCAN AJBKFP USING INDEX IX_AJBKFP_1
+                 行の値     → SEARCH AJBKFP USING INDEX …((MITUNO,MITKOB)>(?,?))
+             ＲＥＡＤ ＮＥＸＴ は1件ごとにこの比較をするので、
+             順に読むだけで**件数の2乗**の時間がかかっていた
+             （B10200PP・B16100PB・B16300PB が180秒でも終わらない）。
+           ■ ＳＱＬ Ｓｅｒｖｅｒ では使えない
+             行の値の比較は標準だがＳＱＬ Ｓｅｒｖｅｒ が対応していないので、
+             そちらは従来の OR のままにする（意味は同じ）。
+        """
+        try:
+            from .. import config
+            if getattr(config, 'DRIVER', '') == 'mssql':
+                return False
+        except Exception:
+            pass
+        return len(self.kagi) > 1
+
     def _where(self, hikaku='='):
         """キーの比較。複数キーは辞書順で比べる。"""
         if hikaku == '=':
             return ' AND '.join('%s = ?' % self._hidari(k) for k in self.kagi)
+        if self._gyochi():
+            return '(%s) %s (%s)' % (
+                ', '.join(self._hidari(k) for k in self.kagi),
+                hikaku, ', '.join('?' for _ in self.kagi))
+        if len(self.kagi) == 1:
+            # 1列なら OR に分ける必要がない（素のまま索引が使える）
+            return '%s %s ?' % (self._hidari(self.kagi[0]), hikaku)
         # START / READ NEXT 用。(a,b,c) > (?,?,?) を素のSQLで書く。
         #
         #   辞書順の「より大きい」は
@@ -125,6 +157,8 @@ class Fairu:
         v = [self._migi(k, a) for k, a in zip(self.kagi, atai)]
         if hikaku == '=':
             return v
+        if self._gyochi() or len(self.kagi) == 1:
+            return v                         # 行の値／1列は、そのまま1組
         a = []
         for i in range(len(self.kagi)):
             a += list(v[:i]) + [v[i]]
@@ -135,6 +169,7 @@ class Fairu:
     # ── 入出力 ──────────────────────────────────
     def yomu(self, *kagi_atai):
         """READ（乱）。キーを指定して1件読む。"""
+        self._kaa_tojiru()
         if not kagi_atai:
             kagi_atai = tuple(self.rec.get(k) for k in self.kagi)
         sql = ('SELECT %s FROM %s WHERE %s'
@@ -150,12 +185,26 @@ class Fairu:
         return self.status
 
     def hajime(self, *kagi_atai, ijou=True):
-        """START。順読みの開始位置を決める（KEY >= / KEY >）。"""
+        """START。順読みの開始位置を決める（KEY >= / KEY >）。
+
+           ■ 鍵の値が渡されないこともある（2026-11-26 実測）
+             ＲＥＣＯＲＤ ＫＥＹ を書いていないファイル（順ファイル）に
+             ＳＴＡＲＴ を書いている原文がある（SEISANAS）。
+             このときは**先頭から**にする。値が無いのに比較を組もうとして
+             `list index out of range` で落ちていた。
+        """
+        self._kaa_tojiru()
         hikaku = '>=' if ijou else '>'
-        sql = ('SELECT %s FROM %s WHERE %s ORDER BY %s'
-               % (self._sel(), self._Q(self.hyo), self._where(hikaku),
-                  self._junjo()))
-        r = self.db.q1(self.con, sql, tuple(self._hikisu(kagi_atai, hikaku)))
+        if not kagi_atai:
+            sql = ('SELECT %s FROM %s ORDER BY %s'
+                   % (self._sel(), self._Q(self.hyo), self._junjo()))
+            r = self.db.q1(self.con, sql, ())
+        else:
+            sql = ('SELECT %s FROM %s WHERE %s ORDER BY %s'
+                   % (self._sel(), self._Q(self.hyo), self._where(hikaku),
+                      self._junjo()))
+            r = self.db.q1(self.con, sql,
+                           tuple(self._hikisu(kagi_atai, hikaku)))
         if r is None:
             self.status = NASHI
             self._owari = True
@@ -166,6 +215,51 @@ class Fairu:
             self.status = SEIJOU
             self._tsugi_wa_ima = True
         return self.status
+
+    def _kaa_tojiru(self):
+        """開いているカーソルを捨てる。位置が動いたとき・書いたときに呼ぶ。"""
+        k = getattr(self, '_kaa', None)
+        if k is not None:
+            try:
+                k.close()
+            except Exception:
+                pass
+        self._kaa = None
+        self._kaa_cols = None
+
+    def _tsugi_kaa(self):
+        """前へ読み進める。**カーソルを開いたままにして1件ずつ取る**。
+
+           ■ なぜ要るか（2026-11-26 実測）
+             1件ごとに `WHERE キー > 前の位置 ORDER BY キー` を投げ直して
+             いた。文字のキーは末尾空白を落として比べるため左辺が
+             `RTRIM(列)` になり、ＳＱＬite は索引を範囲検索に使えず
+             **毎回索引を頭から走る**（EXPLAIN が SCAN）。
+             順に読むだけで件数の2乗の時間がかかり、ＡＪＢＫＦＰ
+             753,364件を通しで読むと数時間になる計算だった
+             （B10200PP・B16100PB・B16300PB が180秒でも終わらない）。
+           ■ どうしたか
+             同じ並びを返すＳＱＬを**1回だけ**投げ、カーソルを持ったまま
+             `fetchone()` で1件ずつ取る。返す中身は前と同じ。
+             位置が動く操作（ＳＴＡＲＴ・乱読み）と書き込みでは
+             カーソルを捨てて開き直すので、読む順番も結果も変わらない。
+        """
+        if getattr(self, '_kaa', None) is None:
+            if self._ichi is None:
+                sql = ('SELECT %s FROM %s ORDER BY %s'
+                       % (self._sel(), self._Q(self.hyo), self._junjo()))
+                hiki = ()
+            else:
+                sql = ('SELECT %s FROM %s WHERE %s ORDER BY %s'
+                       % (self._sel(), self._Q(self.hyo),
+                          self._where('>'), self._junjo()))
+                hiki = tuple(self._hikisu(self._ichi, '>'))
+            self._kaa = self.db.ex(self.con, sql, hiki)
+            self._kaa_cols = [d[0] for d in self._kaa.description]
+        r = self._kaa.fetchone()
+        if r is None:
+            return None
+        return dict(zip(self._kaa_cols, [self.db._val(v) for v in r]))
 
     def tsugi(self):
         """READ NEXT（順）。もう無ければ "10"（AT END）。"""
@@ -180,15 +274,7 @@ class Fairu:
                       self._junjo()))
             r = self.db.q1(self.con, sql, tuple(self._hikisu(self._ichi, '=')))
         else:
-            if self._ichi is None:
-                sql = ('SELECT %s FROM %s ORDER BY %s'
-                       % (self._sel(), self._Q(self.hyo), self._junjo()))
-                r = self.db.q1(self.con, sql, ())
-            else:
-                sql = ('SELECT %s FROM %s WHERE %s ORDER BY %s'
-                       % (self._sel(), self._Q(self.hyo),
-                          self._where('>'), self._junjo()))
-                r = self.db.q1(self.con, sql, tuple(self._hikisu(self._ichi, '>')))
+            r = self._tsugi_kaa()
         if r is None:
             self._owari = True
             self.status = OWARI
@@ -200,6 +286,7 @@ class Fairu:
 
     def kaku(self, rec=None):
         """WRITE。同じキーが既にあれば "22"。"""
+        self._kaa_tojiru()
         if rec is not None:
             self.rec = dict(rec)
         if self.jun:
@@ -223,6 +310,7 @@ class Fairu:
 
     def kakinaosu(self, rec=None):
         """REWRITE。無ければ "23"。"""
+        self._kaa_tojiru()
         if rec is not None:
             self.rec = dict(rec)
         kagi_atai = tuple(self.rec.get(k) for k in self.kagi)
@@ -238,6 +326,7 @@ class Fairu:
 
     def kesu(self, *kagi_atai):
         """DELETE。無ければ "23"。"""
+        self._kaa_tojiru()
         if not kagi_atai:
             kagi_atai = tuple(self.rec.get(k) for k in self.kagi)
         sql = 'DELETE FROM %s WHERE %s' % (self._Q(self.hyo), self._where())

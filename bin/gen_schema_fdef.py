@@ -27,7 +27,8 @@
   使い方
     python3 gen_schema_fdef.py <.SMB置き場> <いまのschema_gen.py> <出力先.py>
 """
-import sys, re, pprint, pathlib, collections, importlib.util
+import sys
+import re, pprint, pathlib, collections, importlib.util
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import fdef
@@ -283,6 +284,102 @@ for na, (moto, konkyo) in KAKIKAE.items():
     t['moto'] = moto
     t['konkyo'] = konkyo
     naoshita.append(na)
+# ---- 原文が使っていて、定義体が後から届いたファイルを足す（2026-11-26）-----
+"""村上様から「20261126_OBJ_追加分.zip」で**作業ファイルの定義体**をいただいた。
+
+   これまで 107本のファイルが「定義体が無い」状態で、うち 81本は
+   `COPY ○○ OF XFDLIB` でレコードの中身を書いていたため、
+   どの桁が何の項目か決められず 14本のプログラムが止まっていた。
+
+   いただいた定義体で**表として足す**。中身は空（＝ＣＬが実行前に作る
+   一時ファイル）なので、READ は「該当なし」が返る＝ＣＯＢＯＬ の
+   決まりどおり。足すのは**原文が実際に使っているものだけ**にする
+   （定義体があるからといって、使っていない表を増やさない）。
+
+   第4引数に原文（.COB）の置き場を渡したときだけ働く。
+"""
+TSUKAU = set()
+if len(sys.argv) > 4:
+    _moto = pathlib.Path(sys.argv[4])
+    for _f in _moto.glob('*.COB'):
+        _hon = '\n'.join(ln[1:67] for ln in
+                          _f.read_text(encoding='utf-8', errors='replace').splitlines()
+                          if ln and ln[0] not in '*/Dd')
+        for _m in re.finditer(r'\bSELECT\s+([A-Z0-9#@$-]+)', _hon, re.I):
+            TSUKAU.add(_m.group(1).upper())
+        for _m in re.finditer(r'\bCOPY\s+([A-Z0-9#@$-]+)\s+OF\s+XFDLIB', _hon, re.I):
+            TSUKAU.add(_m.group(1).upper())
+# **論理ファイルは表にしない**（2026-11-26）。
+#   ＡＳＰ の論理ファイル（ＰＹＡＭＡＭＬ１ など）は物理ファイルの見方違いで、
+#   データは物理ファイルにある。表として足すと空の表が二重にでき、
+#   論理名→物理名の引き当て（_ronri_hiki）を素通りして**黙って0件になる**。
+#   既にある表の `ronri` に載っている名前は足さない。
+RONRI_ZUMI = {r for v in TABLES.values() for r in (v.get('ronri') or [])}
+
+
+def _butsuri(na, f):
+    """論理ファイル名 → もとの物理表名。無ければ None。
+
+       `GAIHIYL1` は `GAIHIYFP` の見方違い。末尾の `L1`／`L2` を落として
+       `FP`／`MP`／`SF`／`FS`／`JP` を付けた名前が表にあり、**レコード長も
+       一致する**ときだけ、そう見なす（長さを確かめるので取り違えない）。
+    """
+    m = re.match(r'^(.+?)(?:F?L\d|L\d)$', na)
+    if not m:
+        return None
+    ne = m.group(1)
+    for sue in ('FP', 'MP', 'SF', 'FS', 'JP'):
+        k = ne + sue
+        if k in TABLES and TABLES[k].get('naga') == f.get('naga'):
+            return k
+    return None
+
+
+tsuika, ronri_tsuika = [], []
+for na in sorted(TSUKAU):
+    f = teigi.get(na)
+    if na in TABLES or na in RONRI_ZUMI or f is None or not f.get('naga'):
+        continue
+    # **実行時の引き当てで既に解けるものは足さない**（2026-11-26）。
+    #   cob2py/kumitate.py の fd_ireru は、論理名が表に無いとき
+    #   `名前[:-3]+'FP'`／`+'MP'` を試す（FHNEML1 → FHNEMP）。
+    #   これで解けるものを表にすると、空の表が二重にできて黙って0件になる。
+    if len(na) > 3 and (na[:-3] + 'FP' in TABLES or na[:-3] + 'MP' in TABLES):
+        continue
+    # 論理ファイルなら**表にせず、物理表の論理名として登録**する。
+    # 表にすると空の表が二重にでき、黙って0件になる。
+    b = _butsuri(na, f)
+    if b:
+        TABLES[b].setdefault('ronri', [])
+        if na not in TABLES[b]['ronri']:
+            TABLES[b]['ronri'].append(na)
+            ronri_tsuika.append('%s→%s' % (na, b))
+        continue
+    TABLES[na] = {
+        'cols': [(rna, kata_sql(k), k['midashi'] or '', pic(k))
+                 for rna, k in hirogeru(f)],
+        'kuri': kurikaeshi(f),
+        'naga': f['naga'], 'rec': f['rec'], 'nm': f.get('midashi') or '',
+        'lib': 'XFDLIB', 'ronri': [], 'hantei': '要確認',
+        'pk': [], 'notnull': [], 'default': {},
+        'src': 'teigitai', 'moto': None,
+        'konkyo': '2026-11-26 村上様から定義体をいただいた作業ファイル'}
+    naoshita.append(na)
+    tsuika.append(na)
+    if na in teigi_nashi:
+        teigi_nashi.remove(na)
+if tsuika:
+    print()
+    print('■ 定義体が届いて足した作業ファイル … %d表' % len(tsuika))
+    for i in range(0, len(tsuika), 8):
+        print('   ' + ' '.join(tsuika[i:i+8]))
+if ronri_tsuika:
+    print()
+    print('■ 物理表の論理名として登録（表は増やさない） … %d本'
+          % len(ronri_tsuika))
+    for i in range(0, len(ronri_tsuika), 5):
+        print('   ' + ' '.join(ronri_tsuika[i:i+5]))
+
 for na, (nm, lib, konkyo) in MOTTEKURU.items():
     f = teigi.get(na)
     if na in TABLES or f is None:

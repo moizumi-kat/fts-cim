@@ -816,6 +816,13 @@ def _nihongo_betsumei(oya, settou, cols):
        ■ 以前は繰返しのある表（kuri あり）のときだけ足していたので、
          繰返しの無い表では別名が1つも付かず、35本がここで止まっていた。
     """
+    # ■ 接頭辞が無いときは作らない（2026-11-26 実測）
+    #   `FD C10020S1. COPY C10020S1 OF XFDLIB.`（JOINING なし）では
+    #   settou が空なので `settou[:-1] + sep + ja` が **`-製番`** という
+    #   ありえない名前になっていた。原文は接頭辞が無ければ列名
+    #   （SEIBAN）で書くので、日本語の別名は要らない。
+    if not settou:
+        return
     betsu = []
     for c in cols:
         ja = (c[2] or '').strip() if len(c) > 2 else ''
@@ -870,7 +877,69 @@ def _gun_ja(oya, settou, cols):
             oya.ko.append(g)
 
 
-def fd_ko(settou, cols, na=None, kuri=None):
+def _gun_teigitai(oya, settou, gun, ichi_hyo):
+    """定義体（.SMB）の**集団項目**を Ko として足す（2026-11-26）。
+
+       ＣＯＢＯＬ は集団項目の名前でまとめて読み書きする。
+           AEJGFP  CRTTAN（作成担当者コード）＝ CRTBSY ＋ CRTKKR
+           原文    `MOVE 連携鑑－作成担当者コード TO …`（A25010PB）
+       これまでは決め打ちの `_GUN` 2件（組織コード・YMD）しか無く、ほかは
+       「知らない項目」で止まっていた。定義体は 2,263個の集団項目を
+       **子の並びつきで**持っているので、そこから組む。
+
+       範囲は**子の先頭から子の最後まで**（ichi_hyo＝列の実位置）で出す。
+       定義体の ichi をそのまま使わないのは、繰返しの展開で列の実位置が
+       変わることがあるため。子が1つでも引けなければ**足さない**（安全側）。
+       英名（CRTTAN）と見出しの日本語名（作成担当者コード）の両方を足す。
+    """
+    if not gun:
+        return
+    moto = settou[:-1] if settou else ''
+    kugiri = ['-', '\uff0d'] if (moto and not moto.isascii()) else ['-']
+    sumi = {c.na for c in oya.ko}
+    for g in gun:
+        ko = g.get('ko') or []
+        kaisu = g.get('kaisu') or {}
+        if not ko:
+            continue
+        han = []                     # 子ごとの (始まり, 終わり)
+        for b in ko:
+            if b in ichi_hyo:
+                han.append((ichi_hyo[b][0], ichi_hyo[b][0] + ichi_hyo[b][1]))
+                continue
+            # 繰返しの子は `SERITU_1`〜`SERITU_3` に展開されている。
+            # **展開後の列の位置**から範囲を出す（推測しない）。
+            n = kaisu.get(b) or 0
+            moto = b.ljust(6, '_') if len(b) < 6 else b
+            ichi = [ichi_hyo['%s_%d' % (m, i + 1)]
+                    for i in range(n)
+                    for m in (moto, b) if '%s_%d' % (m, i + 1) in ichi_hyo]
+            if not n or len(ichi) < n:
+                han = None
+                break
+            han.append((min(x[0] for x in ichi),
+                        max(x[0] + x[1] for x in ichi)))
+        if not han:
+            continue
+        a = min(x[0] for x in han)
+        owari = max(x[1] for x in han)
+        na = [settou + g['na']]
+        if g.get('ja') and moto:
+            for sep in kugiri:
+                na.append(moto + sep + g['ja'])
+        elif g.get('ja'):
+            na.append(g['ja'])
+        for x in na:
+            if x in sumi:
+                continue
+            k = Ko(3, x)
+            k.kata = None; k.keta = owari - a; k.naga = owari - a
+            k.ichi = a; k.occurs = 0; k.dan = []; k.oya = oya
+            oya.ko.append(k)
+            sumi.add(x)
+
+
+def fd_ko(settou, cols, na=None, kuri=None, gun=None):
     """接頭辞＋表の列 → Ko（01レコード）。繰返しと集団項目を戻す。
 
        kuri（表定義の `kuri`＝定義体から起こした [(基本名, 回数, 刻み)]）が
@@ -936,6 +1005,7 @@ def fd_ko(settou, cols, na=None, kuri=None):
                 g = Ko(3, gna)
                 g.kata = None; g.naga = owari - a; g.ichi = a; g.oya = oya
                 oya.ko.append(g)
+        _gun_teigitai(oya, settou, gun, ichi_hyo)
         oya.naga = ichi
         return oya
     for cna, ty, occ in _kurikaeshi(cols):
@@ -958,6 +1028,7 @@ def fd_ko(settou, cols, na=None, kuri=None):
             g = Ko(3, gna)
             g.kata = None; g.naga = owari - a; g.ichi = a; g.oya = oya
             oya.ko.append(g)
+    _gun_teigitai(oya, settou, gun, ichi_hyo)
     oya.naga = ichi
     return oya
 

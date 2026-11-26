@@ -165,6 +165,32 @@ def _pack(b, shou=0):
     return v / (10 ** shou) if shou else v
 
 
+SO, SI = 0x28, 0x29          # 日本語の開始／終了コード
+
+
+def _moji(b):
+    """文字項目（X）のバイト列 → 文字。**シフトコードがあれば混じり読み**。
+
+       ■ 根拠（2026-11-26 村上様ご回答）
+         「SHIFT1 は日本語データ開始コード X'28'、SHIFT2 は日本語データ
+           終了コード X'29'」
+         文字項目の中に、この2つで囲んで日本語（ＪＥＦ2バイト）を入れる。
+         ＡＢＵＨＭＰ の部品名称は 4,994件のうち **2,901件**がこれを含む。
+             4040 e5d4 40 4d 40 f8f0 28 b3d1 29 5d
+             ＝「  VM ( 80」＋〈日本語開始〉角〈終了〉＋「)」
+         1バイトずつ読んでいたため「  VM ( 80·J)」と化けていた。
+
+       ■ 安全側（方針1-3）
+         **開始・終了の対がある項目だけ**混じり読みにする。無い項目は
+         これまでどおり1バイトずつ（＝回帰ゼロ）。ＥＢＣＤＩＣ の
+         `(` は 0x4D・`)` は 0x5D なので、0x28／0x29 を括弧と
+         取り違えることはない。
+    """
+    if SO in b and SI in b and b.index(SO) < b.rindex(SI):
+        return teigitai_moji._mazari(b)
+    return teigitai_moji.ebcdic_data(b)
+
+
 def _ebcdic(b):
     """EBCDIC n バイト → n 文字。**末尾の空白は切らない**（2026-11-24）。
 
@@ -185,7 +211,74 @@ def _jef(b):
     return teigitai_moji.nibyte_data(b)
 
 
-def hitotsu(rec, cols):
+KAHEN = {
+    # 「先頭2バイト＝後ろに続く有効データのバイト数（2バイトバイナリ）」の
+    # **可変長文字項目**。表名 → 列名。
+    #
+    # ■ 根拠（2026-11-26）
+    #   村上様ご回答「定義体の先頭2バイトは後ろに続く有効データのバイト数を
+    #   2バイトのバイナリで表したもの。データベースのテーブルにデータを
+    #   入れ込むときは先頭2バイトは対象外になります」
+    #
+    # ■ 定義体には可変長の印が無い（実測）
+    #   ABUHMP の PARTNA と PARTCD の項目レコードを 0x00〜0x40 まで
+    #   突き合わせたが、違うのは名前・位置・桁だけだった。
+    #   ですので**実データで判定する**（`bin/chk_kahencho.py`）。判定は
+    #     ① 先頭2バイトの n が 0 ≦ n ≦ 桁数−2
+    #     ② 位置 2+n から後ろは全部詰め物（0x40／0x20／0x00）
+    #
+    # ■ 安全側に寄せている（方針1-3）
+    #   取り違えて可変長にすると値が2バイトずれて**黙って間違う**。
+    #   ですので**実データで確かめたものと、村上様が名指しされたものだけ**。
+    #   同じレイアウトの写し（AWKMFP／FAJBMFP／TAJBMFP／論理ファイル）は
+    #   実データが手元に無いので入れていない。届いたら chk_kahencho.py で
+    #   判定して足す。
+    'ABUHMP':   {'PARTNA'},                  # 部品名称 実測 4,994件すべて一致
+    'ASETMP':   {'SETNAM'},                  # セット回路名称 実測 1,987件
+    'BUHHOSFP': {'BUHMEI'},                  # 部品補足名称 実測 2,542件（52桁）
+    'AJBMFP':   {'NAME___1', 'NAME___2'},    # 名称 村上様が名指しされた2列
+    'FAJBMFP':  {'NAME___1', 'NAME___2'},    # 同じレイアウト・実データでも確認
+}
+# ■ AJBMFP／FAJBMFP の名称が2列ある理由（2026-11-26 実測）
+#   定義体は `NAME`（32桁）1項目だが、親の集団項目 `NOTBL`（新旧テーブル）が
+#   **ＯＣＣＵＲＳ 2** なので、列は NAME___1（位置34）と NAME___2（位置166・
+#   刻み132）の2つになる。村上様が名指しされた NAME___1／NAME___2 はこれ。
+#
+# ■ 入れていないもの（実データが手元に無い）
+#   AWKMFP／TAJBMFP（.SFL が空）・論理ファイル（ABUHML1 等。取り込みは
+#   物理ファイルだけなので要らない）。届いたら chk_kahencho.py で判定する。
+
+
+def kahen_hiku(michi):
+    """ファイル名から、その表の可変長項目の列名を返す。
+
+       `AJBMFP1.SFL`／`AJBMFP2.SFL` のように**分割して書き出された**ものが
+       あるので（村上様 2026-11-24「AJBMFP1,2,3 ⇒ AJBMFP」）、
+       末尾の数字を落としても引く。
+    """
+    na = pathlib.Path(michi).stem.upper()
+    if na in KAHEN:
+        return KAHEN[na]
+    m = re.match(r'^(.*?)\d+$', na)
+    if m and m.group(1) in KAHEN:
+        return KAHEN[m.group(1)]
+    return frozenset()
+
+
+def _kahen_atai(bb):
+    """可変長文字項目のバイト列 → **先頭2バイトを外した**バイト列。
+
+       桁数は変えない（2バイトぶん右を空白で埋める）。レコードの中の
+       位置も、ほかの列の位置も動かさないため。
+    """
+    n = int.from_bytes(bb[:2], 'big')
+    honbun = bb[2:]
+    if 0 <= n <= len(honbun):
+        honbun = honbun[:n] + b'\x40' * (len(honbun) - n)
+    return honbun + b'\x40\x40'
+
+
+def hitotsu(rec, cols, kahen=()):
     """1レコードのバイト列 → {列名: 値}。筋が通らなければ None。"""
     d = {}
     i = 0
@@ -198,7 +291,7 @@ def hitotsu(rec, cols):
         if k.startswith(('nchar', 'nvarchar')):
             d[na_] = _jef(bb)
         elif k.startswith(('char', 'varchar')):
-            d[na_] = _ebcdic(bb)
+            d[na_] = _moji(_kahen_atai(bb) if na_ in kahen else bb)
         else:
             m = re.match(r'(numeric|decimal)\((\d+),(\d+)\)', k)
             shou = int(m.group(3))
@@ -212,6 +305,7 @@ def hitotsu(rec, cols):
 
 def yomu(michi, cols):
     """.SFL 1本 → ([ {列名: 値} ], データの先頭位置, 読めなかった枠の数)。"""
+    kahen = kahen_hiku(michi)
     b = pathlib.Path(michi).read_bytes()
     j = kaiseki(b)
     if j['naga'] != rec_naga(cols):
@@ -219,7 +313,7 @@ def yomu(michi, cols):
                          % (j['naga'], rec_naga(cols)))
     out, dame = [], 0
     for p in j['ichi']:
-        r = hitotsu(b[p:p + j['naga']], cols)
+        r = hitotsu(b[p:p + j['naga']], cols, kahen)
         if r is None:
             dame += 1
             continue

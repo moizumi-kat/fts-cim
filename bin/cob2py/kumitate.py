@@ -18,6 +18,7 @@
       入れ子の IF の中からでも飛べるようにするため、例外にしている。
 """
 import sys, re, pathlib
+import re as _re
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from cob2py import ji, data, tetsuzuki, dasu
 from cob2py.tetsuzuki import na_py
@@ -267,11 +268,13 @@ def fd_joining(go, hajime, owari):
     return out
 
 
-def fd_ireru(fc, sude, joining=None):
+def fd_ireru(fc, sude, joining=None, copyna=None, rec_fd=None):
     """FILE-CONTROL の各ファイルのレコードを、表定義から組み立てて足す。"""
     TABLES = _hyo()
     out = []
     joining = dict(joining or {})
+    copyna = dict(copyna or {})
+    kouho = {}            # 別名 → [ファイル名…]
     # ファイルに結びつかない JOINING（WORKING-STORAGE のもの）も記憶域にする
     fc = dict(fc)
     for midashi, j in list(joining.items()):
@@ -317,13 +320,46 @@ def fd_ireru(fc, sude, joining=None):
         if hon_rec and not j:
             rec_na = hon_rec              # 接頭辞が無いときはそのまま
         k = data_fd(settou, TABLES[hyomei]['cols'], rec_na,
-                    TABLES[hyomei].get('kuri'))
-        _rec_betsumei(k, settou, ronri, rec_na, hon_rec)
+                    TABLES[hyomei].get('kuri'),
+                    _gun_teigi(ronri, hyomei))
+        # ■ `COPY <原文名> OF XFDLIB` の原文名が FD 名と違うとき、
+        #   **原文名のほうの定義体**が持つ 01 名も別名にする（2026-11-26）。
+        cp_rec = None
+        cp = copyna.get(na)
+        if cp:
+            cp_rec = (_fdef_rec().get(cp) or {}).get('rec')
+        _rec_betsumei(k, settou, ronri, rec_na, hon_rec, cp_rec, na)
+        # ■ レコード名 → ファイル名 を集める（2026-11-26）
+        #   ＣＯＢＯＬ は WRITE／REWRITE に**レコード名**を書く
+        #   （`WRITE １３－部所出力順レコード`）。ＦＤに 01 が書かれて
+        #   いない（COPY だけ）ときは原文から対応が取れないため、
+        #   ここで作った 01 とその別名をそのまま対応表にする。
+        #   これが無いと「表が無い」で止まっていた（B30000PB・NOUJU09S）。
+        for x in [rec_na] + [c.na for c in k.ko if c.kata is None]:
+            kouho.setdefault(x, []).append(na)
         out.append(k)
+    if rec_fd is not None:
+        # **1つのファイルにしか当たらない名前だけ**入れる。`RECFD` のような
+        # ありふれた綴りは複数のファイルに付くので、入れると書き先を
+        # 取り違える（黙って間違うので必ず落とす）。
+        for x, fs in kouho.items():
+            if len(set(fs)) == 1:
+                rec_fd.setdefault(x, fs[0])
     return out
 
 
-def _rec_betsumei(oya, settou, ronri, rec_na, hon_rec=None):
+def _zen(s):
+    """英数字を全角にする。`L1` → `Ｌ１`。
+
+       原文は日本語の名前の中で**全角の英数字**を使う
+       （`順序－組織出力順序マスタＬ１`）。論理名 ASOJML1 の末尾 `L1` から
+       作るので、ここで全角へ直す。
+    """
+    return s.translate({c: c + 0xFEE0 for c in range(0x21, 0x7F)})
+
+
+def _rec_betsumei(oya, settou, ronri, rec_na, hon_rec=None, cp_rec=None,
+                  fairu_na=None):
     """01レコードの**別名**を足す（2026-11-24 実測）。
 
        原文は 01 レコードをコピー原文の名前で書く。コピー原文（XFDLIB）が
@@ -342,6 +378,12 @@ def _rec_betsumei(oya, settou, ronri, rec_na, hon_rec=None):
     moto = settou[:-1] if settou else ''
     kugiri = ['-', '\uff0d'] if (moto and not moto.isascii()) else ['-']
     na = []
+    # `COPY <原文名> OF XFDLIB` の原文名側の 01 名（村上様ご指摘・2026-11-26）
+    if cp_rec:
+        na.append(cp_rec)
+        for sep in kugiri:
+            if moto:
+                na.append(moto + sep + cp_rec)
     if hon_rec:
         na.append(hon_rec)
         for sep in kugiri:
@@ -350,6 +392,35 @@ def _rec_betsumei(oya, settou, ronri, rec_na, hon_rec=None):
     if ronri and len(ronri) > 3:
         na.append(ronri[:-3] + 'FD')
     na.append('RECFD')
+    # ■ 接頭辞が無いファイルは**ファイル名**でも修飾される（2026-11-26 実測）
+    #   `FD C10020S1. COPY C10020S1 OF XFDLIB.` の原文は
+    #   `MOVE … TO SEIBAN OF C10020S1` と**ファイル名**で書き、
+    #   01 の名前（RECFD）では書かない。rec_na を 01 名にした時点で
+    #   ファイル名の別名が消えていたため、書き先の列が1つも引けず
+    #   `INSERT INTO t () VALUES ()` になっていた（C10020PB）。
+    if fairu_na:
+        # 接頭辞があっても付ける。`_rec_toru_01` がファイル名で 01 を
+        # 探すので、これが無いと書く列が1つも集まらない（B30000PB）。
+        na.append(fairu_na)
+    # ■ 接頭辞＋**ファイル名**（2026-11-26 実測）
+    #   `FD 組織マスタ. COPY ASOSML1 OF XFDLIB JOINING １１ AS PREFIX.` のとき
+    #   原文は `INITIALIZE １１－組織マスタ` と**接頭辞＋ＦＤ名**で書く。
+    #   これが無くて13本が「知らない項目 １１－組織マスタ」で止まっていた
+    #   （文字比較を直して処理が先へ進むようになり、はじめて表に出た）。
+    if moto and fairu_na and fairu_na != moto:
+        hoka = [fairu_na]
+        # ＦＤ名の「ファイル」を「レコード」に替えたもの（実測）
+        #   `FD 部所出力順ファイル` → `１３－部所出力順レコード`（B30000PB）
+        if 'ファイル' in fairu_na:
+            hoka.append(fairu_na.replace('ファイル', 'レコード'))
+        # ＦＤ名＋論理名の末尾（Ｌ１ など・全角）（実測）
+        #   `FD 組織出力順序マスタ` ＋ `COPY ASOJML1`
+        #        → `順序－組織出力順序マスタＬ１`（B16320PB）
+        if ronri and _re.search(r'L\d$', ronri):
+            hoka.append(fairu_na + _zen(ronri[-2:]))
+        for x in hoka:
+            for sep in kugiri:
+                na.append(moto + sep + x)
     if moto:
         for sep in kugiri:
             na.append(moto + sep + 'レコード')
@@ -378,8 +449,92 @@ def _ronri_hiki():
     return _RONRI
 
 
-def data_fd(settou, cols, na, kuri=None):
-    return data.fd_ko(settou, cols, na, kuri)
+def data_fd(settou, cols, na, kuri=None, gun=None):
+    return data.fd_ko(settou, cols, na, kuri, gun)
+
+
+def _gun_teigi(*na):
+    """定義体（.SMB）が持つ**集団項目**を返す。最初に見つかったものを使う。
+
+       論理ファイル名（ASOSML1）でも物理名（ASOSMP）でも引けるようにする。
+       どちらの .SMB も同じレイアウトなので、集団項目も同じ。
+    """
+    h = _fdef_rec()
+    for x in na:
+        if x and x in h and h[x].get('gun'):
+            return h[x]['gun']
+    return []
+
+
+_FDEF_REC = None
+
+
+def _fdef_rec():
+    """ファイル定義体（.SMB）の **定義名 → 01レコード名**。
+
+       ■ なぜ表定義（TABLES）と別に要るか（2026-11-26 村上様のご指摘）
+         TABLES に入るのは**物理ファイル 486表だけ**。
+         `COPY FSSIFL1 OF XFDLIB` の FSSIFL1 は**論理ファイル**なので
+         TABLES に無く、rec（FSSIRC）が引けなかった。
+         .SMB は 1,061本いただいているので、そこから直に引く。
+       生成は `bin/gen_fdef_rec.py <OBJディレクトリ>`。
+    """
+    global _FDEF_REC
+    if _FDEF_REC is None:
+        import json, os
+        ne = pathlib.Path(__file__).resolve().parent.parent.parent
+        kouho = [os.environ.get('FTSCIM_FDEF_REC'),
+                 ne / 'proto' / 'cim' / 'fdef_rec.json',
+                 ne.parent / 'proto' / 'cim' / 'fdef_rec.json']
+        _FDEF_REC = {}
+        for m in kouho:
+            if m and pathlib.Path(m).exists():
+                _FDEF_REC = json.loads(
+                    pathlib.Path(m).read_text(encoding='utf-8'))
+                break
+    return _FDEF_REC
+
+
+def fd_copy_na(go, hajime, owari):
+    """`FD <ファイル名>. COPY <原文名> OF XFDLIB.` の **原文名**を拾う。
+
+       ■ 村上様のご指摘（2026-11-26）
+         「COPY OF XFDLIB でファイル名と違う名称が指定されているもの」。
+         原文名はファイル名と違うことがあり、**01レコード名は原文名の
+         ほうの定義体が持っている**。
+
+           SHIZI74F   FD  FSSIFL2.
+                          COPY FSSIFL1 OF XFDLIB.
+                      INITIALIZE FSSIRC OF FSSIFL2.
+           FSSIFL2.SMB の rec = FSSIR2 ／ **FSSIFL1.SMB の rec = FSSIRC**
+
+         ＦＤのファイル名しか見ていなかったので `FSSIRC` が引けず
+         止まっていた。857本中11本・64箇所でファイル名と原文名が違う。
+       JOINING 付きは fd_joining が別に見るので、ここでは名前だけ返す。
+    """
+    out = {}
+    if hajime < 0:
+        return out
+    ima = None
+    i = hajime
+    while i < owari:
+        g = go[i]
+        if g.na('FD', 'SD') and i + 1 < owari:
+            ima = go[i+1].v.upper(); i += 2; continue
+        if g.na('WORKING-STORAGE', 'LINKAGE'):
+            break
+        if g.na('COPY') and ima and i + 1 < owari:
+            na = go[i+1].v.upper()
+            j, lib = i + 2, None
+            while j < owari and not (go[j].shu == 'ki' and go[j].v == '.'):
+                if go[j].na('OF') and j + 1 < owari:
+                    lib = go[j+1].v.upper(); break
+                j += 1
+            if lib == 'XFDLIB' and na != ima:
+                out[ima] = na
+            i += 2; continue
+        i += 1
+    return out
 
 
 _TEIGI = None
@@ -649,7 +804,12 @@ def kumu(michi):
     fdrec = data.fd_rec(go, d_i, p_i) if d_i >= 0 else {}
     fdrec.update(fd_copy_rec(go, d_i, p_i))
     joining = fd_joining(go, d_i, p_i) if d_i >= 0 else {}
-    ne += fd_ireru(fc, {c.na for k in ne for c in k.mina()}, joining)
+    copyna = fd_copy_na(go, d_i, p_i) if d_i >= 0 else {}
+    rec_fd = {}
+    ne += fd_ireru(fc, {c.na for k in ne for c in k.mina()}, joining, copyna,
+                   rec_fd)
+    for _k, _v in rec_fd.items():
+        fdrec.setdefault(_k, _v)      # 原文に書いてある対応を上書きしない
     namae = {c.na for k in ne for c in k.mina()}
     hairetsu = {c.na for k in ne for c in k.mina() if c.occurs}
     # PROCEDURE DIVISION USING 〜 ＝ 呼ぶ側から受け取る項目

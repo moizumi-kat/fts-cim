@@ -7,6 +7,7 @@
 from decimal import Decimal, ROUND_HALF_UP, ROUND_DOWN
 import datetime
 import re
+import pathlib
 
 from .kioku import Ryoiki, Komoku
 from . import fairu as F
@@ -23,6 +24,39 @@ NAIFAIRU = '35'          # OPEN したがファイルが無い
 _GUN_JA_KAGI = {
     '組織コード': ('BSYOCD', 'TANCD'),      # 部所コード(2)＋係コード(2)
 }
+
+_FDEF = None
+
+
+def _fdef_gun(hyo, db=None):
+    """その表の**集団項目** {名前: [子の列名]} を定義体から返す（2026-11-26）。
+
+       英名（YMD）と見出しの日本語名（年月日）の両方を鍵にして返す。
+       もとは `bin/gen_fdef_rec.py` が .SMB 1,061本から起こした
+       `cim/fdef_rec.json`。無ければ空で動く（決め打ちの表だけになる）。
+    """
+    global _FDEF
+    if _FDEF is None:
+        import json
+        _FDEF = {}
+        for m in (pathlib.Path(__file__).resolve().parent.parent
+                  / 'fdef_rec.json',):
+            try:
+                _FDEF = json.loads(m.read_text(encoding='utf-8'))
+            except Exception:
+                _FDEF = {}
+    na = [hyo]
+    try:
+        na += list(db.TABLES[hyo].get('ronri') or [])
+    except Exception:
+        pass
+    out = {}
+    for x in na:
+        for g in ((_FDEF.get(x) or {}).get('gun') or []):
+            out.setdefault(g['na'], g['ko'])
+            if g.get('ja'):
+                out.setdefault(g['ja'], g['ko'])
+    return out
 
 
 def D(v):
@@ -47,6 +81,72 @@ def SUUJIKA(v):
 def EIJIKA(v):
     s = str(v).replace(' ', '')
     return s.isalpha()
+
+
+class Kazu(Decimal):
+    """数字項目の値。**文字リテラルとも比べられる**ようにしたもの。
+
+       ■ なぜ要るか（2026-11-26 実測）
+         原文は数字項目を文字リテラルと比べることがある。
+             03  END-FLG  PIC 9(01).
+             PERFORM UNTIL RED-FLG = "OK" OR END-FLG = "1"
+         ＣＯＢＯＬ はこれを数として比べて真になるが、Python では
+         `Decimal('1') == '1'` が偽。そのため終わりの印を立てても
+         ループが抜けず、**ＳＱＬを1本も出さずに回り続けていた**
+         （B10200PP。20秒で 1,899,469回 READ していた）。
+       ■ どう比べるか
+         相手が文字なら、**数として読めれば数で**、読めなければ
+         文字どうしで比べる。`Moji`（文字項目）が数と比べられるのと対。
+    """
+
+    def _soroeru(self, h):
+        if not isinstance(h, str):
+            return None, None
+        s = h.strip()
+        try:
+            return Decimal(self), Decimal(s or 0)
+        except Exception:
+            return str(self), s
+
+    def __eq__(self, h):
+        a, b = self._soroeru(h)
+        if a is not None:
+            return a == b
+        return Decimal.__eq__(self, h)
+
+    def __ne__(self, h):
+        r = self.__eq__(h)
+        return r if r is NotImplemented else (not r)
+
+    def __lt__(self, h):
+        a, b = self._soroeru(h)
+        return a < b if a is not None else Decimal.__lt__(self, h)
+
+    def __le__(self, h):
+        a, b = self._soroeru(h)
+        return a <= b if a is not None else Decimal.__le__(self, h)
+
+    def __gt__(self, h):
+        a, b = self._soroeru(h)
+        return a > b if a is not None else Decimal.__gt__(self, h)
+
+    def __ge__(self, h):
+        a, b = self._soroeru(h)
+        return a >= b if a is not None else Decimal.__ge__(self, h)
+
+    def __hash__(self):
+        return Decimal.__hash__(self)
+
+
+# ＳＱＬite の値の変換は**型がぴったり一致したものだけ**使われる。
+# `Decimal` 用の登録（cim/db.py）は派生クラスには効かないので、
+# ここで `Kazu` も同じやり方で登録する。でないとＳＱＬの引数に渡した
+# ところで ProgrammingError になる（2026-11-26 実測）。
+try:
+    import sqlite3 as _sqlite3
+    _sqlite3.register_adapter(Kazu, str)
+except Exception:
+    pass
 
 
 class Moji(str):
@@ -140,10 +240,7 @@ class Moji(str):
         return str.__eq__(self, h)
 
     def __ne__(self, h):
-        # 相手が文字でも数でもないときは __eq__ が NotImplemented を返す。
-        # それを not で裏返すと Python が警告を出すので、そのまま返す。
-        r = self.__eq__(h)
-        return r if r is NotImplemented else (not r)
+        return not self.__eq__(h)
 
     def __hash__(self):
         return str.__hash__(self)
@@ -286,7 +383,7 @@ class Pgm:
                 for k in (d.get('kagi') or []):
                     hira = self._kagi_hiraku(
                         self._kagi_retsu(k, hyo, db), hyo, db)
-                    kagi += [c for c, _n in hira]
+                    kagi += [x[0] for x in hira]
                     bu.append((k, hira))
                 self.f_kagi_bu[na] = bu
                 try:
@@ -410,6 +507,8 @@ class Pgm:
             v = r.toru(k.na, kai) if k.na in r.hyo else r.nama(k, kai)
             if isinstance(v, str):
                 v = Moji(v)
+            elif isinstance(v, Decimal) and not isinstance(v, Kazu):
+                v = Kazu(v)          # 文字リテラルとも比べられるように
         if kiri is not None:
             s = v if isinstance(v, str) else str(v)
             a = int(kiri[0]) - 1
@@ -529,6 +628,16 @@ class Pgm:
                 mina = [d for _s, d, _m in self._jun()]
                 if e.saki in mina:
                     return self._zentai(mina.index(e.saki))
+                # ■ 飛び先が**節の名前**のこともある（2026-11-26 実測）
+                #   `AURIFL1-NEXTREAD-RTN SECTION.` の中から
+                #   `GO TO AURIFL1-NEXTREAD-RTN`（自分の節の先頭へ戻る）と
+                #   書く形。段落名だけ探していたので外へ抜けていた
+                #   （B10222PP）。
+                if e.saki == na:
+                    i = 0; continue
+                k = self._setsu_saki(e.saki)
+                if k is not None:
+                    return self._zentai(k)
                 raise
             i += 1
 
@@ -546,8 +655,18 @@ class Pgm:
             except _Tobu as e:
                 if e.saki in na:
                     i = na.index(e.saki); continue
+                k = self._setsu_saki(e.saki)
+                if k is not None:
+                    i = k; continue
                 raise
             i += 1
+
+    def _setsu_saki(self, saki):
+        """飛び先が**節の名前**なら、その節の最初の段落の位置を返す。"""
+        for k, (sna, _d, _m) in enumerate(self._jun()):
+            if sna == saki:
+                return k
+        return None
 
     def _thru(self, kara, made):
         """PERFORM 〜 THRU 〜。
@@ -648,6 +767,25 @@ class Pgm:
         for f, d in self.FAIRU.items():
             if (d.get('ronri') or '').upper().startswith(na.upper()[:4]):
                 return f
+        # ■ 接頭辞の 01 がちょうど1つなら、そのファイルとみなす（2026-11-26）
+        #   原文は `WRITE １３－部所出力順レコード` と**コピー原文に書かれた
+        #   日本語の 01 名**で書く。コピー原文は手元に無く、定義体にも
+        #   見出しが入っていないので、この綴りはどこからも起こせない
+        #   （B30005PB・NOUJU09S）。
+        #   _rec_sagasu（項目を引くとき）と同じ縛りで安全側にする。
+        #     ・**レコードを指す綴り**に限る（レコード／REC／FD で終わる）
+        #     ・その接頭辞の 01 が**ちょうど1つ**のときだけ
+        if re.search(r'(レコード.{0,3}|REC|FD)$', na):
+            for sep in ('-', '\uff0d'):
+                if sep not in na:
+                    continue
+                moto = na.split(sep, 1)[0]
+                atari = [k for k in self.ryoiki
+                         if k.split('-', 1)[0] == moto
+                         or k.split('\uff0d', 1)[0] == moto]
+                if len(atari) == 1 and atari[0] in self.FD_REC:
+                    return self.FD_REC[atari[0]]
+                break
         return na
 
     @staticmethod
@@ -664,16 +802,28 @@ class Pgm:
             return [(c, None)]
         if c in kata:
             return [(c, None)]
-        bu = _GUN_JA_KAGI.get(c)
+        # 決め打ちの表 → 無ければ**定義体の集団項目**（2026-11-26）
+        bu = _GUN_JA_KAGI.get(c) or _fdef_gun(hyo, db).get(c)
         if not bu or not all(b in kata for b in bu):
             return [(c, None)]
-        # 値を切り分けるので、**長さが一意に決まる文字の列だけ**開く。
+        # 値を切り分けるので、**長さが一意に決まる列だけ**開く。
+        #   文字  char(n)/nchar(n) … n 文字
+        #   数字  numeric(d,0)     … d 桁（小数があるものは開かない）
+        # ＣＣＡＬＭＬ１ の `RECORD KEY IS YMD`（年4＋月2＋日2）がこれ。
+        # 数字は str で切ったあと int に戻す（列が数のままなので、
+        # 文字で渡すと SQL が別物として扱い、黙って0件になる）。
         naga = []
         for b in bu:
-            mm = re.match(r'n?char\((\d+)\)', str(kata[b]))
-            if not mm:
-                return [(c, None)]         # 開かない（ここで止まって人が見る）
-            naga.append((b, int(mm.group(1))))
+            k2 = str(kata[b])
+            mm = re.match(r'n?char\((\d+)\)', k2)
+            if mm:
+                naga.append((b, int(mm.group(1)), False))
+                continue
+            mm = re.match(r'(?:numeric|decimal)\((\d+),\s*0\)', k2)
+            if mm:
+                naga.append((b, int(mm.group(1)), True))
+                continue
+            return [(c, None)]         # 開かない（ここで止まって人が見る）
         return naga
 
     @staticmethod
@@ -721,10 +871,23 @@ class Pgm:
             if len(hira) == 1:
                 atai.append(v)
                 continue
-            mo = v if isinstance(v, str) else str(v)
+            keta = sum(x[1] for x in hira)
+            if isinstance(v, str):
+                mo = v
+            else:
+                # 数をまとめて入れた集団項目（`MOVE WK-DATE TO YMD`）は
+                # **桁いっぱいまで0で埋めて**から切る。20261126 → 2026/11/26
+                mo = str(v).split('.')[0].rjust(keta, '0')
             i = 0
-            for _c, n in hira:
-                atai.append(mo[i:i+n])
+            for x in hira:
+                n = x[1]
+                kire = mo[i:i+n]
+                if len(x) > 2 and x[2]:
+                    try:
+                        kire = int(kire or 0)
+                    except ValueError:
+                        pass
+                atai.append(kire)
                 i += n
         return atai
 
@@ -734,6 +897,15 @@ class Pgm:
         if fa is None:
             st = self._machi_yomu(f)
             if st is not None:
+                # ■ ＦＩＬＥ ＳＴＡＴＵＳ を書いてから返す（2026-11-26 実測）
+                #   表を持たないファイル（ＶＬＤ・作業ファイル）の READ は
+                #   ここで返っていたが、**状態を書いていなかった**ので
+                #   原文の `EVALUATE U10-STATUS` がどちらにも当たらず、
+                #   `PERFORM UNTIL … END-FLG = "1"` が終わらなかった
+                #   （B10200PP。ＳＱＬを1本も出さずに回り続けていた）。
+                #   `hiraku`／`tojiru` で同じ抜けを直したのと同じ形。
+                self.f_jotai[f] = st
+                self._jotai_kaku(f, st)
                 return st
             raise Mikansei('READ %s（表が無い）' % f, 0)
         # ■ ACCESS MODE IS SEQUENTIAL の索引ファイルも順読み（2026-11-25）
@@ -899,6 +1071,65 @@ class Pgm:
                 return c
         return None
 
+    def _rec_toru_01(self, f):
+        """接頭辞の無いファイルの書き先を、**その 01 レコードから**集める。
+
+           ■ なぜ要るか（2026-11-26 実測）
+             `FD C10020S1. COPY C10020S1 OF XFDLIB.`（JOINING なし）だと
+             項目に接頭辞が付かないので、接頭辞で集める従来のやり方では
+             **1列も集まらず** `INSERT INTO C10020S1 () VALUES ()` になり
+             「near ")": syntax error」で止まっていた（C10020PB）。
+             以前は表が無く別の道を通っていたので表に出なかった。
+           ■ どう集めるか
+             01 レコードには**ファイル名の別名**が入っている（kumitate の
+             `_rec_betsumei` が必ず足す）。それでレコードを特定し、
+             その中の**型のある項目で、かつその表の列にあるもの**だけ採る。
+             値は `oya=` でレコード名を指定して引く。同じ名前の列
+             （SEIBAN など）が他のファイルにもあるので、指定しないと
+             別のレコードの値を書いてしまう。
+        """
+        fa = self.f.get(f)
+        aru = None
+        if fa is not None and getattr(fa, 'db', None) is not None:
+            try:
+                aru = {c[0] for c in fa.db.TABLES[fa.hyo]['cols']}
+            except Exception:
+                aru = None
+        for rna, r in self.ryoiki.items():
+            if f not in r.hyo:
+                continue
+            d = {}
+            for na, k in r.hyo.items():
+                if not k.kata:
+                    continue
+                # 項目名には接頭辞が付いていることがある（`１３-SOSICD`）。
+                # 列名はそのままなので、**接頭辞を外した形も試す**。
+                kouho = [na]
+                for sep in ('-', '\uff0d'):
+                    if sep in na:
+                        kouho.append(na.split(sep, 1)[1])
+                        break
+                for retsu in kouho:
+                    if k.occurs:
+                        tsuketa = False
+                        for i in range(k.occurs):
+                            for nm in ('%s_%d' % (retsu.ljust(6, '_')
+                                                  if len(retsu) < 6 else retsu,
+                                                  i + 1),
+                                       '%s_%d' % (retsu, i + 1)):
+                                if aru is None or nm in aru:
+                                    d[nm] = self.V(na, kai=i, oya=rna)
+                                    tsuketa = True
+                        if tsuketa:
+                            break
+                    elif aru is None or retsu in aru:
+                        d[retsu] = self.V(na, oya=rna)
+                        break
+            d.pop('STSCD', None)
+            if d:
+                return d
+        return {}
+
     def _rec_toru(self, f):
         """レコードの項目を {列名: 値} にする。
 
@@ -910,7 +1141,8 @@ class Pgm:
         s = self._settou(f)
         d = {}
         if not s:
-            return d
+            # 接頭辞（JOINING）の無いファイルは、**その 01 レコードから**集める。
+            return self._rec_toru_01(f)
         fa = self.f.get(f)
         aru = None
         if fa is not None and getattr(fa, 'db', None) is not None:
