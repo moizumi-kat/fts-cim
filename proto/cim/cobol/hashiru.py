@@ -1194,6 +1194,36 @@ class Pgm:
     _YONDA_CLS = {}
     _FUKASA = 0
 
+    _PGMID = None
+
+    @staticmethod
+    def _pgmid_hiku(na):
+        """ＰＲＯＧＲＡＭ-ＩＤ → 原文のファイル。無ければ None。
+
+           857本を1回だけ走査して索引を作る（2回目からは覚えている）。
+        """
+        if Pgm._PGMID is None:
+            import os, pathlib as _p, re as _re
+            Pgm._PGMID = {}
+            ne = _p.Path(__file__).resolve().parent.parent.parent.parent
+            moto = None
+            if os.environ.get('FTSCIM_SRC'):
+                moto = _p.Path(os.environ['FTSCIM_SRC'])
+            for m in (moto, ne / 'cim' / 'utf8', ne.parent / 'cim' / 'utf8'):
+                if m and m.exists():
+                    moto = m
+                    break
+            if moto and moto.exists():
+                for x in sorted(moto.glob('*.COB')):
+                    try:
+                        s = x.read_text(encoding='utf-8', errors='replace')
+                    except Exception:
+                        continue
+                    mm = _re.search(r'PROGRAM-ID[.\s]+([A-Z0-9#@$-]+)', s, _re.I)
+                    if mm:
+                        Pgm._PGMID.setdefault(mm.group(1).upper(), x)
+        return Pgm._PGMID.get(str(na).strip().upper())
+
     @staticmethod
     def _yobu_kumu(na):
         """CALL の相手の原文を写して、クラスを返す。無ければ None。
@@ -1214,9 +1244,22 @@ class Pgm:
                   ne.parent / 'cim' / 'utf8' / ('%s.COB' % na)]
         f = next((x for x in kouho if x.exists()), None)
         if f is None:
+            # ■ ファイル名と ＰＲＯＧＲＡＭ-ＩＤ が違う（2026-11-27 実測）
+            #   `BANKIN1S.COB` の中身は `PROGRAM-ID. BANKIN1O.`。
+            #   ＣＬ も ＣＯＢＯＬ も **ＰＲＯＧＲＡＭ-ＩＤ** で呼ぶので、
+            #   ファイル名で探すと見つからない。857本中**192本**が該当。
+            #   ＡＳＰ の決まり（原文の名前と呼び名が別）。
+            f = Pgm._pgmid_hiku(na)
+        if f is None:
             Pgm._YONDA_CLS[na] = None
             return None
         try:
+            # 写し取りの道具（cob2py）の置き場を、呼ぶ側に頼らず自分で通す
+            import sys as _sys
+            for _b in (ne / 'fts-cim-repo' / 'bin',
+                       ne.parent / 'fts-cim-repo' / 'bin'):
+                if _b.exists() and str(_b) not in _sys.path:
+                    _sys.path.insert(0, str(_b))
             from cob2py import kumitate
             honbun, _d = kumitate.kumu(str(f))
             m = _t.ModuleType(na)
