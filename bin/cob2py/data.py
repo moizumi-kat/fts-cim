@@ -481,7 +481,7 @@ def _gamen_ko_kuri(teigi, ko, kuri, kata=None, rec_na=None, settou=''):
             _ko_betsumei(oya, g, hoka)
         naga = max(naga, d.ichi + d.naga)
     oya.naga = naga
-    return oya
+    return seigyo_soto_naosu(oya)
 
 
 def _ko_betsumei(oya, g, na2):
@@ -502,6 +502,43 @@ def _ko_betsumei(oya, g, na2):
     oya.ko.append(g2)
 
 
+def seigyo_soto_naosu(oya):
+    """レコードの外に置いた制御部へ、実際の位置を割り当てる（2026-11-27）。
+
+       先頭すぎて 5バイトの制御部が入らない項目のぶん。
+       **レコードの本来のバイトは1つも動かさず**、領域の末尾に足す。
+       制御部は表示の見た目（色・カーソル）を決めるだけでデータではない
+       ので、ここに置いても計算の答えは変わらない。
+       これが無いと原文の `EDIT-COLOR OF 項目` が引けず止まる。
+    """
+    if oya is None:
+        return oya
+    # ■ 再帰で書くと落ちる（2026-11-27 実測）
+    #   項目の木は別名づけで同じ枝を共有することがあり、たどり直しで
+    #   深くなって RecursionError になった（32本が写せなくなった）。
+    #   一度見た枝は id で覚えて、**繰り返し**でたどる。
+    soto = []
+    mita = set()
+    tsumi = [oya]
+    while tsumi:
+        k = tsumi.pop()
+        if id(k) in mita:
+            continue
+        mita.add(id(k))
+        for c in getattr(k, 'ko', []) or []:
+            if getattr(c, 'seigyo_soto', False):
+                soto.append(c)
+            tsumi.append(c)
+    if not soto:
+        return oya
+    ichi = max(int(getattr(oya, 'naga', 0) or 0), 0)
+    for c in soto:
+        c.ichi = ichi
+        ichi += 1
+    oya.naga = ichi
+    return oya
+
+
 def _gamen_ko_1(na, k, kata, kai, dan, oyako):
     """画面・帳票の項目ひとつ（制御部5バイト＋データ）を作る。
 
@@ -519,6 +556,22 @@ def _gamen_ko_1(na, k, kata, kai, dan, oyako):
             c = Ko(5, sn + ' OF ' + na)
             c.kata = 'X'; c.keta = 1; c.naga = 1; c.ichi = moto + j
             c.occurs = kai; c.dan = list(dan); c.oya = g
+            g.ko.append(c)
+    else:
+        # ■ 先頭すぎて制御部が入らない項目（2026-11-27 実測）
+        #   レコードの中に 5バイト置く場所が無い。それでも原文は
+        #   `MOVE … TO EDIT-COLOR OF 項目` と書くので、名前が引けないと
+        #   「知らない項目 EDIT-COLOR」で止まる（ＣＬ経由で20回）。
+        #   制御部は**表示の見た目を決めるだけ**でデータではないので、
+        #   レコードの外（領域の末尾）に置いて名前だけ引けるようにする。
+        #   レコードのバイトは1つも動かさないので、データは変わらない。
+        soto = oyako.naga if getattr(oyako, 'naga', 0) else 0
+        for j, sn in enumerate(SEIGYO):
+            c = Ko(5, sn + ' OF ' + na)
+            c.kata = 'X'; c.keta = 1; c.naga = 1
+            c.ichi = -1 - j          # あとで領域の外へ置き直す印
+            c.occurs = 0; c.dan = []; c.oya = g
+            c.seigyo_soto = True
             g.ko.append(c)
     d = Ko(5, na)
     d.kata = (kata or {}).get(na, 'X')
@@ -639,7 +692,7 @@ def _gamen_ko_kozo(teigi, kata=None, rec_na=None, settou=''):
             n = x.ichi + (x.occurs - 1) * x.dan[-1] + x.naga
         owari = max(owari, n)
     oya.naga = owari
-    return oya
+    return seigyo_soto_naosu(oya)
 
 
 def gamen_ko(teigi, namae, kata=None, rec_na=None, settou=''):
@@ -709,7 +762,7 @@ def gamen_ko(teigi, namae, kata=None, rec_na=None, settou=''):
         if hoka != na:
             _ko_betsumei(oya, g, hoka)
     oya.naga = ichi
-    return oya
+    return seigyo_soto_naosu(oya)
 
 
 # ── FD のレコード（COPY 〜 OF XFDLIB）────────────────
@@ -1030,7 +1083,7 @@ def fd_ko(settou, cols, na=None, kuri=None, gun=None):
             oya.ko.append(g)
     _gun_teigitai(oya, settou, gun, ichi_hyo)
     oya.naga = ichi
-    return oya
+    return seigyo_soto_naosu(oya)
 
 
 def fd_rec(go, hajime, owari):

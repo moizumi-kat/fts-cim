@@ -67,6 +67,7 @@ def main():
     matome = collections.Counter()
     tsukutte_nai = collections.Counter()
     yobi = collections.Counter()
+    warui = collections.Counter()
     for na in hon:
         kekka, log = hitotsu(na, BYOU)
         matome[kekka.split(':')[0]] += 1
@@ -75,6 +76,10 @@ def main():
                 tsukutte_nai[s.split('（')[0]] += 1
             if s.startswith('ＣＡＬＬ'):
                 yobi[s.split('→')[-1].strip()] += 1
+                # 写し取れていない呼び先は、**プログラム名ごと**に数える
+                # （どれを直せばよいか分かるようにするため）
+                if '写し取れていない' in s or '原文が無い' in s:
+                    warui[s] += 1
         if len(hon) <= 5:
             print('=== %s … %s' % (na, kekka))
             for c, g, s in log:
@@ -87,6 +92,11 @@ def main():
         print('■ ＣＡＬＬ の結果（多い順）')
         for k, v in yobi.most_common(10):
             print('   %-40s %d回' % (k[:40], v))
+        if warui:
+            print()
+            print('■ 呼び先で止まったもの（プログラム名つき）')
+            for k, v in warui.most_common(20):
+                print('   %-60s %d回' % (k[:60], v))
         if tsukutte_nai:
             print()
             print('■ まだ作っていない命令が出たもの')

@@ -405,11 +405,26 @@ class Pgm:
         h = Pgm._ronri_hyo()
         if ronri in h:
             return h[ronri]
+        ate = None
         if len(ronri) >= 3 and ronri[-3] in 'FML' and ronri[-2:].isdigit():
-            return ronri[:-3] + ('FP' if ronri[-3] == 'F' else 'MP')
-        if ronri.endswith(('FL1', 'ML1', 'ML3')):
-            return ronri[:-3] + ('FP' if ronri[-3] == 'F' else 'MP')
-        return ronri
+            ate = ronri[:-3] + ('FP' if ronri[-3] == 'F' else 'MP')
+        elif ronri.endswith(('FL1', 'ML1', 'ML3')):
+            ate = ronri[:-3] + ('FP' if ronri[-3] == 'F' else 'MP')
+        # ■ **実在する表を優先する**（2026-11-27 実測）
+        #   名前の形から当てる書き方（WSGRFL1 → WSGRFP）は、当てた先が
+        #   表に無いことがある。そのとき**論理名そのものが表にある**なら
+        #   そちらが正しい（WSGRFL1 は定義体をいただいて表にした作業
+        #   ファイル）。当てた名前を優先していたため「表が無い」で
+        #   止まっていた（WSCK01CF）。
+        try:
+            from ..schema_gen import TABLES
+        except Exception:
+            TABLES = {}
+        if ate and ate in TABLES:
+            return ate
+        if ronri in TABLES:
+            return ronri
+        return ate or ronri
 
     _RONRI_HYO = None
 
@@ -463,10 +478,36 @@ class Pgm:
                     return r, r.hyo[na]
         t = self.hyo.get(na)
         if t is None:
+            t = self._seigyo_sagasu(na, oya)
+        if t is None:
             t = self._rec_sagasu(na)
         if t is None:
             raise Mikansei('知らない項目 %s' % na, 0)
         return t
+
+    def _seigyo_sagasu(self, na, oya):
+        """`EDIT-COLOR OF 処理区分` の修飾が**項目名の一部**のときに探す。
+
+           ■ なぜ要るか（2026-11-27 実測）
+             原文は `MOVE "R" TO EDIT-COLOR OF 処理区分` と書くが、
+             画面定義体のその項目の名前は **明細処理区分**（A10060D1 の
+             R001）。原文は後ろの一部だけで修飾している。
+             そのままでは引けず「知らない項目 EDIT-COLOR」で止まり、
+             ＣＬ経由で20回 止まっていた。
+           ■ 安全側（方針1-3）
+             **制御部を持つ項目**（＝画面の項目）だけを対象に、
+             名前が `oya` で終わるものを探す。**ちょうど1つ**のときだけ
+             結びつけ、複数あれば結びつけない（取り違えると別の項目の
+             色を変えることになる）。
+        """
+        if not oya or not str(na).startswith('EDIT-'):
+            return None
+        sue = ' OF ' + str(oya)
+        atari = [k for k in self.hyo
+                 if k.startswith(str(na) + ' OF ') and k.endswith(oya)]
+        if len(atari) == 1:
+            return self.hyo[atari[0]]
+        return None
 
     def _rec_sagasu(self, na):
         """`接頭辞－…レコード` を、そのファイルの 01 レコードとみなす。
