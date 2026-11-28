@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}製番別実行予算集計 照会{% endblock %}
+{% block main %}
+<div class="crumb">Ｇ：製番別実行予算集計　照会　製番 {{ seiban }}
+  {% if back %}<a class="back" href="{{ back }}">← 一覧へ戻り（ＰＦ５）</a>{% endif %}
+  <a class="back" href="/nippou?a={{ 1 if adv else 0 }}">← 日報へ（ＰＦ４）</a></div>
+<div class="note2">Ｇは、<b>物件検討ファイルに該当製番のレコードがあるか</b>で遷移が分かれます
+  （あり → 検討物件照会／なし → 製番別実行予算集計照会）。この製番は
+  <b>{{ 'あり' if has_bukken else 'なし' }}</b>でした（データベースを引いた結果）。</div>
+{% if not d %}
+  <div class="note2">製番 {{ seiban }} の実行予算は、このプロトタイプにはまだ投入していません。
+    現物のサンプルをいただいているのは <b>6-11071</b> です。
+    <a href="/go/G/6-11071?a={{ 1 if adv else 0 }}">6-11071 を見る</a></div>
+{% else %}
+{% if d and d.machi %}<div class="note2">{{ d.machi }}</div>{% endif %}
+<div class="card rep">
+  <div class="scr-h">製番（ {{ d.seiban }} ）　製番別実行予算集計　照会</div>
+  <div class="as">（ {{ d.kenmei }} ）　担当者： {{ d.tanto }}　　（単位：千円）</div>
+  {{ m.kvg([('受注先',d.ukesaki),('受注金額',m.yen(d.jutyu_gaku)),('受注率',m.pct(d.ritsu)),
+            ('予算差額',m.yen(d.yosan_sagaku)),('実績差額',m.yen(d.jisseki_sagaku)),
+            ('納　期',d.nouki),('仕　様',d.siyo)]) }}
+  <div class="two">
+    <div><div class="scroll"><table>
+      <thead><tr><th>原価計算項目</th><th class="n">総原価</th><th class="n">実行予算</th>
+        <th class="n">実績額</th><th class="n">外注費</th></tr></thead>
+      <tbody>{% for r in d.meisai %}
+        <tr><td>{{ r.komoku }}</td><td class="n">{{ r.sougenka }}</td><td class="n">{{ r.jikkou }}</td>
+          <td class="n">{{ r.jisseki }}</td><td class="n">{{ r.gaichu }}</td></tr>
+      {% endfor %}</tbody></table></div></div>
+    <div><div class="sec2">面　数</div><table><tbody>{% for r in d.mensu %}
+      <tr><td>{{ r.syubetsu }}</td><td class="n">{{ r.su if r.su is not none else '' }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  </div>
+  {{ m.pf(['ＰＦ９：再','ＰＦ１０：終','ＰＦ４：日報','ＰＦ５：一覧','ＰＦ７：受票','ＰＦ８：進']) }}
+</div>
+{% endif %}
+{% endblock %}

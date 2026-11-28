@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}受注票 照会{% endblock %}
+{% block main %}
+<div class="crumb">受注票　照会　製番 {{ seiban }}
+  {% if back %}<a class="back" href="{{ back }}">← 一覧へ戻り（ＰＦ５）</a>{% endif %}
+  <a class="back" href="/nippou?a={{ 1 if adv else 0 }}">← 日報へ（ＰＦ６）</a></div>
+{% if not d %}
+  <div class="note2">製番 {{ seiban }} の受注票は、このプロトタイプにはまだ投入していません。
+    現物のサンプルをいただいているのは <b>6-11071</b> です。
+    <a href="/jutyuhyo/6-11071?a={{ 1 if adv else 0 }}">6-11071 を見る</a></div>
+{% else %}
+{% if d and d.machi %}<div class="note2">{{ d.machi }}</div>{% endif %}
+<div class="card rep">
+  <div class="scr-h">製番（ {{ d.seiban }} ）　　受注票　照会</div>
+  <div class="as">受注金額（ {{ m.yen(d.jutyu_gaku) }} 円 ）　　（明細金額単位：千円）</div>
+  <div class="scroll"><table>
+    <thead><tr><th>発行日</th><th>伝票区分</th><th>取消</th><th>追加</th><th>変更</th>
+      <th class="n">受注率</th><th class="n">立会検査日</th><th class="n">最終納期</th></tr></thead>
+    <tbody><tr><td>{{ d.hakko_bi }}</td><td>{{ d.denpyo_kubun }}</td><td>{{ d.torikeshi }}</td>
+      <td>{{ d.tsuika }}</td><td>{{ d.henko }}</td><td class="n">{{ m.pct(d.ritsu) }} ％</td>
+      <td class="n">{{ d.tachiai }}</td><td class="n">{{ d.saishu_nouki }}</td></tr></tbody></table></div>
+  {{ m.kvg([('施　主',d.sesyu),('設計先',d.sekkeisaki),('受注先',d.ukesaki),('建設業者',d.kensetsu),
+            ('件　名',d.kenmei),('施行者銘板名',d.meiban),('施主大分類',d.sesyu_dai),('仕様１',d.siyo1),
+            ('仕様２',d.siyo2),('部品メーカー名',d.maker),('担当者',d.tanto),('見積No.',d.mitsumori_no)]) }}
+  <div class="scroll"><table>
+    <thead><tr><th>品</th><th>区分</th><th>項目</th><th>品　　名</th><th class="n">数量</th><th>単位</th>
+      <th class="n">金　額</th><th class="n">増減額</th><th class="n">先出</th><th class="n">完成</th>
+      <th class="n">出図</th><th class="n">売上</th></tr></thead>
+    <tbody>{% for r in d.meisai %}
+      <tr><td>{{ r.hin }}</td><td>{{ r.kubun }}</td><td>{{ r.komoku }}</td><td>{{ r.hinmei }}</td>
+        <td class="n">{{ r.suryo }}</td><td>{{ r.tani }}</td><td class="n">{{ m.yen(r.gaku) }}</td>
+        <td class="n">{{ m.yen(r.zogen) }}</td><td class="n">{{ r.sakide }}</td><td class="n">{{ r.kansei }}</td>
+        <td class="n">{{ r.syutsuzu }}</td><td class="n">{{ r.uriage }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {{ m.pf(['ＰＦ１：次画面','ＰＦ２：前画面','ＰＦ１１：先頭','ＰＦ１０：終了','ＰＦ９：製番指定','ＰＦ５：一覧へ戻り','ＰＦ６：日報へ']) }}
+</div>
+{% endif %}
+{% endblock %}

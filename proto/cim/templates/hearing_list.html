@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}聞き取り 一覧{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>聞き取り　一覧</h2>
+  <div class="path">聞いた工程 {{ sm|length }} / {{ total }}　|　記録 {{ rows|length }}件</div>
+</div>
+<form class="card" method="get">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:12.5px">
+    <label>大分類
+      <select name="dai"><option value=""></option>
+        {% for d in dai_list %}<option value="{{ d }}" {{ 'selected' if d==dai }}>{{ d }}</option>{% endfor %}
+      </select></label>
+    <label>判定
+      <select name="hantei"><option value=""></option>
+        {% for h in hantei_list %}{% if h %}<option value="{{ h }}" {{ 'selected' if h==hantei }}>{{ h }}</option>{% endif %}{% endfor %}
+      </select></label>
+    <label>ことば <input name="word" value="{{ word or '' }}"></label>
+    <button class="go" type="submit">絞り込む</button>
+    <a class="pfk" href="/hearing.csv?dai={{ dai }}&hantei={{ hantei }}&word={{ word }}">CSVで取り出す</a>
+  </div>
+</form>
+
+<div class="card">
+  <div class="sec">工程ごとの進み具合</div>
+  <div class="scroll"><table>
+    <thead><tr><th>No</th><th>大分類</th><th>中分類</th><th>工程</th><th class="n">件数</th>
+      <th>最終</th><th>判定</th><th></th></tr></thead>
+    <tbody>{% for r in sm %}
+      <tr><td>{{ r.koutei_no }}</td><td>{{ r.dai }}</td><td>{{ r.chu }}</td><td>{{ r.koutei_nm }}</td>
+        <td class="n">{{ r.ken }}</td><td>{{ r.saishu }}</td><td>{{ r.hantei }}</td>
+        <td><a class="pfk" href="/hearing/{{ r.koutei_no }}">開く</a></td></tr>
+    {% endfor %}</tbody></table></div>
+  {% if not sm %}<div class="empty">まだ記録がありません。左のメニューから工程を開いて、
+    右下の「聞き取り」から記録してください。</div>{% endif %}
+</div>
+
+{% if rows %}
+<div class="card">
+  <div class="sec">記録（{{ rows|length }}件）</div>
+  <div class="scroll"><table>
+    <thead><tr><th>No</th><th>工程</th><th>日</th><th>部署</th><th>お名前</th>
+      <th>設問</th><th>答え</th><th>判定</th><th>メモ</th></tr></thead>
+    <tbody>{% for r in rows %}
+      <tr><td>{{ r.koutei_no }}</td><td>{{ r.koutei_nm }}</td><td>{{ r.kiki_bi }}</td>
+        <td>{{ r.bumon }}</td><td>{{ r.hito }}</td><td>{{ r.shitsumon }}</td><td>{{ r.kotae }}</td>
+        <td>{{ r.hantei }}</td><td>{{ r.memo }}</td></tr>
+    {% endfor %}</tbody></table></div>
+</div>
+{% endif %}
+{% endblock %}

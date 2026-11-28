@@ -13,7 +13,7 @@
 import csv, io, datetime
 from flask import (Flask, render_template, request, redirect, url_for, abort,
                    Response, make_response)
-from . import repo, koutei, hearing, jikkou
+from . import repo, koutei, hearing, jikkou, master
 from .db import connect
 
 app = Flask(__name__)
@@ -120,6 +120,59 @@ def ugokasu_page(no, pgm=None):
 
 
 # ------------------------------------------------------------------ 営業日報
+# ------------------------------- マスタ管理（ＣＡＳＥＴ仕様書から起こした分・2026-11-28）
+#   村上様ご回答「上記は全て以前に提供したCASET仕様書をもとに作成してください。」
+#   ＣＯＢＯＬ の原文が無いＭ系（マスタ管理サブシステム）を仕様書から作った分。
+@app.route('/master/<int:no>')
+def master_page(no):
+    if not master.aru(no): abort(404)
+    q = request.args.get('q', '').strip()
+    con = connect()
+    try:
+        r = master.ichiran(con, no, joken=q or None)
+    finally:
+        con.close()
+    if r is None: abort(404)
+    return render_template('master.html', j=r['j'], retsu=r['retsu'], gyo=r['gyo'],
+                           zenken=r['zenken'], kensaku=q, **_nav(no))
+
+
+@app.route('/master/<int:no>/mente', methods=['GET', 'POST'])
+def master_mente(no):
+    if not master.aru(no): abort(404)
+    j = master.joho(no)
+    if not j or j.get('ichiran'): abort(404)
+    kb = (request.form.get('kubun') or request.args.get('kubun') or '1').strip()
+    kagi = {c: (request.form.get('k_' + c) or '').strip() for c in j['pk']}
+    moto = {c: (request.form.get('m_' + c) or '').strip() for c in j['pk']}
+    atai = {c: request.form.get('v_' + c) for c in j['cols']
+            if request.form.get('v_' + c) is not None}
+    ko = [c for c in j['cols'] if c not in j['pk'] and c not in master.KYOTU]
+    rec, ok, msg = {}, True, ''
+    con = connect()
+    try:
+        if request.method == 'POST' and request.form.get('go') == 'jikkou':
+            ok, msg = master.kakikomi(con, no, kb, kagi, atai=atai,
+                                      moto_kagi=moto if kb == '4' else None)
+            if ok and kb != '3':
+                rec = master.hitotsu(con, no, kagi) or {}
+        else:
+            if any(kagi.values()):
+                rec = master.hitotsu(con, no, kagi) or {}
+                if not rec and kb in ('2', '3'):
+                    ok, msg = False, master.ERR['ERR003'] + '（ERR003）'
+                elif rec and kb in ('1', '4'):
+                    ok, msg = False, master.ERR['ERR002'] + '（ERR002）'
+                elif rec:
+                    msg = '呼び出しました'
+            if atai:
+                rec = dict(rec); rec.update({k: v for k, v in atai.items() if v != ''})
+    finally:
+        con.close()
+    return render_template('master_mente.html', j=j, kb=kb, kubun=master.KUBUN,
+                           kagi=kagi, moto=moto, ko=ko, rec=rec, ok=ok, msg=msg, **_nav(no))
+
+
 @app.route('/nippou')
 def nippou():
     adv = request.args.get('a') == '1'

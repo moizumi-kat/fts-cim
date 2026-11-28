@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}営業用 工程進捗 照会{% endblock %}
+{% block main %}
+<div class="crumb">営業用　工程進捗　照会　製番 {{ seiban }}
+  {% if back %}<a class="back" href="{{ back }}">← 一覧へ戻り（ＰＦ５）</a>{% endif %}
+  <a class="back" href="/nippou?a={{ 1 if adv else 0 }}">← 日報へ（ＰＦ４）</a></div>
+{% if not d %}
+  <div class="note2">製番 {{ seiban }} の工程進捗は、このプロトタイプにはまだ投入していません。
+    現物のサンプルをいただいているのは <b>6-11071</b> です。
+    <a href="/go/S/6-11071?a={{ 1 if adv else 0 }}">6-11071 を見る</a></div>
+{% else %}
+<div class="card rep">
+  <div class="scr-h">営業用　工程進捗　照会</div>
+  <div class="as">製番： {{ seiban }}　件名： {{ kenmei }}</div>
+  <div class="scroll"><table>
+    <thead><tr><th>項目</th><th>承2<br>指示</th><th>承2<br>作成</th><th>承2<br>変指</th>
+      <th>製図<br>指示</th><th>製図<br>作成</th><th>製図<br>変指</th><th>製図<br>変更</th>
+      <th>板金<br>作業</th><th>板金<br>変更</th><th>色指</th><th class="n">組立<br>作業</th>
+      <th class="n">検査<br>出荷</th><th class="n">完成<br>納期</th></tr></thead>
+    <tbody>{% for r in d %}
+      <tr><td>{{ r.komoku }}</td><td>{{ r.sj2_shiji }}</td><td>{{ r.sj2_sakusei }}</td><td>{{ r.sj2_henshi }}</td>
+        <td>{{ r.sz_shiji }}</td><td>{{ r.sz_sakusei }}</td><td>{{ r.sz_henshi }}</td><td>{{ r.sz_henko }}</td>
+        <td>{{ r.bk_sagyo }}</td><td>{{ r.bk_henko }}</td><td>{{ r.iro }}</td>
+        <td class="n">{{ r.kumitate }}</td><td class="n">{{ r.kensa }}</td><td class="n">{{ r.kansei_nouki }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {{ m.pf(['ＰＦ１：次画面','ＰＦ２：前画面','ＰＦ１１：先頭画面','ＰＦ１０：終了','ＰＦ９：再指','ＰＦ４：日報','ＰＦ５：一覧','ＰＦ６：原価','ＰＦ７：受票']) }}
+</div>
+{% endif %}
+{% endblock %}

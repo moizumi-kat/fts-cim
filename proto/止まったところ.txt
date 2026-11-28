@@ -1,0 +1,15 @@
+# 858本を動かしてみて止まったところ（全件）
+# 区分	プログラム	止まった場所と理由
+変換できない	BUTSYOR1	ValueError: PROCEDURE DIVISION がありません
+変換できない	GENSYOR1	ValueError: PROCEDURE DIVISION がありません
+変換できない	JHYSYORI	ValueError: PROCEDURE DIVISION がありません
+変換できない	JYUSYORI	ValueError: PROCEDURE DIVISION がありません
+変換できない	KETGAMEN	ValueError: PROCEDURE DIVISION がありません
+変換できない	SINSYORI	ValueError: PROCEDURE DIVISION がありません
+変換できない	SZUGAMEN	ValueError: PROCEDURE DIVISION がありません
+変換できない	URIGAMEN	ValueError: PROCEDURE DIVISION がありません
+時間切れ	AJBKSEL1	START-PROCESS が 10秒で終わらない
+時間切れ	B16100PB	START-PROCESS が 10秒で終わらない
+時間切れ	B16300PB	START-PROCESS が 10秒で終わらない
+時間切れ	D20920PB	PGM-START が 10秒で終わらない
+Mikansei	RUNCHK1	INIT-RTN … CALL XSBSSI（原文 0行）

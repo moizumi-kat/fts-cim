@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}出図 打合せ決定内容 照会{% endblock %}
+{% block main %}
+<div class="crumb">出図　打合せ決定内容　照会　製番 {{ seiban }}
+  {% if back %}<a class="back" href="{{ back }}">← 一覧へ戻り（ＰＦ９）</a>{% endif %}
+  <a class="back" href="/nippou?a={{ 1 if adv else 0 }}">← 日報へ</a></div>
+<div class="card rep">
+  <div class="scr-h">出図　打合せ決定内容　照会</div>
+  <div class="as">製番（ {{ seiban }} ）（ {{ kenmei }} ）　　{% if not d %}予定外のデータです{% endif %}</div>
+  <div class="scroll"><table>
+    <thead><tr><th>先出<br>納期</th><th>納期</th><th>状況</th><th class="n">予定金額</th>
+      <th class="n">決定<br>出荷日</th><th class="n">決定<br>出図日</th></tr></thead>
+    <tbody>{% if d %}{% for r in d %}
+      <tr><td>{{ r.sakide_nouki }}</td><td>{{ r.nouki }}</td><td>{{ r.jokyo }}</td>
+        <td class="n">{{ r.yotei_gaku }}</td><td class="n">{{ r.kettei_syukka }}</td>
+        <td class="n">{{ r.kettei_syutsuzu }}</td></tr>
+    {% endfor %}{% else %}<tr><td colspan="6">&nbsp;</td></tr>{% endif %}</tbody></table></div>
+  {% if not d %}<div class="note">打合せ決定内容が登録されていない製番です（現物サンプルも同じく明細が空＝「予定外のデータです」でした）。</div>{% endif %}
+  {{ m.pf(['ＰＦ９：明細に戻り','ＰＦ１０：終了']) }}
+</div>
+{% endblock %}

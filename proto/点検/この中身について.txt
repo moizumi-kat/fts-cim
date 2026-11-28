@@ -1,0 +1,21 @@
+ここは、開発側の点検用スクリプトです。ふだんは使いません。
+
+  tsql_check.py … アプリを動かしながら、実際に発行されたSQLを全部ひろい、
+                  SQL Server（T-SQL）として解析できるかを確かめます。
+  tsql_src.py   … ソースに書いてあるSQL文（置換パラメータ ? のまま）を
+                  取り出して、同じく T-SQL として解析できるかを確かめます。
+
+動かすには sqlglot というSQL解析ライブラリが要ります。
+
+    python -m pip install sqlglot
+    cd ..
+    python 点検\tsql_check.py
+    python 点検\tsql_src.py
+
+2026-10-13 時点の結果：
+  ・表の定義（SQL Server用）＋実行時のSQL  計249文  … すべて解析OK
+  ・ソース中のSQL 32文（? のまま）          … すべて解析OK
+  ・表名・列名と T-SQL 予約語の衝突          … なし
+
+ ※これは「構文として通る」ことの確認です。
+   実機のSQL Serverでの動作確認は、接続確認.bat で行ってください。

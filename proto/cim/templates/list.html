@@ -1,0 +1,65 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}{{ title }}{% endblock %}
+{% macro selcell(seiban) %}
+  <form action="/sel2" method="get" style="display:inline">
+    <input type="hidden" name="seiban" value="{{ seiban }}">
+    <input type="hidden" name="kind" value="{{ kind }}">
+    <input type="hidden" name="busyo" value="{{ busyo_cd }}">
+    <input type="hidden" name="a" value="{{ 1 if adv else 0 }}">
+    <input class="sel" name="op" maxlength="1" aria-label="選択">
+  </form>
+  {% for o in ops %}<a class="op" title="{{ oplbl[o] }}"
+     href="/go/{{ o }}/{{ seiban }}?kind={{ kind }}&busyo={{ busyo_cd }}&a={{ 1 if adv else 0 }}">{{ o }}</a>{% endfor %}
+{% endmacro %}
+{% block main %}
+<div class="crumb">{{ busyo_nm }}　{{ title }}
+  <a class="back" href="/nippou?a={{ 1 if adv else 0 }}">← 日報へ（ＰＦ６）</a></div>
+{% if not rows_any %}
+<div class="note2">この拠点（{{ busyo_nm }}）の明細は、いまのところ投入していません。
+  現物のサンプルをいただいているのは <b>部所11 北日本支店・2026年10月度</b> だけです。</div>
+{% endif %}
+<div class="card rep">
+  <div class="scr-h">部所コード（ {{ busyo_cd }} ）（ {{ busyo_nm }} ）　{{ title }}　　　　{{ sel_label }}</div>
+  <div class="as">検索年月日（ 2026 年 10 月度： 21 日 ～ 20 日　下段の操作指示を参照して下さい</div>
+  <div class="scroll"><table>
+  {% if kind=='J' %}
+    <thead><tr><th>製番</th><th>受注先名</th><th>件　名</th><th class="n">受注・増減</th><th>判</th>
+      <th class="n">受注率</th><th>納期と発行</th><th>増減理由</th><th>選</th></tr></thead>
+    <tbody>
+    {% for b in d.blocks %}
+      {% for r in b.rows %}
+      <tr><td>{{ r.seiban }}</td><td>{{ r.ukesaki }}</td><td>{{ r.kenmei }}</td>
+        <td class="n">{{ m.yen(r.gaku) }}</td><td>{{ r.han }}</td><td class="n">{{ m.pct(r.ritsu) }}</td>
+        <td>{{ r.nouki }}　{{ r.hakko }}</td><td>{{ r.riyu }}</td>
+        <td class="selc">{{ selcell(r.seiban) }}</td></tr>
+      {% endfor %}
+      <tr class="tot"><td></td><td></td><td>{{ busyo_nm }}</td><td class="n">{{ m.yen(b.total) }}</td>
+        <td></td><td></td><td></td><td></td><td></td></tr>
+    {% endfor %}
+      <tr class="grand"><td></td><td></td><td>{{ busyo_nm }}</td><td class="n">{{ m.yen(d.grand) }}</td>
+        <td></td><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  {% else %}
+    <thead><tr><th>製番</th><th>受注先名</th><th>件　名</th><th class="n">受注金額</th>
+      <th class="n">{{ '当月出図' if kind=='Z' else '当月売上' }}</th>
+      <th class="n">{{ '出図残額' if kind=='Z' else '売上残額' }}</th><th>最終納期</th><th>選</th></tr></thead>
+    <tbody>
+      {% for r in d.rows %}
+      <tr><td>{{ r.seiban }}</td><td>{{ r.ukesaki }}</td><td>{{ r.kenmei }}</td>
+        <td class="n">{{ m.yen(r.jutyu_gaku) }}</td><td class="n">{{ m.yen(r.tougetsu) }}</td>
+        <td class="n">{{ m.yen(r.zan) }}</td><td>{{ r.saishu_nouki }}</td>
+        <td class="selc">{{ selcell(r.seiban) }}</td></tr>
+      {% endfor %}
+      <tr class="tot"><td></td><td></td><td>{{ busyo_nm }}　　合計</td>
+        <td class="n">{{ m.yen(d.total.jutyu_gaku) }}</td><td class="n">{{ m.yen(d.total.tougetsu) }}</td>
+        <td class="n">{{ m.yen(d.total.zan) }}</td><td></td><td></td></tr>
+    </tbody>
+  {% endif %}
+  </table></div>
+  <div class="pf"><a class="pfk" href="/nippou?a={{ 1 if adv else 0 }}">ＰＦ６：日報へ</a>
+    <span class="pfk">ＰＦ７：部所指定</span><span class="pfk">ＰＦ１：次画面</span>
+    <span class="pfk">ＰＦ２：前画面</span><span class="pfk">ＰＦ１１：先頭</span><span class="pfk">ＰＦ１０：終了</span></div>
+  <div class="note">製番の行の「選」に {{ ops_help }} を入れてENTER。
+    {% if not adv %}※ J のみ。G／S／K は「営業日報（Ａ）照会」（CHK5S010）の機能です。{% endif %}</div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ j.nm }}{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>{{ j.nm }}</h2>
+  <div class="path">マスタ管理 ＞ {{ j.hyo_nm }}（{{ j.hyo }}）　|　工程No.{{ j.no }}　|　{{ j.pgm }}</div>
+  <div class="meta">
+    <span class="tag">{{ '一覧出力' if j.ichiran else '登録・更新' }}</span>
+    <span class="tag">全{{ zenken }}件</span>
+    <span class="tag">キー {{ j.pk|join('＋') }}（{{ j.kagi_moto }}）</span>
+  </div>
+  <div class="note">ＣＯＢＯＬ の原文が無いため、<b>ＣＡＳＥＴ仕様書</b>から起こした画面です（村上様ご指示 2026-11-28）。</div>
+  {% if j.yokakunin %}<div class="banner ng">{{ j.yokakunin }}</div>{% endif %}
+</div>
+
+<div class="card">
+  <form method="get" style="margin-bottom:10px">
+    <label>検索（{{ j.midashi.get(j.pk[0], j.pk[0]) if j.pk else '' }}の前方一致）
+      <input name="q" value="{{ kensaku }}" size="16"></label>
+    <button type="submit">表示</button>
+    {% if not j.ichiran %}<a class="hb main" style="margin-left:10px" href="/master/{{ j.no }}/mente">メンテナンス</a>{% endif %}
+  </form>
+  <div class="scroll">
+    <table>
+      <thead><tr>{% for c in retsu %}<th>{{ j.midashi.get(c, c) }}<div class="path">{{ c }}</div></th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for r in gyo %}
+        <tr>{% for c in retsu %}<td>{{ r[c] }}</td>{% endfor %}</tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="note">{{ gyo|length }}件を表示（全{{ zenken }}件）。列は定義体の項目名・見出しそのままです。</div>
+</div>
+{% endblock %}

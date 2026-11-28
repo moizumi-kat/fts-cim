@@ -16,6 +16,9 @@
 {% if p.noproto %}
 <div class="banner ng">この工程は、CASET仕様書が存在しないため（村上様 2026-10-09 ご確認）、今回はプロトタイプを作成しません。
   対象プログラム：{{ p.noproto }}</div>
+{% elif p.url %}
+<div class="banner">この工程は画面ができています。
+  <a class="hb main" style="margin-left:8px" href="{{ p.url }}">{{ p.nm }}をひらく</a></div>
 {% else %}
 <div class="banner">この工程はまだ画面を作っていません。下は、いまCIMから読み取れている中身です。</div>
 {% endif %}

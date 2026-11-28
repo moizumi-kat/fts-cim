@@ -1,0 +1,59 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}聞き取り｜{{ p.nm }}{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>聞き取り　{{ p.nm }}</h2>
+  <div class="path">{{ p.dai }} ＞ {{ p.chu }}　|　起動 {{ p.cl or '—' }}　|　工程No.{{ p.no }}　
+    <a href="{{ p.url or ('/koutei/%d' % p.no) }}">← この工程の画面へ戻る</a></div>
+  <div class="meta"><span class="tag">{{ p.kind }}</span>
+    {% if kensu %}<span class="tag g">記録 {{ kensu }}件</span>{% endif %}</div>
+</div>
+{% if saved %}<div class="banner ok">{{ saved }}件を記録しました。</div>{% endif %}
+<form class="card" method="post">
+  <div class="sec">聞いた相手</div>
+  <div class="kvg">
+    <div class="kvr"><span class="kvl">部署</span><span class="kvv">
+      <input name="bumon" value="{{ last.bumon or '' }}" style="width:100%" list="bumonlist"></span></div>
+    <div class="kvr"><span class="kvl">お名前</span><span class="kvv">
+      <input name="hito" value="{{ last.hito or '' }}" style="width:100%"></span></div>
+    <div class="kvr"><span class="kvl">聞いた日</span><span class="kvv">
+      <input name="kiki_bi" type="date" value="{{ last.kiki_bi or today }}"></span></div>
+  </div>
+  <datalist id="bumonlist">
+    {% for b in bumon_list %}<option value="{{ b }}">{% endfor %}
+  </datalist>
+
+  <div class="sec">聞くこと（{{ p.kind }}の工程むけ）</div>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:38%">設問</th><th>答え</th></tr></thead>
+    <tbody>{% for s in questions %}
+      <tr><td>{{ loop.index }}. {{ s }}
+            <input type="hidden" name="q{{ loop.index0 }}" value="{{ s }}"></td>
+          <td><textarea name="a{{ loop.index0 }}" rows="2" style="width:100%;font:inherit"></textarea></td></tr>
+    {% endfor %}</tbody></table></div>
+
+  <div class="sec">この工程をどうするか</div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px">
+    {% for h in hantei_list %}{% if h %}
+      <label><input type="radio" name="hantei" value="{{ h }}"> {{ h }}</label>
+    {% endif %}{% endfor %}
+  </div>
+  <div class="sec">自由メモ</div>
+  <textarea name="memo" rows="3" style="width:100%;font:inherit"
+    placeholder="その場で出た話・言葉そのまま・あとで確かめること など"></textarea>
+  <div style="margin-top:12px"><button class="go" type="submit">記録する</button>
+    <a class="back" href="/hearing" style="margin-left:10px">聞き取り一覧へ</a></div>
+</form>
+
+{% if rows %}
+<div class="card">
+  <div class="sec">これまでの記録（{{ rows|length }}件）</div>
+  <div class="scroll"><table>
+    <thead><tr><th>日</th><th>部署</th><th>お名前</th><th>設問</th><th>答え</th><th>判定</th><th>メモ</th></tr></thead>
+    <tbody>{% for r in rows %}
+      <tr><td>{{ r.kiki_bi }}</td><td>{{ r.bumon }}</td><td>{{ r.hito }}</td>
+        <td>{{ r.shitsumon }}</td><td>{{ r.kotae }}</td><td>{{ r.hantei }}</td><td>{{ r.memo }}</td></tr>
+    {% endfor %}</tbody></table></div>
+</div>
+{% endif %}
+{% endblock %}

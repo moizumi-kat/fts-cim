@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}FTS-CIM{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='cim.css') }}">
+</head><body>
+<div id="wrap">
+ <nav id="side">
+  <h1><a href="/">FTS-CIM（Python版 試作）</a>
+    <small>村上様確定 405工程／動く画面は太字</small></h1>
+  <form action="/" method="get"><input id="q" name="q" value="{{ q or '' }}"
+    placeholder="工程名・CL名で絞り込み" autocomplete="off"></form>
+  <div id="cnt">{{ cnt }}</div>
+  {% for d in tree %}
+    <div class="dai">{{ d.nm }}</div>
+    {% for c in d.chu %}
+      <div class="chu">{{ c.nm }}</div>
+      {% for p in c['rows'] %}
+        <a class="it{% if p.url %} live{% endif %}{% if cur and cur==p.no %} sel{% endif %}"
+           href="{{ p.url or ('/koutei/%d' % p.no) }}">
+          <span class="n">{{ p.o2 }}</span>
+          <span class="t">{% if p.noproto %}⊘ {% endif %}{% if done and p.no in done %}<span class="mk">聞</span>{% endif %}{{ p.nm }}</span>
+          <span class="k">{{ p.kind }}</span></a>
+      {% endfor %}
+    {% endfor %}
+  {% endfor %}
+ </nav>
+ <main id="main">{% block main %}{% endblock %}</main>
+ <div id="hbar">
+   {% if cur %}<a class="hb main" href="/hearing/{{ cur }}">この工程を聞き取り</a>{% endif %}
+   <a class="hb" href="/hearing">一覧</a>
+ </div>
+</div>
+</body></html>

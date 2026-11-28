@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}FTS-CIM Python版 試作{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>FTS-CIM　Python版 試作</h2>
+  <div class="path">村上様確定の405工程（2026-10-06 修正版）をそのまま収録。束ね・削除はしていません。</div>
+  <dl class="kv">
+    <dt>動かし方</dt><dd>Python + Flask + データベース。いまは SQLite（ファイル1個）で動いています。
+      本番の SQL Server へは <code>cim/config.py</code> の1行と <code>db.py</code> の <code>connect()</code> だけで差し替わります。</dd>
+    <dt>実物として動く画面</dt><dd>{{ st.jisso }}工程（左メニューの<b>太字</b>）。
+      営業日報照会／営業日報（Ａ）照会／営業日報マスタ（目標）メンテナンス。
+      日報からは <b>受注一覧・出図一覧・売上一覧・受注票・製番別実行予算集計・検討物件・営業用工程進捗・打合せ決定内容</b>の8画面へ遷移します。</dd>
+    <dt>テーブル</dt><dd><b>現行システムのファイルに合わせています</b>（IT部門ご要望・2026-10-14）。
+      テーブル名＝現行の物理ファイル名（NIPSYOL2 など）、列名＝現行の項目名（受注目標額 など）。
+      <a href="/tables">テーブル一覧を見る</a></dd>
+    <dt>データ</dt><dd>村上様からいただいた<b>現物の紙</b>（営業日報・サンプル画面8枚）をそのままデータベースに入れています。
+      金額の計・達成率は<b>SQLで集計</b>していて、現物と全数字が一致することを確認済みです。</dd>
+    <dt>工程数</dt><dd>{{ st.total }} 件　（帳票 {{ st.kind['帳票'] }}／登録・更新 {{ st.kind['登録・更新'] }}／照会 {{ st.kind['照会'] }}／処理 {{ st.kind['処理'] }}／運用 {{ st.kind['運用'] }}）</dd>
+    <dt>ほかの工程</dt><dd>CASET仕様書から読み取れた項目・ファイル・処理概要と、起動CLが呼ぶプログラムを表示します。
+      ⊘印の{{ st.noproto }}工程は、CASET仕様書が無いため今回は作成対象外です（村上様 2026-10-09）。</dd>
+    <dt>次にやること</dt><dd>営業（見積・受注）の画面を、実体プログラムから起こして同じやり方で足していきます。</dd>
+  </dl>
+</div>
+<div class="card">
+  <div class="sec">このプロトタイプで確かめられること</div>
+  <ul style="margin:6px 0 0 18px;padding:0;font-size:12.5px;line-height:1.9">
+    <li>ASPのファイルを<b>表（テーブル）に置き換えても、同じ画面・同じ数字が出る</b>こと</li>
+    <li>日報 → 一覧 → 明細 の<b>操作の流れ（選択欄に J／Z／U、製番行に J／G／S／K）が残せる</b>こと</li>
+    <li>Ｇの分岐（物件検討ファイルに製番があるか）のような<b>業務の判断をSQLで持てる</b>こと</li>
+    <li>登録画面（目標メンテ）が<b>実際に書き込める</b>こと</li>
+  </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% macro yen(v) %}{% if v is none or v=='' %}{% else %}{{ '{:,}'.format(v|int) }}{% endif %}{% endmacro %}
+{% macro pct(v) %}{% if v is none or v=='' %}{% else %}{{ '%.1f'|format(v) }}{% endif %}{% endmacro %}
+{% macro pf(items) %}<div class="pf">{% for x in items %}<span class="pfk">{{ x }}</span>{% endfor %}</div>{% endmacro %}
+{% macro kvg(pairs) %}<div class="kvg">{% for a,b in pairs %}
+  <div class="kvr"><span class="kvl">{{ a }}</span><span class="kvv">{{ b if b is not none else '' }}</span></div>
+{% endfor %}</div>{% endmacro %}

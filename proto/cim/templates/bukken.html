@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}検討物件照会{% endblock %}
+{% block main %}
+<div class="crumb">Ｇ：検討物件照会　製番 {{ seiban }}
+  {% if back %}<a class="back" href="{{ back }}">← 一覧へ戻り（Ｆ５）</a>{% endif %}
+  <a class="back" href="/nippou?a={{ 1 if adv else 0 }}">← 日報へ（Ｆ４）</a></div>
+<div class="note2">物件検討ファイルに製番 {{ seiban }} のレコードが<b>あった</b>ので、検討物件照会へ遷移しました。</div>
+{% if d and d.machi %}<div class="note2">{{ d.machi }}</div>{% endif %}
+<div class="card rep">
+  <div class="scr-h">製番（ {{ d.seiban }} ）　検討物件照会</div>
+  <div class="as">納期： {{ d.nouki }}　件名： {{ d.kenmei }}</div>
+  {{ m.kvg([('受注先',d.ukesaki),('管理No.',d.kanri_no),('受注金額',m.yen(d.jutyu_gaku)),
+            ('受注率',m.pct(d.ritsu)),('予算差額',m.yen(d.yosan_sagaku)),('収束差額',m.yen(d.syusoku_sagaku)),
+            ('補材費',m.yen(d.hozai)),('仕様',d.siyo),('面数',d.mensu),('検討日',d.kento_bi)]) }}
+  <div class="scroll"><table>
+    <thead><tr><th>項　目</th><th class="n">総原価</th><th class="n">実行予算額</th>
+      <th class="n">検討決定額</th><th class="n">実績額</th></tr></thead>
+    <tbody>{% for r in d.meisai %}
+      <tr><td>{{ r.komoku }}</td><td class="n">{{ r.sougenka }}</td><td class="n">{{ r.jikkou }}</td>
+        <td class="n">{{ r.kettei }}</td><td class="n">{{ r.jisseki }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  <div class="sec2">決定事項</div>
+  <div class="scroll"><table>
+    <thead><tr><th>決定日</th><th class="n">金　額</th><th class="n">（率）</th><th>内　容</th></tr></thead>
+    <tbody>{% for r in d.kettei %}
+      <tr><td>{{ r.bi }}</td><td class="n">{{ r.gaku }}</td><td class="n">{{ r.ritsu }}</td><td>{{ r.naiyo }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {{ m.pf(['Ｆ９：再指','Ｆ４：日報','Ｆ５：一覧','Ｆ７：受票','Ｆ８：進捗','Ｆ１０：終了']) }}
+</div>
+{% endblock %}

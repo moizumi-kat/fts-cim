@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}営業日報マスタ（目標）メンテナンス{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>営業日報マスタ（目標）　メンテナンス</h2>
+  <div class="path">管理 ＞ 日報・月報　|　EGNIP11S（PROGRAM-ID. EGNIP11O）　|　工程No.{{ no }}</div>
+  <div class="meta"><span class="tag">登録・更新</span><span class="tag g">Python版・データベースへ書き込みます</span></div>
+</div>
+<div class="banner">村上様 2026-10-13 ご回答（決定21）：<b>年度分の目標金額を12ヶ月で割ったひと月分の金額を、年度初めに一度だけ登録する。</b>
+  このため、この画面で入れるのは<b>年度額</b>で、ひと月分は保存時に ÷12（切り捨て）して持ちます。
+  月ごとの入れ替えはしません。</div>
+{% if saved %}<div class="banner ok">{{ saved }}件を登録しました（{{ nendo }}年度）。</div>{% endif %}
+<form class="card rep" method="post" action="/mokuhyo">
+  <div class="scr-h">年度 <input class="num" name="nendo" value="{{ nendo }}" style="width:70px"> 年度の受注目標</div>
+  <div class="as">（金額単位：千円）</div>
+  <div class="scroll"><table>
+    <thead><tr><th>部所</th><th>営業所名</th><th>営業部</th><th class="n">年度の目標金額</th>
+      <th class="n">ひと月分（自動計算）</th></tr></thead>
+    <tbody>{% for r in rows %}
+      <tr><td>{{ r.cd }}</td><td>{{ r.nm }}</td><td>{{ r.bu }}</td>
+        <td class="n"><input class="num" name="g_{{ r.cd }}" value="{{ r.nendo_gaku if r.nendo_gaku is not none else '' }}"></td>
+        <td class="n">{{ m.yen(r.tsuki_gaku) }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  <div style="margin-top:12px"><button class="go" type="submit">登録する（年度初めの1回）</button></div>
+  <div class="note">登録すると、営業日報照会の「受目標」がこのひと月分の金額になります。</div>
+</form>
+{% endblock %}

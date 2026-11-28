@@ -1,0 +1,55 @@
+{% extends "base.html" %}{% import "_macros.html" as m %}
+{% block title %}営業日報{% if adv %}（Ａ）{% endif %} 照会{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>営業日報{% if adv %}（Ａ）{% endif %}　照会</h2>
+  <div class="path">管理 ＞ 日報・月報　|　起動 {{ cl }}　|　工程No.{{ no }}</div>
+  <div class="meta"><span class="tag">照会</span>
+    <span class="tag g">Python版・データベースから表示</span></div>
+</div>
+<div class="banner ok">金額・計・達成率は <b>SQLで集計した結果</b>です（現物の紙と全数字が一致することを確認済）。
+  <b>受注率＝受注予定金額 ÷ 標準原価 ×100</b>。計は率を平均せず、
+  <b>金額と原価をそれぞれ足し込んでから割り</b>ます（茂泉様ご説明／JUHEN2CF.COB で確認）。
+  {% if not d.keisan %}いまは現物に金額・原価が出ていないため、受注率は当月受注率ファイルの値をそのまま出しています。
+  履歴ファイルがつながれば、この式で計算されます。{% endif %}</div>
+
+<div class="card rep">
+  <h3>営業日報{% if adv %}（Ａ）{% endif %}　照会</h3>
+  <div class="as">{{ d.asof }}　（金額単位：千円）</div>
+  <div class="scroll"><table>
+    <thead><tr><th>営業所名</th><th class="n">受目標</th><th class="n">受注実績</th><th class="n">達成率</th>
+      <th class="n">受注率</th><th class="n">当日受注</th><th class="n">出図実績</th><th class="n">売上実績</th>
+      <th>選</th></tr></thead>
+    <tbody>
+    {% for g in d.groups %}
+      {% for r in g.rows %}
+      <tr><td>{{ r.nm }}</td><td class="n">{{ m.yen(r.mokuhyo) }}</td><td class="n">{{ m.yen(r.jutyu) }}</td>
+        <td class="n">{{ m.pct(r.tassei) }}</td><td class="n">{{ m.pct(r.ritsu) }}</td>
+        <td class="n">{{ m.yen(r.tou_jutyu) }}</td><td class="n">{{ m.yen(r.syutsuzu) }}</td>
+        <td class="n">{{ m.yen(r.uriage) }}</td>
+        <td class="selc">
+          <form action="/sel" method="get" style="display:inline">
+            <input type="hidden" name="busyo" value="{{ r.cd }}"><input type="hidden" name="a" value="{{ 1 if adv else 0 }}">
+            <input class="sel" name="op" maxlength="1" aria-label="選択">
+          </form>
+          <a class="op" title="受注一覧" href="/list/J/{{ r.cd }}?a={{ 1 if adv else 0 }}">J</a><a
+             class="op" title="出図一覧" href="/list/Z/{{ r.cd }}?a={{ 1 if adv else 0 }}">Z</a><a
+             class="op" title="売上一覧" href="/list/U/{{ r.cd }}?a={{ 1 if adv else 0 }}">U</a>
+        </td></tr>
+      {% endfor %}
+      <tr class="tot"><td>{{ g.total.nm }}</td><td class="n">{{ m.yen(g.total.mokuhyo) }}</td>
+        <td class="n">{{ m.yen(g.total.jutyu) }}</td><td class="n">{{ m.pct(g.total.tassei) }}</td>
+        <td class="n">{{ m.pct(g.total.ritsu) }}</td><td class="n">{{ m.yen(g.total.tou_jutyu) }}</td>
+        <td class="n">{{ m.yen(g.total.syutsuzu) }}</td><td class="n">{{ m.yen(g.total.uriage) }}</td><td></td></tr>
+      <tr><td colspan="9">&nbsp;</td></tr>
+    {% endfor %}
+      <tr class="grand"><td>{{ d.grand.nm }}</td><td class="n">{{ m.yen(d.grand.mokuhyo) }}</td>
+        <td class="n">{{ m.yen(d.grand.jutyu) }}</td><td class="n">{{ m.pct(d.grand.tassei) }}</td>
+        <td class="n">{{ m.pct(d.grand.ritsu) }}</td><td class="n">{{ m.yen(d.grand.tou_jutyu) }}</td>
+        <td class="n">{{ m.yen(d.grand.syutsuzu) }}</td><td class="n">{{ m.yen(d.grand.uriage) }}</td><td></td></tr>
+    </tbody></table></div>
+  <div class="note">生産実績：{{ m.yen(d.seisan) }}　／　受注率は、当月新規登録のみ対象（他変更受注登録分含まず）。
+    「当日受注」＝受注実績額 − 受注当日累計（その日ぶん）。</div>
+  <div class="note">拠点の行の「選」に J（受注一覧）／Z（出図一覧）／U（売上一覧）を入れてENTER。ボタンでも移動できます。</div>
+</div>
+{% endblock %}

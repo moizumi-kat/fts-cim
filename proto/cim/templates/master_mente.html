@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ j.nm }}{% endblock %}
+{% block main %}
+<div class="card">
+  <h2>{{ j.nm }}</h2>
+  <div class="path">{{ j.hyo_nm }}（{{ j.hyo }}）　|　工程No.{{ j.no }}　|　{{ j.pgm }}</div>
+  <div class="note">ＣＡＳＥＴ仕様書「画面項目仕様」どおりの処理区分とチェックです
+    （ＥＲＲ００１〜００４）。更新すると履歴ファイルへ1件記録します。</div>
+</div>
+
+{% if msg %}<div class="banner {{ '' if ok else 'ng' }}">{{ msg }}</div>{% endif %}
+
+<div class="card">
+  <form method="post">
+    <div class="sec">処理区分</div>
+    <select name="kubun">
+      {% for k, v in kubun.items() %}
+        <option value="{{ k }}" {{ 'selected' if k == kb else '' }}>{{ k }}：{{ v }}</option>
+      {% endfor %}
+    </select>
+
+    <div class="sec">キー</div>
+    {% for c in j.pk %}
+      <label>{{ j.midashi.get(c, c) }}
+        <input name="k_{{ c }}" value="{{ kagi.get(c, '') }}" size="12"></label>
+    {% endfor %}
+    <button name="go" value="yobidashi" type="submit">呼び出し</button>
+
+    {% if kb == '4' %}
+      <div class="sec">複写元のキー</div>
+      {% for c in j.pk %}
+        <label>{{ j.midashi.get(c, c) }}
+          <input name="m_{{ c }}" value="{{ moto.get(c, '') }}" size="12"></label>
+      {% endfor %}
+    {% endif %}
+
+    {% if kb in ('1', '2') %}
+      <div class="sec">項目（{{ ko|length }}件）</div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>項目</th><th>英名</th><th>型</th><th>値</th></tr></thead>
+          <tbody>
+          {% for c in ko %}
+            <tr><td>{{ j.midashi.get(c, c) }}</td><td class="path">{{ c }}</td>
+                <td class="path">{{ j.kata.get(c) }}</td>
+                <td><input name="v_{{ c }}" value="{{ rec.get(c, '') }}" size="18"></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+
+    <div style="margin-top:12px">
+      <button class="hb main" name="go" value="jikkou" type="submit">実行</button>
+      <a class="hb" style="margin-left:8px" href="/master/{{ j.no }}">一覧へ戻る</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
