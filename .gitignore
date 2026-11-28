@@ -1,3 +1,6 @@
 __pycache__/
 work_cob2py.json
 work_sfl.json
+
+# ＦＩＭＰＯＲＴ が書き出す実データのテキスト（社内データなので正本に入れない）
+proto/tenso/

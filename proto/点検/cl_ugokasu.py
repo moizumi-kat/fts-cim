@@ -23,7 +23,11 @@ YOBANAI = '--yobanai' in sys.argv
 BYOU = 60
 if '--byou' in sys.argv:
     BYOU = int(sys.argv[sys.argv.index('--byou') + 1])
-NA = [x for x in sys.argv[1:] if not x.startswith('-') and x != str(BYOU)]
+MEISAI = ''
+if '--meisai' in sys.argv:
+    MEISAI = sys.argv[sys.argv.index('--meisai') + 1]
+NA = [x for x in sys.argv[1:] if not x.startswith('-') and x != str(BYOU)
+      and x != MEISAI]
 sys.argv = [sys.argv[0]]
 
 import datetime
@@ -80,6 +84,12 @@ def main():
                 # （どれを直せばよいか分かるようにするため）
                 if '写し取れていない' in s or '原文が無い' in s:
                     warui[s] += 1
+        # ＣＬ1本ごとの結果を別ファイルへ（どれが変わったか**後から比べる**ため。
+        #   2026-11-28：命令を足したあと「通った」が540→537に動いたとき、
+        #   どのＣＬが変わったのか分からず測り直すことになった反省から。）
+        if MEISAI:
+            with open(MEISAI, 'a', encoding='utf-8') as f:
+                f.write('%s\t%s\n' % (na, kekka))
         if len(hon) <= 5:
             print('=== %s … %s' % (na, kekka))
             for c, g, s in log:

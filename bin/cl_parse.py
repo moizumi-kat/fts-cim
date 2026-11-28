@@ -86,6 +86,14 @@ def tsunagu(hon):
          ・次の行が `&&` か `,` で始まる     … 式の続き
              ?MSG2 := ?CLID && ' '
                       && @JOBDATE
+         ・前の行が `!` で終わる、次の行が `!` で始まる
+                                              … ＳＯＲＴ の入力ファイル列挙
+             SORTD  INFILE-D20400S3.@TEMP !
+                           D20400S4.@TEMP,
+           （村上様ご回答 2026-11-28 の【Ｂ】ＣＤ２Ｚ０４００・ＣＬ６Ｄ００００
+             「該当コマンドなし」で気づいた。つながないと2本目以降の入力
+             ファイル名を**命令の名前**と読んでしまい、ＳＯＲＴが1本しか
+             読まない＝並べ替えの結果が変わる。）
          ・前の行が `THEN` で終わらない `IF` … 条件の続き
        つながないと、`NPROMPT-` や `&& @JOBDATE` を**命令の名前**として
        数えてしまい、13,605行が「読めない行」になっていた。
@@ -97,14 +105,25 @@ def tsunagu(hon):
             continue
         if out:
             mae = out[-1][1]
-            if (mae.endswith((',', '&&', '+', '-', '*', '/', ':=', '='))
-                    or s.startswith(('&&', ',', '+', '*', '/'))
+            if (mae.endswith((',', '&&', '+', '-', '*', '/', ':=', '=', '!'))
+                    or s.startswith(('&&', ',', '+', '*', '/', '!'))
                     or (re.match(r'^IF\b', mae, re.I)
                         and not re.search(r'\bTHEN\b', mae, re.I))):
                 out[-1] = (out[-1][0], mae + ' ' + s)
                 continue
         out.append((no, s))
     return out
+
+
+# ＦＯＲ文（村上様ご回答 2026-11-28【Ｂ】「マニュアルを参照して理解し、
+#   その動作を実現させてください。」）
+#       FOR  ?I := 1  STEP 1  TO  3
+#       DO   …
+#       END
+#   ＤＯ は単独の行のことも、同じ行に文が続くこともある（実測）。
+#       CA2D0312  `FOR ?I := 1 STEP 1 TO ?BUSU` / `DO` / `CALL …` / `END`
+#       SYUSICL1  `DO      ?WNAM := ?FNAM(?I) && '.' && ?LNAM`
+FORBUN = re.compile(r"^FOR\s+(\?[A-Z0-9@#$_-]+)\s*:=\s*(.+?)\s+STEP\s+(.+?)\s+TO\s+(.+?)\s*$", re.I)
 
 
 def yomu(michi):
@@ -136,6 +155,19 @@ def yomu(michi):
         if mm:
             bun.append({'shu': 'dainyu', 'saki': mm.group(1),
                         'shiki': mm.group(2).strip(), 'gyo': no})
+            continue
+        mm = FORBUN.match(s)
+        if mm:
+            bun.append({'shu': 'for', 'hensu': mm.group(1).upper(),
+                        'kara': mm.group(2).strip(), 'kizami': mm.group(3).strip(),
+                        'made': mm.group(4).strip(), 'gyo': no})
+            continue
+        mm = re.match(r'^DO\b(.*)$', s, re.I)
+        if mm:
+            bun.append({'shu': 'do', 'gyo': no})
+            nokori = mm.group(1).strip()
+            if nokori:
+                bun.extend(yomu_moji(nokori, no))
             continue
         m = MEIREI.match(s)
         if not m:
@@ -182,9 +214,19 @@ def yomu_moji(s, no=0):
     if not m:
         return [{'shu': 'fumei', 'moji': s, 'gyo': no}]
     meirei, ato = m.group(1).upper(), m.group(2).strip()
-    if meirei in ('GOTO', 'RETURN', 'CASE', 'WHEN'):
+    if meirei == 'GOTO':
+        # `IF … THEN GOTO STEP70    END` のように、同じ行に ＥＮＤ が
+        # 続くことがある（ＣＤ２Ｚ００５４ 実測・2026-11-28）。
+        # 飛び先は**最初の語だけ**。残りはそのまま文として読む。
+        bun = ato.split()
+        out = [{'shu': 'goto', 'ato': bun[0] if bun else '', 'gyo': no}]
+        nokori = ' '.join(bun[1:]).strip()
+        if nokori:
+            out.extend(yomu_moji(nokori, no))
+        return out
+    if meirei in ('RETURN', 'CASE', 'WHEN'):
         return [{'shu': meirei.lower(), 'ato': ato, 'gyo': no}]
-    if meirei in ('ELSE', 'END', 'ENDCASE'):
+    if meirei in ('ELSE', 'END', 'ENDCASE', 'DO'):
         return [{'shu': meirei.lower(), 'gyo': no}]
     hiki = _hikisu(ato)
     return [{'shu': 'meirei', 'na': meirei, 'hiki': hiki,

@@ -40,7 +40,7 @@ KARA = {
     'CHGFILE': 'ファイル属性の変更', 'SETPF': '物理ファイルの設定',
     'ACTLF': '論理ファイルの活性化', 'DACTLF': '論理ファイルの非活性化',
     'SNDFTPC': 'ＦＴＰ送信', 'CNTFTPC': 'ＦＴＰ接続',
-    'DCNTFTPC': 'ＦＴＰ切断', 'FIMPORT': 'ファイルの取り込み',
+    'DCNTFTPC': 'ＦＴＰ切断',
     'STRDPSD': '分散処理の開始', 'RELATE': 'ファイルの関係づけ',
     'CNVDF': 'データ形式の変換', 'DLTSAVF': '保存ファイルの削除',
     'ENDDPSD': '分散処理の終了', 'SNDFILE': 'ファイル送信',
@@ -50,6 +50,50 @@ KARA = {
     'DACTVLD': 'ＶＬＤの非活性化', 'OVRSF': '順ファイルの差し替え',
     'SAVMBR': 'メンバの保存', 'RLSSPLF': 'スプールの解放',
     'DACTWS': '端末の非活性化', 'CRTLF': '論理ファイルの作成',
+}
+
+# 村上様ご回答（2026-11-28【Ｂ】ＣＬ４３本・ＣＬ毎の回答）で
+# **「コマンド試作対象外」**と確定したもの。記録だけして次へ進む。
+TAISHOGAI_MEIREI = {
+    'SYNCREPL': 'レプリケーションの同期',
+    'OVRDSPF': 'ディスプレイファイルの置換え',
+    'STRFAXLK': 'ＦＡＸ－Ｌｉｎｋの起動',
+    'HLDSPLF': 'スプールファイルの保留',
+    'DSPTDIR': 'ディレクトリの表示',
+    'CHGSPLF': 'スプールファイルの変更',
+    'RSTFILE': 'ファイルのリストア',
+    'LOADMT': 'テープの装着', 'UNLDMT': 'テープの取り外し',
+    'INZMT': 'テープの初期化', 'DSPRETN': '保存期限の表示',
+    'CNDPF': '物理ファイルの整理（削除レコードの詰め）',
+    'STRDHS': 'ＤＨＳの起動', 'RNMTMBR': 'メンバの名前変更',
+    'DLTTMBR': 'メンバの削除', 'CRTPF': '物理ファイルの作成',
+    'ACTMSGQ': 'メッセージキューの活性化', 'RCVMSG': 'メッセージの受信',
+    'DMPWSLOG': '端末ログの出力', 'POWEROFF': '電源断',
+    'SAVCHGOBJ': '変更オブジェクトの保存',
+    # ↓ 村上様が名指しされたものと**同じ系統**だったため、同じ扱いにした分。
+    #    （ご回答に名前が無いので、誤っていればご指摘いただきたい分）
+    'STRRPSCH': 'レプリケーションのスケジュール開始（ＳＹＮＣＲＥＰＬ と同系・ＣＡ１Ｚ３２００）',
+    'STRRPULG': 'レプリケーションのログ開始（同上）',
+    'CANFAXLK': 'ＦＡＸ－Ｌｉｎｋの取消（ＳＴＲＦＡＸＬＫ と同系・ＣＬ０Ｄ０１００）',
+    'CANJOB': 'ジョブの取消（終業処理・ＣＬ０Ｄ０１００）',
+    'CTLNSS': 'ネットワークの制御（ＤＡＣＴＷＳ の後継・ＣＬ０Ｄ０１００）',
+    'DACTMSGQ': 'メッセージキューの非活性化（ＣＬ０Ｄ０１００）',
+    'CHGLFFFD': '論理ファイルの項目定義変更（ＣＡ１Ｚ３０１０）',
+}
+# 「Ｑ１」「Ｑ２８３」等はスプール切替えコマンド＝対象外（村上様ご回答）。
+TAISHOGAI_Q = re.compile(r'^Q\d{1,3}$')
+# 「ＳＴＰ○○○系」はサービス停止＝対象外（村上様ご回答・ＣＬ０Ｄ０１００）。
+TAISHOGAI_STP = re.compile(r'^STP[A-Z0-9]*$')
+
+# **処理（ＣＬ）そのものが試作対象外**と確定したもの（村上様ご回答）。
+TAISHOGAI_CL = {
+    'CF1Z2300': 'ＦＡＸ－Ｌｉｎｋの起動のみの処理',
+    'CF1Z3000': 'ＦＡＸ－Ｌｉｎｋの起動のみの処理',
+    'CF1Z3100': 'ＦＡＸ－Ｌｉｎｋの起動のみの処理',
+    'FUCHUCL6': 'ファイルリストアの処理',
+    'PGBACKUP': 'ファイルバックアップのＣＬ',
+    'RUNCHKCL': 'システム状態参照（ご指示により対象外）',
+    'VLDSTAR2': 'ジョブ起動（ＳＢＭＪＯＢ）の処理',
 }
 
 
@@ -197,6 +241,12 @@ class Jikkou:
     # ── 動かす ──────────────────────────────────
     def hashiru(self, cl, hiki=()):
         """ＣＬ 1本を動かす。`hiki` は呼ぶ側が渡した値の並び。"""
+        if cl.upper() in TAISHOGAI_CL:
+            # 村上様ご回答（2026-11-28【Ｂ】）で
+            # **この処理自体を試作対象外**と確定したもの。
+            self._kaku(cl, 0, 'この処理は試作対象外（%s・村上様ご指示）'
+                       % TAISHOGAI_CL[cl.upper()])
+            return 0
         michi = _moto() / (cl + '.CL')
         if not michi.exists():
             self._kaku(cl, 0, '原文が無い')
@@ -221,7 +271,7 @@ class Jikkou:
         j = i + 1
         while j < len(bun):
             s = bun[j]['shu']
-            if s in ('if', 'case'):
+            if s in ('if', 'case', 'for'):
                 fukasa += 1
             elif s == 'end':
                 if fukasa == 0:
@@ -233,13 +283,19 @@ class Jikkou:
     def _ichibun(self, cl, b, i, bun, raberu, hensu, para, hiki):
         shu = b['shu']
         gyo = b.get('gyo', 0)
-        if shu in ('raberu', 'end', 'else', 'caseji', 'when'):
+        if shu == 'end' and getattr(self, '_relate', False):
+            self._relate = False
+            return i + 1
+        if shu in ('raberu', 'end', 'else', 'caseji', 'when', 'do'):
             # ＥＬＳＥ に素通りで入るのは、ＩＦ が真だったとき。
             # その場合は ＥＮＤ まで飛ばす。
             if shu == 'else':
                 return self._tobu(bun, i)
             return i + 1
         if shu == 'fumei':
+            # ＲＥＬＡＴＥ の宣言の中（`#1#  ?INDAY,?MIN`）は処理ではない。
+            if getattr(self, '_relate', False):
+                return i + 1
             self._kaku(cl, gyo, '読めない行: %s' % b['moji'][:40])
             return i + 1
         if shu == 'dainyu':
@@ -255,6 +311,45 @@ class Jikkou:
             else:
                 hensu[saki] = v
             return i + 1
+        if shu == 'for':
+            # ＦＯＲ ?I := 開始 STEP きざみ TO 終わり … ＤＯ … ＥＮＤ
+            #   村上様ご回答（2026-11-28【Ｂ】）
+            #     「『ＦＯＲ』文⇒マニュアルを参照して理解し、その動作を
+            #       実現させてください。」（ＣＡ２Ｄ０３１２・ＳＹＵＳＩＣＬ１）
+            #   ＣＡ２Ｄ０３１２ は部数ぶん、ＳＹＵＳＩＣＬ１ は3回まわす。
+            #   回していなかったときは**1回も実行していなかった**
+            #   （ＦＯＲ を知らない命令として読み飛ばしていたため）。
+            owari = self._tobu(bun, i)                 # ＥＮＤ の次
+            na = b['hensu']
+            try:
+                kara = int(float(str(self._shiki(b['kara'], hensu)).strip() or 0))
+                kizami = int(float(str(self._shiki(b['kizami'], hensu)).strip() or 1))
+                made = int(float(str(self._shiki(b['made'], hensu)).strip() or 0))
+            except (TypeError, ValueError):
+                self._kaku(cl, gyo, 'ＦＯＲ の回数が読めない: %s' % b)
+                return owari
+            if kizami == 0:
+                self._kaku(cl, gyo, 'ＦＯＲ のきざみが0（まわさない）')
+                return owari
+            n, kaisu = kara, 0
+            while (kizami > 0 and n <= made) or (kizami < 0 and n >= made):
+                hensu[na] = n
+                j = i + 1
+                fumi = 0
+                while j < owari - 1:
+                    j = self._ichibun(cl, bun[j], j, bun, raberu, hensu, para, hiki)
+                    fumi += 1
+                    if fumi > 100000:      # ＧＯＴＯ で後ろへ飛び続けたとき用
+                        self._kaku(cl, gyo, 'ＦＯＲ の中が終わらないので打ち切った')
+                        return owari
+                n += kizami
+                kaisu += 1
+                if kaisu > 10000:                      # 念のための暴走止め
+                    self._kaku(cl, gyo, 'ＦＯＲ が1万回を超えたので打ち切った')
+                    break
+            self._kaku(cl, gyo, 'ＦＯＲ %s %d〜%d きざみ%d＝%d回まわした'
+                       % (na, kara, made, kizami, kaisu))
+            return owari
         if shu == 'if':
             if self._joken(b['joken'], hensu):
                 return i + 1
@@ -325,14 +420,22 @@ class Jikkou:
             return
         if na == 'PARA':
             # `PARA ?A,STRING*6` … 呼ぶ側の値を順に受け取る
+            #
+            # ■ `VALUE-` は**省略したときの既定値**（2026-11-28 実測）
+            #     PARA ?BUSU,INTEGER,IN,VALUE-3
+            #   ＣＡ２Ｄ０３１２ は部数 ?BUSU ぶん ＦＯＲ でまわすが、
+            #   既定値を入れていなかったので 0 になり**1回もまわらなかった**。
+            #   呼ぶ側が値を渡したときは、渡された値が勝つ。
             if h:
                 v = h[0].upper()
                 para.append(v)
+                kitei = self._atai(kw['VALUE'], hensu) if 'VALUE' in kw else ''
                 if isinstance(hiki, dict):
-                    hensu.setdefault(v, '')
+                    hensu.setdefault(v, kitei)
+                elif len(hiki) >= len(para):
+                    hensu[v] = hiki[len(para) - 1]
                 else:
-                    hensu[v] = hiki[len(para) - 1] \
-                        if len(hiki) >= len(para) else ''
+                    hensu[v] = kitei
             return
         if na == 'VAR':
             if h:
@@ -356,7 +459,10 @@ class Jikkou:
             if len(h) >= 2:
                 hensu[h[0].upper()] = self._shiki(h[1], hensu)
             return
-        if na == 'OVRF':
+        if na in ('OVRF', 'OVRLF'):
+            # ＯＶＲＬＦ は**論理**ファイルの差し替え。表としては同じ扱い。
+            # （村上様ご回答 2026-11-28【Ｂ】ＭＥＩＣＰＹＣＬ「該当コマンド
+            #   なし・そのまま作成してください」）
             a = self._hyo(kw.get('FILE', ''))
             b2 = self._hyo(kw.get('TOFILE', ''))
             if a and b2:
@@ -393,12 +499,155 @@ class Jikkou:
         if na == 'CALL':
             self._yobu(cl, gyo, h, hensu)
             return
+        if na == 'SBMJOB':
+            # 村上様ご回答（2026-11-28【Ｂ】）
+            #   「『ＳＢＭＪＯＢ』ジョブを起動するコマンド⇒『ＰＧＭ-ＸＸＸＸＸＸ』に
+            #     記述されているＣＬを別プロセスで実行してください。」
+            #   （ＣＡ１Ｚ１０００／ＣＡ１Ｚ１０１０／ＣＬ０Ｄ００００）
+            # 試作は1人で順に動かすので、**その場で呼ぶ**（結果は同じ）。
+            saki = str(kw.get('PGM', '')).strip().upper().split('.')[0]
+            if not saki:
+                self._kaku(cl, gyo, 'ＳＢＭＪＯＢ（ＰＧＭ が無い）')
+                return
+            self._kaku(cl, gyo, 'ＳＢＭＪＯＢ → %s を動かす' % saki)
+            tsugi = ['PGM-' + saki]
+            if 'PARA' in kw:
+                tsugi.append('PARA-' + str(kw['PARA']))
+            self._yobu(cl, gyo, tsugi, hensu)
+            return
+        if na == 'PAUSE':
+            # 村上様ご回答：「『ＯＫ』入力なら後続処理を実行，『ＮＯ』入力なら
+            #   処理を打切り。」試作は人が居ないので**ＯＫ扱いで進む**。
+            #   打ち切りたいときは pause_kotae='NO' を渡す。
+            if str(getattr(self, 'pause_kotae', 'OK')).upper() == 'NO':
+                self._kaku(cl, gyo, 'ＰＡＵＳＥ → ＮＯ のため打ち切り')
+                raise Owari(0)
+            self._kaku(cl, gyo, 'ＰＡＵＳＥ → ＯＫ として先へ進む')
+            return
+        if na == 'FEXPORT':
+            # 村上様ご回答：「端末からホストへのファイル転送⇒テキスト
+            #   ファイルを取込む処理に変換してください」
+            #   ＭＯＤＥ-@ＲＥＰ は入れ替え、それ以外は追加。
+            self._torikomu(cl, gyo, self._hyo(kw.get('FILE', '')),
+                           str(kw.get('MODE', '@REP')).upper() == '@REP')
+            return
+        if na == 'FIMPORT':
+            # 村上様ご回答：「ホストから端末へのファイル転送⇒テキスト
+            #   ファイルを作成する処理に変換してください」
+            self._kakidasu(cl, gyo, self._hyo(kw.get('FILE', '')))
+            return
+        if na == 'SETISF':
+            # 順ファイルから索引ファイルを作る。表としては**写し**と同じ。
+            self._utsusu(cl, gyo, self._hyo(kw.get('FILE', '')),
+                         self._hyo(kw.get('TOFILE', '')))
+            return
+        if na in TAISHOGAI_MEIREI:
+            self._kaku(cl, gyo, '%s（%s・村上様ご指示により試作対象外）'
+                       % (na, TAISHOGAI_MEIREI[na]))
+            return
+        if TAISHOGAI_Q.match(na) or TAISHOGAI_STP.match(na):
+            self._kaku(cl, gyo, '%s（%s・村上様ご指示により試作対象外）'
+                       % (na, 'スプール切替え' if TAISHOGAI_Q.match(na) else 'サービス停止'))
+            return
+        if na == 'RELATE':
+            # ＲＥＬＡＴＥ ?KBN EXCL / #1# ?INDAY,?MIN / END
+            #   引数どうしの関係（排他・必須）の**宣言**であって処理ではない。
+            #   ＥＮＤ までが1つのかたまりなので、まとめて読み飛ばす。
+            #   （ＣＬ０Ｄ００００ で「読めない行」になっていた 2026-11-28）
+            self._kaku(cl, gyo, 'ＲＥＬＡＴＥ %s（引数の関係の宣言）'
+                       % (' '.join(h)[:30] if h else ''))
+            self._relate = True
+            return
         if na in KARA:
             self._kaku(cl, gyo, '%s（%s・試作では何もしない）' % (na, KARA[na]))
             return
+        # ＣＬ は **名前だけで直接** 呼べる（2026-11-28 実測）。
+        #     CB1M1030 YY-?YEAR,MM-?TUKI
+        #     SUIHYCL1 YY-?YEAR,MM-?TUKI
+        #     PSAKUZU2 SJCODE-'1402'
+        #   呼ばれる側の `PGM (YY-?YY,MM-?MM)` と名前で対応する。
+        #   命令として読んでいたため、これまで**呼ばずに素通り**していた。
+        if (_moto() / (na + '.CL')).exists():
+            if self.fukasa >= 8:
+                self._kaku(cl, gyo, '%s（呼び出しが深すぎる）' % na)
+                return
+            watasu = {k: self._atai(v, hensu) for k, v in kw.items()} if kw else []
+            self.fukasa += 1
+            try:
+                self.pgmec = self.hashiru(na, watasu)
+            finally:
+                self.fukasa -= 1
+            self._kaku(cl, gyo, '%s（ＣＬを名前で呼ぶ）→ %s' % (na, self.pgmec))
+            return
+        if not h:
+            self._kaku(cl, gyo, '%s（ラベルとみなして素通り）' % na)
+            return
         self._kaku(cl, gyo, '%s（まだ作っていない命令）' % na)
 
-    def _utsusu(self, cl, gyo, a, b2):
+    # ------------------------------------------------------- テキストの受け渡し
+    #   村上様ご回答（2026-11-28【Ｂ】）
+    #     ＦＥＸＰＯＲＴ（端末→ホスト）⇒ テキストファイルを**取込む**処理に
+    #     ＦＩＭＰＯＲＴ（ホスト→端末）⇒ テキストファイルを**作成する**処理に
+    #   置き場は、ＣＬを動かす側が tenso（既定 proto/tenso）で決める。
+    #   ＣＳＶ（1行目が列名）。現行の転送パラメタ（ＰＥＸＰＡＲＡ 等）は
+    #   端末側の定義なので持っていない＝列名で合わせる。
+    def _tenso_dir(self):
+        import pathlib as _p
+        d = getattr(self, 'tenso', None)
+        d = _p.Path(d) if d else (ここ.parent.parent / 'tenso')
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def _torikomu(self, cl, gyo, hyo, irekae=True):
+        """ＦＥＸＰＯＲＴ。テキスト（ＣＳＶ）を表へ取り込む。"""
+        import csv
+        if not self._hyo_aru(hyo):
+            self._kaku(cl, gyo, 'ＦＥＸＰＯＲＴ %s（表が無い）' % hyo)
+            return
+        michi = self._tenso_dir() / (hyo + '.csv')
+        if not michi.exists():
+            self._kaku(cl, gyo, 'ＦＥＸＰＯＲＴ %s（%s が置かれていないので取り込まない）'
+                       % (hyo, michi.name))
+            return
+        from ..schema_gen import TABLES
+        retsu = [c[0] for c in TABLES[hyo]['cols']]
+        n = 0
+        with michi.open(encoding='utf-8-sig', newline='') as f:
+            yomi = csv.DictReader(f)
+            tomo = [c for c in (yomi.fieldnames or []) if c in retsu]
+            if not tomo:
+                self._kaku(cl, gyo, 'ＦＥＸＰＯＲＴ %s（列名が合わないので取り込まない）' % hyo)
+                return
+            if irekae:
+                self.con.execute('DELETE FROM [%s]' % hyo)
+            for gy in yomi:
+                self.con.execute(
+                    'INSERT INTO [%s](%s) VALUES(%s)'
+                    % (hyo, ','.join('[%s]' % c for c in tomo), ','.join('?' * len(tomo))),
+                    tuple(gy.get(c, '') for c in tomo))
+                n += 1
+        self._kaku(cl, gyo, 'ＦＥＸＰＯＲＴ %s ← %s %d件' % (hyo, michi.name, n))
+
+    def _kakidasu(self, cl, gyo, hyo):
+        """ＦＩＭＰＯＲＴ。表をテキスト（ＣＳＶ）に書き出す。"""
+        import csv
+        if not self._hyo_aru(hyo):
+            self._kaku(cl, gyo, 'ＦＩＭＰＯＲＴ %s（表が無い）' % hyo)
+            return
+        from ..schema_gen import TABLES
+        retsu = [c[0] for c in TABLES[hyo]['cols']]
+        michi = self._tenso_dir() / (hyo + '.csv')
+        cur = self.con.execute('SELECT %s FROM [%s]'
+                               % (','.join('[%s]' % c for c in retsu), hyo))
+        n = 0
+        with michi.open('w', encoding='utf-8-sig', newline='') as f:
+            kaku = csv.writer(f)
+            kaku.writerow(retsu)
+            for r in cur.fetchall():
+                kaku.writerow(['' if v is None else v for v in r])
+                n += 1
+        self._kaku(cl, gyo, 'ＦＩＭＰＯＲＴ %s → %s %d件' % (hyo, michi.name, n))
+    def _utsusu(self, cl, gyo, a, b2, tsuika=False):
         """ＣＮＶＦＩＬＥ。表 a の中身を表 b2 へ写す。
 
            村上様のご回答（2026-11-26）で、この組は**同じ並び**と確認済み
@@ -417,7 +666,8 @@ class Jikkou:
                        'ＣＮＶＦＩＬＥ %s→%s（列が合わないので写さない）' % (a, b2))
             return
         try:
-            self.con.execute('DELETE FROM [%s]' % b2)
+            if not tsuika:
+                self.con.execute('DELETE FROM [%s]' % b2)
             retsu = ','.join('[%s]' % c for c in tomo)
             self.con.execute('INSERT INTO [%s](%s) SELECT %s FROM [%s]'
                              % (b2, retsu, retsu, a))
@@ -433,17 +683,34 @@ class Jikkou:
            `SORTD INFILE-FGENKA,INRL-40,OUTFILE-…,FIELD-…` の形。
            並べる列が読み取れないときは**何もせず記録する**
            （適当な順で入れると、あとの処理が黙って違う答えを出す）。
+
+           ■ 入力ファイルは**複数**書ける（2026-11-28 実測）
+               SORTD  INFILE-D20400S3.@TEMP !
+                             D20400S4.@TEMP,
+                      INRL-30,INBF-136 ! 136,
+             `!` で区切って並べる＝**4本まとめて並べ替える**。
+             村上様ご回答【Ｂ】の「ＣＤ２Ｚ０４００／ＣＬ６Ｄ００００＝該当
+             コマンドなし・そのまま作成」で気づいた。これまでは行の続きと
+             読めておらず、2本目以降を命令の名前として捨てていた
+             （＝1本しか読まない＝件数が足りない）。
         """
-        moto = self._hyo(kw.get('INFILE', ''))
-        saki = self._hyo(kw.get('OUTFILE', '') or moto)
-        if not (self._hyo_aru(moto) and self._hyo_aru(saki)):
-            self._kaku(cl, gyo, 'ＳＯＲＴ %s→%s（表が無い）' % (moto, saki))
+        moto_ra = [self._hyo(x) for x in str(kw.get('INFILE', '')).split('!') if x.strip()]
+        saki = self._hyo(kw.get('OUTFILE', '') or (moto_ra[0] if moto_ra else ''))
+        aru = [m for m in moto_ra if self._hyo_aru(m)]
+        if not aru or not self._hyo_aru(saki):
+            self._kaku(cl, gyo, 'ＳＯＲＴ %s→%s（表が無い）'
+                       % ('＋'.join(moto_ra) or '?', saki))
             return
         self._kaku(cl, gyo,
-                   'ＳＯＲＴ %s→%s（並べる列が決まらないので写すだけ）'
-                   % (moto, saki))
-        if moto != saki:
-            self._utsusu(cl, gyo, moto, saki)
+                   'ＳＯＲＴ %s→%s（入力%d本・並べる列が決まらないので写すだけ）'
+                   % ('＋'.join(aru), saki, len(aru)))
+        tsuika = False
+        for m in aru:
+            if m == saki:
+                tsuika = True                       # 出力＝入力のときは消さない
+                continue
+            self._utsusu(cl, gyo, m, saki, tsuika=tsuika)
+            tsuika = True
 
     def _yobu(self, cl, gyo, h, hensu):
         """ＣＡＬＬ。ＣＯＢＯＬ か ＣＬ を呼ぶ。引数は参照渡し。"""
